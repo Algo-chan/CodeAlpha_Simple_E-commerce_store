@@ -1,0 +1,16 @@
+-- Template for a new migration file.
+-- Copy to: 001_your_change.sql   (three digits + snake_case description)
+--
+-- NOTE: do not add BEGIN/COMMIT here. The runner (run.js) already wraps every
+-- migration in a transaction, so a failure rolls this file back automatically.
+
+-- Example DDL (edit me):
+--
+-- CREATE TABLE IF NOT EXISTS example (
+--   id          BIGSERIAL PRIMARY KEY,
+--   name        VARCHAR(255) NOT NULL,
+--   created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+--   updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+-- );
+--
+-- CREATE INDEX IF NOT EXISTS idx_example_name ON example (name);

@@ -1,0 +1,37 @@
+<!--
+  Placeholder Footer markup.
+  Loaded at runtime by js/main.js into <div data-partial="footer">.
+-->
+<footer class="site-footer">
+  <div class="container site-footer__inner">
+    <p class="text-sm text-muted">
+      &copy; <span data-current-year>2026</span> Storefront &mdash; architecture setup phase.
+    </p>
+    <nav class="site-footer__links" aria-label="Footer navigation">
+      <!-- Policy / contact links are added with the content pages. -->
+    </nav>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: auto;
+    padding-block: var(--space-8);
+    background-color: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .site-footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .site-footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+  }
+</style>

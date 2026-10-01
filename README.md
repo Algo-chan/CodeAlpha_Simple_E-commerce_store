@@ -2,7 +2,7 @@
 
 A basic full-stack e-commerce web application developed as a web development project.
 
-##  Features
+## Features
 
 - Product listings
 - Product details page
@@ -11,7 +11,7 @@ A basic full-stack e-commerce web application developed as a web development pro
 - Order processing
 - Database for products, users, and orders
 
-##  Technologies
+## Technologies
 
 - HTML
 - CSS
@@ -20,6 +20,6 @@ A basic full-stack e-commerce web application developed as a web development pro
 - Express.js
 - PostgreSQL / Database
 
-##  Project Goal
+## Project Goal
 
 The goal of this project is to build a simple e-commerce platform while practicing frontend development, backend development, database management, authentication, and order processing.

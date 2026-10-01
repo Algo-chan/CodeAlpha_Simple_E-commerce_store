@@ -1,0 +1,17 @@
+{
+  "name": "@ecommerce/frontend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vanilla HTML/CSS/JS storefront for the e-commerce platform",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "devDependencies": {
+    "express": "^5.2.1"
+  }
+}

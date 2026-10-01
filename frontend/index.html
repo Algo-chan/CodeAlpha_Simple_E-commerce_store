@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Modern single-vendor e-commerce storefront - architecture setup phase."
+    />
+    <title>Storefront &middot; Setup</title>
+    <link rel="stylesheet" href="/css/main.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>&#9670;</text></svg>"
+    />
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <div class="page">
+      <!-- Navbar partial is injected here by js/main.js -->
+      <div data-partial="navbar"></div>
+
+      <main class="page__main" id="main-content">
+        <div class="container">
+          <section class="hero" aria-labelledby="page-title">
+            <h1 class="hero__title" id="page-title">Architecture setup in progress</h1>
+            <p class="hero__subtitle mt-4">
+              The storefront UI, catalogue, cart and checkout are intentionally not built yet. This
+              page exists to verify that the frontend, the REST API and PostgreSQL are wired
+              together correctly.
+            </p>
+          </section>
+
+          <section class="page__section" aria-labelledby="status-title">
+            <h2 class="mb-4" id="status-title">System status</h2>
+
+            <div class="card">
+              <div class="card__body">
+                <div class="status-list" data-health-status>
+                  <div class="status-list__row">
+                    <span class="status-list__label">API server</span>
+                    <span class="badge">checking…</span>
+                  </div>
+                  <div class="status-list__row">
+                    <span class="status-list__label">Database</span>
+                    <span class="badge">checking…</span>
+                  </div>
+                  <div class="status-list__row">
+                    <span class="status-list__label">Environment</span>
+                    <span class="badge">…</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="mt-6 text-sm text-muted">
+              Endpoint: <code>GET /api/v1/health</code> &mdash; see
+              <code>docs/architecture.md</code> for how a request travels from the browser to
+              PostgreSQL.
+            </p>
+          </section>
+
+          <section class="page__section" aria-labelledby="next-title">
+            <h2 class="mb-4" id="next-title">What comes next</h2>
+            <ul class="stack list-reset text-muted">
+              <li>Brand identity, typography and the full design system</li>
+              <li>ER diagram and PostgreSQL schema, then migrations</li>
+              <li>Authentication (customers + admin) and role-based access control</li>
+              <li>Catalogue: categories, products, variants, search and filtering</li>
+              <li>Cart, wishlist, checkout, Cash on Delivery and orders</li>
+              <li>Admin dashboard, inventory, discounts and analytics</li>
+            </ul>
+          </section>
+        </div>
+      </main>
+
+      <!-- Footer partial is injected here by js/main.js -->
+      <div data-partial="footer"></div>
+    </div>
+
+    <script type="module" src="/js/main.js" data-page="home"></script>
+  </body>
+</html>
