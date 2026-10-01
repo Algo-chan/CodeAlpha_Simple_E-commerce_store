@@ -1,2 +1,25 @@
-# CodeAlpha_Simple_E-commerce_store
-A simple full-stack e-commerce web application built with HTML, CSS, JavaScript, and Express.js. The project includes product listings, product details, shopping cart, user registration/login, order processing, and database management for products, users, and orders.
+--------------------> Simple E-commerce Store <------------------------
+
+A basic full-stack e-commerce web application developed as a web development project.
+
+##  Features
+
+- Product listings
+- Product details page
+- Shopping cart
+- User registration and login
+- Order processing
+- Database for products, users, and orders
+
+##  Technologies
+
+- HTML
+- CSS
+- JavaScript
+- Node.js
+- Express.js
+- PostgreSQL / Database
+
+##  Project Goal
+
+The goal of this project is to build a simple e-commerce platform while practicing frontend development, backend development, database management, authentication, and order processing.
