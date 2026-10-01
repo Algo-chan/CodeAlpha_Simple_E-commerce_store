@@ -37,7 +37,7 @@ export default [
 
   // Backend + tooling: Node.js runtime (ESM).
   {
-    files: ['backend/**/*.js', 'scripts/**/*.js'],
+    files: ['backend/**/*.js', 'scripts/**/*.js', 'eslint.config.js'],
     languageOptions: {
       globals: {
         ...globals.node,
