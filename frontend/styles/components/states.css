@@ -1,0 +1,180 @@
+/* =============================================================================
+   EMPTY & ERROR STATES
+   Two families, one layout.
+
+   An empty state answers two questions, in this order:
+     1. What happened?   -> title
+     2. What now?        -> description + one primary action
+
+   An error state adds the same pair plus an optional retry, and never exposes
+   a status code, stack trace or technical reason to the shopper.
+   ========================================================================== */
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-sm);
+  padding: var(--space-2xl) var(--space-lg);
+  margin-inline: auto;
+  max-inline-size: 30rem;
+}
+
+.state--left {
+  align-items: flex-start;
+  text-align: start;
+}
+
+.state--compact {
+  padding-block: var(--space-xl);
+  gap: var(--space-2xs);
+}
+
+/* --- Icon ----------------------------------------------------------------
+   A hairline circle rather than a filled blob: it stays quiet next to real
+   product imagery, which is what a shopper is actually looking at. */
+
+.state__icon {
+  display: grid;
+  place-items: center;
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  margin-block-end: var(--space-2xs);
+  color: var(--color-text-subtle);
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.state--compact .state__icon {
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  margin-block-end: 0;
+}
+
+.state__icon svg {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+
+.state--compact .state__icon svg {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+}
+
+/* --- Copy ---------------------------------------------------------------- */
+
+.state__title {
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-snug);
+}
+
+.state--compact .state__title {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.state__description {
+  max-inline-size: 34ch;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  text-wrap: pretty;
+}
+
+.state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  margin-block-start: var(--space-sm);
+}
+
+.state--left .state__actions {
+  justify-content: flex-start;
+}
+
+/* --- Tone modifiers -------------------------------------------------------
+   The icon and the rule pick up the tone; the copy stays neutral. */
+
+.state--error .state__icon {
+  color: var(--color-error);
+  background-color: var(--color-error-bg);
+  border-color: var(--color-error-border);
+}
+
+.state--warning .state__icon {
+  color: var(--color-warning);
+  background-color: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
+}
+
+.state--info .state__icon {
+  color: var(--color-info);
+  background-color: var(--color-info-bg);
+  border-color: var(--color-info-border);
+}
+
+/* A hairline above the block separates it from surrounding content without
+   needing a filled panel. */
+.state--divided {
+  border-top: var(--border-width-hairline) solid var(--color-border);
+  padding-block-start: var(--space-2xl);
+}
+
+/* --- Suggested actions inside an empty state
+   e.g. the categories offered when a search returns nothing. */
+
+.state__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2xs);
+  margin-block-start: var(--space-sm);
+}
+
+.state--left .state__suggestions {
+  justify-content: flex-start;
+}
+
+/* --- Inline error (inside a panel, not a full page) ----------------------- */
+
+.inline-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  color: var(--color-error-text);
+  background-color: var(--color-error-bg);
+  border: var(--border-width-hairline) solid var(--color-error-border);
+  border-radius: var(--radius-md);
+}
+
+.inline-error__icon {
+  flex-shrink: 0;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  margin-block-start: 0.1em;
+}
+
+.inline-error__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  font-size: var(--font-size-sm);
+}
+
+.inline-error__title {
+  font-weight: var(--font-weight-semibold);
+}
+
+.inline-error__text {
+  color: inherit;
+  opacity: 0.85;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+}

@@ -1,0 +1,375 @@
+/* =============================================================================
+   FILTERS
+   Desktop: a sticky rail inside `.collection__rail`.
+   Mobile: a bottom sheet (see overlay.css), triggered from the collection
+   toolbar. Both render the same `filterPanel()` component, so the two
+   presentations can never drift apart.
+
+   Filter groups are real `<fieldset>`s inside a `<details>`-style disclosure
+   with a button, because `<details>` cannot be styled consistently enough to
+   carry the animated chevron and the count badge.
+
+   Active state is shown on three surfaces at once: a checked control, a
+   removable chip in the toolbar, and the group heading's count. Removing a
+   filter must therefore be discoverable from wherever the shopper is looking.
+   ========================================================================== */
+
+.filter-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Group ----------------------------------------------------------------- */
+
+.filter-group {
+  border-block-end: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+.filter-group:last-child {
+  border-block-end: none;
+}
+
+.filter-group__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding-block: var(--space-sm);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  text-align: start;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.filter-group__toggle:hover {
+  color: var(--color-primary-hover);
+}
+
+.filter-group__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+/* A dot rather than a colour change: it survives greyscale and does not
+   compete with the checkbox state inside the group. */
+.filter-group__indicator {
+  inline-size: 0.375rem;
+  block-size: 0.375rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary);
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity var(--duration-fast) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-emphasized);
+}
+
+.filter-group.is-active .filter-group__indicator {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.filter-group__chevron {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  color: var(--color-text-subtle);
+  transition: transform var(--duration-normal) var(--ease-standard);
+}
+
+.filter-group__toggle[aria-expanded='true'] .filter-group__chevron {
+  transform: rotate(180deg);
+}
+
+/* Collapsible body, animated with grid-template-rows so height can be
+   transitioned without a hard-coded pixel value. */
+.filter-group__body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--duration-normal) var(--ease-standard);
+}
+
+.filter-group.is-open .filter-group__body {
+  grid-template-rows: 1fr;
+}
+
+.filter-group__body-inner {
+  overflow: hidden;
+  min-block-size: 0;
+}
+
+.filter-group__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding-block-end: var(--space-md);
+  /* Keeps the last option off the group divider. */
+  max-block-size: 15rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .filter-group__options {
+    /* Room for a focus ring without clipping it. */
+    margin-inline: calc(var(--space-2xs) * -1);
+    padding-inline: var(--space-2xs);
+  }
+}
+
+.filter-group__more {
+  align-self: flex-start;
+  margin-block-end: var(--space-2xs);
+  padding-block-end: var(--space-2xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-hover);
+}
+
+.filter-group__more:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* --- Price range ----------------------------------------------------------- */
+
+.filter-price {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-block-end: var(--space-md);
+}
+
+.filter-price__inputs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.filter-price__inputs .input {
+  min-inline-size: 0;
+  font-size: var(--font-size-xs);
+  padding-inline: var(--space-2xs);
+}
+
+.filter-price__separator {
+  color: var(--color-text-subtle);
+  flex-shrink: 0;
+}
+
+.filter-price__track {
+  position: relative;
+  block-size: 0.25rem;
+  margin-block: var(--space-md) var(--space-2xs);
+  background-color: var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.filter-price__fill {
+  position: absolute;
+  inset-block: 0;
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+/* Range inputs stacked over the track: the native thumbs stay real (keyboard
+   and touch behaviour come free), and only the track is styled. */
+.filter-price__range {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: -0.5rem;
+  inline-size: 100%;
+  block-size: 1.25rem;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+  appearance: none;
+}
+
+.filter-price__range::-webkit-slider-thumb {
+  pointer-events: auto;
+  appearance: none;
+  inline-size: 1rem;
+  block-size: 1rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface);
+  border: var(--border-width-thick) solid var(--color-primary);
+  box-shadow: var(--shadow-subtle);
+  cursor: grab;
+}
+
+.filter-price__range::-moz-range-thumb {
+  pointer-events: auto;
+  inline-size: 1rem;
+  block-size: 1rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface);
+  border: var(--border-width-thick) solid var(--color-primary);
+  box-shadow: var(--shadow-subtle);
+  cursor: grab;
+}
+
+.filter-price__range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.filter-price__range:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.filter-price__bounds {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Colour filters inside the panel -------------------------------------- */
+
+.filter-group__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  padding-block-end: var(--space-md);
+}
+
+.filter-swatch {
+  position: relative;
+  display: grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  box-shadow: 0 0 0 0 transparent;
+  transition: box-shadow var(--duration-normal) var(--ease-standard);
+}
+
+.filter-swatch__chip {
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+  border-radius: var(--radius-full);
+  background-color: var(--swatch-color, var(--color-border));
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 14%);
+}
+
+.filter-swatch[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3.5px var(--color-primary);
+}
+
+/* --- Availability ---------------------------------------------------------- */
+
+.filter-availability {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding-block-end: var(--space-md);
+}
+
+.filter-radio-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  cursor: pointer;
+}
+
+.filter-radio-row__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.filter-radio-row__count {
+  margin-inline-start: auto;
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Active summary inside the sheet -------------------------------------- */
+
+.filter-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-surface-muted);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+}
+
+.filter-summary__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  font-size: var(--font-size-xs);
+}
+
+.filter-summary__label {
+  color: var(--color-text-muted);
+}
+
+.filter-summary__value {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+  text-align: end;
+}
+
+.filter-summary__clear {
+  align-self: flex-start;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* --- Sheet footer ---------------------------------------------------------- */
+
+.filter-actions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.filter-actions .btn {
+  flex: 1 1 auto;
+}
+
+/* --- Desktop rail header --------------------------------------------------- */
+
+.filter-panel__header {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding-block-end: var(--space-xs);
+}
+
+.filter-panel__title {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-widest);
+  text-transform: var(--text-transform-label);
+  color: var(--color-text-muted);
+}
+
+/* --- Empty filter result --------------------------------------------------- */
+
+.filter-panel__empty {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  padding-block: var(--space-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filter-group__body {
+    transition: none;
+  }
+}

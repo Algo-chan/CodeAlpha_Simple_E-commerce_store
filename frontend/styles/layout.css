@@ -1,0 +1,278 @@
+/* =============================================================================
+   LAYOUT
+   Page shell, containers, section rhythm and the handful of structural grids
+   used across the storefront. Component-specific grids live next to their
+   component (styles/components/product-grid.css and so on).
+
+   Breakpoints (must match the tokens in tokens.css):
+     base        0     - small mobile, single column, everything stacked
+     480px       30em  - large mobile
+     768px       48em  - tablet
+     1024px      64em  - laptop: persistent desktop nav appears
+     1280px      80em  - desktop
+     1440px      90em  - large desktop, full gutters
+   ========================================================================== */
+
+/* --- Container ------------------------------------------------------------ */
+
+.container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--container-pad);
+}
+
+.container--narrow {
+  max-width: var(--container-max-narrow);
+}
+
+/* A container that spans edge to edge but keeps its inner rhythm - used by
+   full-bleed bands that still need aligned content. */
+.container--bleed {
+  max-width: none;
+  padding-inline: 0;
+}
+
+.container--flush {
+  padding-inline: 0;
+}
+
+@media (min-width: 48em) {
+  .container {
+    padding-inline: var(--container-pad-md);
+  }
+}
+
+@media (min-width: 80em) {
+  .container {
+    padding-inline: var(--container-pad-lg);
+  }
+}
+
+/* --- Page shell ----------------------------------------------------------- */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.page__main {
+  flex: 1 0 auto;
+}
+
+.page__footer {
+  margin-top: auto;
+}
+
+/* --- Section rhythm ------------------------------------------------------- */
+
+.section {
+  padding-block: var(--space-3xl);
+}
+
+.section--tight {
+  padding-block: var(--space-2xl);
+}
+
+.section--loose {
+  padding-block: var(--space-section-lg);
+}
+
+.section--subtle {
+  background-color: var(--color-bg-subtle);
+}
+
+.section--inverse {
+  background-color: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
+}
+
+/* A hairline that separates full-bleed bands without a heavy border. */
+.section--divided {
+  border-top: var(--border-width-hairline) solid var(--color-border);
+}
+
+@media (min-width: 48em) {
+  .section {
+    padding-block: var(--space-section);
+  }
+
+  .section--loose {
+    padding-block: var(--space-section-lg);
+  }
+}
+
+/* --- Section header ------------------------------------------------------- */
+
+.section-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xl);
+}
+
+@media (min-width: 48em) {
+  .section-head {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-xl);
+    margin-bottom: var(--space-2xl);
+  }
+}
+
+.section-head__eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-widest);
+  text-transform: var(--text-transform-label);
+  color: var(--color-text-muted);
+}
+
+.section-head__title {
+  font-size: var(--font-size-3xl);
+}
+
+.section-head__description {
+  max-width: var(--content-measure);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-relaxed);
+}
+
+.section-head__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+/* --- Flow helpers --------------------------------------------------------- */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.stack--xs {
+  gap: var(--space-2xs);
+}
+.stack--sm {
+  gap: var(--space-xs);
+}
+.stack--lg {
+  gap: var(--space-lg);
+}
+.stack--xl {
+  gap: var(--space-2xl);
+}
+
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.cluster--tight {
+  gap: var(--space-2xs);
+}
+
+.cluster--between {
+  justify-content: space-between;
+}
+
+.cluster--end {
+  justify-content: flex-end;
+}
+
+/* Auto-fitting grid. Reflows by available width instead of by breakpoint,
+   which is why the product grid never needs hard column counts. */
+.grid {
+  display: grid;
+  gap: var(--grid-gap-md);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+
+.grid--2 {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+}
+
+/* --- Two-column editorial band (copy beside media) ------------------------ */
+
+.split {
+  display: grid;
+  gap: var(--space-2xl);
+  align-items: center;
+}
+
+@media (min-width: 48em) {
+  .split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3xl);
+  }
+
+  .split--reverse > :first-child {
+    order: 2;
+  }
+}
+
+@media (min-width: 64em) {
+  .split {
+    gap: var(--space-4xl);
+  }
+}
+
+/* --- Collection shell (sidebar + results) ---------------------------------
+   Stacked on mobile; the filter sidebar becomes a sticky rail on desktop. */
+
+.collection {
+  display: grid;
+  gap: var(--space-2xl);
+}
+
+@media (min-width: 64em) {
+  .collection {
+    grid-template-columns: var(--filter-sidebar-width) minmax(0, 1fr);
+    gap: var(--space-2xl);
+    align-items: start;
+  }
+}
+
+.collection__rail {
+  display: none;
+}
+
+@media (min-width: 64em) {
+  .collection__rail {
+    display: block;
+    position: sticky;
+    top: calc(var(--header-height) + var(--space-lg));
+    max-height: calc(100dvh - var(--header-height) - var(--space-3xl));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: var(--space-2xs);
+  }
+}
+
+.collection__results {
+  min-width: 0;
+}
+
+/* --- Footer grid ---------------------------------------------------------- */
+
+.footer__grid {
+  display: grid;
+  gap: var(--space-2xl);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+}
+
+@media (min-width: 64em) {
+  .footer__grid {
+    grid-template-columns: 1.6fr repeat(3, 1fr);
+    gap: var(--space-xl);
+  }
+}

@@ -1,0 +1,306 @@
+/* =============================================================================
+   ANIMATIONS
+   Every keyframe in the storefront lives here. Components reference these
+   class names; they never declare their own `@keyframes`. That way the motion
+   language can be retuned from one file.
+
+   Principles
+     - Motion explains state change. It never decorates.
+     - Enter is slower than exit: arriving content should be legible quickly,
+       departing content should get out of the way.
+     - Nothing loops except the skeleton sheen.
+     - Nothing animates a property that triggers layout (width, height, top).
+     - Distance is short. Panels travel 100%, not 150%.
+
+   Reduced motion
+   `reset.css` clamps all durations to 1ms and iteration count to 1 globally,
+   which removes these effects without touching component CSS. The handful of
+   effects that must behave differently rather than simply stop (the skeleton
+   sheen, which would otherwise flash once and look broken) are handled
+   explicitly at the bottom.
+   ========================================================================== */
+
+/* --- Entrance ------------------------------------------------------------- */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.5rem, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* The inverse, used by an overlay on its way out. */
+@keyframes scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+/* Horizontal for panels entering from the trailing edge. */
+@keyframes slide-in-right {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+/* Vertical for bottom sheets on mobile. */
+@keyframes slide-in-up {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes slide-out-down {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 100%, 0);
+  }
+}
+
+/* Trailing-edge panels (nav drawer, cart) entering from the inline start. */
+@keyframes slide-in-left {
+  from {
+    transform: translate3d(-100%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes slide-out-left {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+/* --- Attention ------------------------------------------------------------
+   Reserved for genuine state confirmation: an item was added, a value was
+   rejected. Used sparingly - if everything pulses, nothing does. */
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--color-focus-ring);
+  }
+  70% {
+    box-shadow: 0 0 0 0.5rem transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.28);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes cart-badge-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.32);
+  }
+  70% {
+    transform: scale(0.94);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* A single-direction nudge for destructive confirmations. */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  20% {
+    transform: translate3d(-0.25rem, 0, 0);
+  }
+  40% {
+    transform: translate3d(0.2rem, 0, 0);
+  }
+  60% {
+    transform: translate3d(-0.125rem, 0, 0);
+  }
+  80% {
+    transform: translate3d(0.0625rem, 0, 0);
+  }
+}
+
+/* --- Loading -------------------------------------------------------------- */
+
+@keyframes skeleton-sheen {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Utility classes ------------------------------------------------------ */
+
+.anim-fade-in {
+  animation: fade-in var(--duration-normal) var(--ease-standard) both;
+}
+
+.anim-rise-in {
+  animation: rise-in var(--duration-normal) var(--ease-enter) both;
+}
+
+.anim-scale-in {
+  animation: scale-in var(--duration-normal) var(--ease-enter) both;
+}
+
+.anim-slide-in-right {
+  animation: slide-in-right var(--duration-slow) var(--ease-enter) both;
+}
+
+.anim-slide-out-right {
+  animation: slide-out-right var(--duration-normal) var(--ease-exit) both;
+}
+
+.anim-slide-in-left {
+  animation: slide-in-left var(--duration-slow) var(--ease-enter) both;
+}
+
+.anim-slide-out-left {
+  animation: slide-out-left var(--duration-normal) var(--ease-exit) both;
+}
+
+.anim-slide-in-up {
+  animation: slide-in-up var(--duration-slow) var(--ease-enter) both;
+}
+
+.anim-slide-out-down {
+  animation: slide-out-down var(--duration-normal) var(--ease-exit) both;
+}
+
+.anim-pop {
+  animation: pop var(--duration-slow) var(--ease-emphasized) both;
+}
+
+.anim-pulse-ring {
+  animation: pulse-ring var(--duration-slow) var(--ease-out) both;
+}
+
+.anim-shake {
+  animation: shake var(--duration-normal) var(--ease-standard) both;
+}
+
+.anim-spin {
+  animation: spin 800ms linear infinite;
+}
+
+/* --- Exit helpers
+   `.overlay` manages the is-open / is-closing classes and swaps the animation
+   via these helpers, so no component re-implements the leave transition. */
+
+.overlay.is-closing {
+  animation: fade-out var(--duration-fast) var(--ease-standard) both;
+}
+
+.overlay--drawer.is-closing {
+  animation: slide-out-right var(--duration-normal) var(--ease-exit) both;
+}
+
+.overlay--drawer-start.is-closing {
+  animation: slide-out-left var(--duration-normal) var(--ease-exit) both;
+}
+
+.overlay--sheet.is-closing {
+  animation: slide-out-down var(--duration-normal) var(--ease-exit) both;
+}
+
+/* --- Reduced motion: the few effects that need replacing, not removing ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  /* A 1ms infinite shimmer reads as a flicker. Swap it for a static tone. */
+  .skeleton,
+  .skeleton__block {
+    animation: none !important;
+    background-image: none;
+    background-color: var(--color-skeleton);
+  }
+
+  /* The attention animations carry no information without movement; the state
+     change is already announced by the toast region and aria-live. */
+  .anim-pop,
+  .anim-pulse-ring,
+  .anim-shake {
+    animation: none !important;
+  }
+}

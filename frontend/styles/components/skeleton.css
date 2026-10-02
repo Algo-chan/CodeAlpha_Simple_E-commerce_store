@@ -1,0 +1,177 @@
+/* =============================================================================
+   SKELETONS
+   Placeholders that match the shape of the component they replace, so the
+   layout does not jump when real content arrives. That is the entire point:
+   a skeleton with different dimensions is worse than a spinner because it
+   causes a reflow at exactly the moment the user starts reading.
+
+   Each skeleton mirrors the real component's structure:
+     .skeleton-card      -> product-card
+     .skeleton-gallery   -> product-gallery
+     .skeleton-line-item -> cart line item
+     .skeleton-row       -> search result row
+     .skeleton-page      -> product detail page
+   ========================================================================== */
+
+.skeleton {
+  --skeleton-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--skeleton-radius);
+  background-color: var(--color-skeleton);
+}
+
+/* A travelling sheen. Under `prefers-reduced-motion` the animation is removed
+   in animations.css and the block falls back to a flat tone. */
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-skeleton-sheen) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-sheen 1.4s ease-in-out infinite;
+}
+
+/* --- Primitive shapes ----------------------------------------------------- */
+
+.skeleton--text {
+  block-size: 0.75em;
+  border-radius: var(--radius-full);
+}
+
+.skeleton--text-sm {
+  block-size: 0.625em;
+  inline-size: 60%;
+}
+
+.skeleton--text-xs {
+  block-size: 0.5em;
+  inline-size: 40%;
+}
+
+.skeleton--title {
+  block-size: 1.1em;
+  inline-size: 75%;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton--circle {
+  border-radius: var(--radius-full);
+}
+
+.skeleton--pill {
+  block-size: 1.25rem;
+  border-radius: var(--radius-full);
+}
+
+/* --- Product card ---------------------------------------------------------
+   Media keeps the exact aspect ratio of the real card. */
+
+.skeleton-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.skeleton-card__media {
+  aspect-ratio: var(--product-card-media-ratio);
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding-block-start: var(--space-3xs);
+}
+
+/* --- Product detail page -------------------------------------------------- */
+
+.skeleton-page {
+  display: grid;
+  gap: var(--space-2xl);
+}
+
+@media (min-width: 64em) {
+  .skeleton-page {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: var(--space-3xl);
+    align-items: start;
+  }
+}
+
+.skeleton-gallery {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+@media (min-width: 64em) {
+  .skeleton-gallery {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+  }
+}
+
+.skeleton-gallery__thumbs {
+  display: none;
+}
+
+@media (min-width: 64em) {
+  .skeleton-gallery__thumbs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+  }
+}
+
+.skeleton-gallery__main {
+  aspect-ratio: var(--product-media-ratio);
+}
+
+.skeleton-gallery__thumb {
+  aspect-ratio: 1;
+  inline-size: 100%;
+}
+
+/* --- Cart line item ------------------------------------------------------- */
+
+.skeleton-line-item {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: var(--space-sm);
+  padding-block: var(--space-md);
+}
+
+.skeleton-line-item__media {
+  aspect-ratio: 1;
+  inline-size: 100%;
+}
+
+/* --- Search result row ---------------------------------------------------- */
+
+.skeleton-row {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  gap: var(--space-sm);
+  align-items: center;
+  padding-block: var(--space-xs);
+}
+
+/* --- Generic stacks ------------------------------------------------------- */
+
+.skeleton-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.skeleton-cluster {
+  display: flex;
+  gap: var(--space-2xs);
+  flex-wrap: wrap;
+}

@@ -1,0 +1,391 @@
+/* =============================================================================
+   CART
+   The side cart / mini cart. Desktop: a trailing drawer. Mobile: a bottom
+   sheet via overlay.css.
+
+   Anatomy
+     .cart__progress      free-delivery threshold. A concrete goal converts
+                          better than a bare subtotal, and it is the one place
+                          an extra progress bar earns its space.
+     .cart__lines         scrollable, shrinkable
+     .cart__summary       pinned totals + actions, always visible
+   ========================================================================== */
+
+/* --- Progress ------------------------------------------------------------- */
+
+.cart__progress {
+  flex-shrink: 0;
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-primary-subtle);
+  border-bottom: var(--border-width-hairline) solid var(--color-primary-border);
+}
+
+.cart__progress-text {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  color: var(--color-primary-hover);
+}
+
+.cart__progress-text strong {
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.cart__progress-track {
+  block-size: 0.25rem;
+  margin-block-start: var(--space-2xs);
+  background-color: var(--ember-200);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.cart__progress-bar {
+  block-size: 100%;
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  transition: inline-size var(--duration-slow) var(--ease-standard);
+}
+
+/* --- Lines ----------------------------------------------------------------- */
+
+.cart__lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.cart-line {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  position: relative;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.cart-line + .cart-line {
+  border-block-start: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+.cart-line:hover {
+  background-color: var(--color-surface-hover);
+}
+
+/* Pending removal: collapse the row out rather than making it vanish, so the
+   shopper can see what left and undo it. */
+.cart-line.is-removing {
+  opacity: 0;
+  transform: translate3d(1.5rem, 0, 0);
+  transition:
+    opacity var(--duration-fast) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-exit);
+}
+
+.cart-line__media {
+  inline-size: 5rem;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
+.cart-line__media img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.cart-line__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  min-inline-size: 0;
+}
+
+.cart-line__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.cart-line__name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+  color: var(--color-text);
+}
+
+.cart-line__name:hover {
+  color: var(--color-primary-hover);
+}
+
+.cart-line__remove {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  margin-inline-start: auto;
+  margin-block-start: -0.125rem;
+  color: var(--color-text-subtle);
+  border-radius: var(--radius-sm);
+  opacity: 0.6;
+  transition:
+    opacity var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.cart-line__remove:hover {
+  opacity: 1;
+  color: var(--color-error);
+  background-color: var(--color-error-bg);
+}
+
+.cart-line__remove svg {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+}
+
+/* Variant read-back, e.g. "Black / 42". */
+.cart-line__variant {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3xs);
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-muted);
+}
+
+.cart-line__variant-dot {
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--swatch-color, var(--color-border));
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
+}
+
+.cart-line__sku {
+  font-family: var(--font-mono);
+  color: var(--color-text-subtle);
+}
+
+.cart-line__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-block-start: var(--space-2xs);
+}
+
+.cart-line__unit {
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.cart-line__total {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Quantity in a line --------------------------------------------------- */
+
+.cart-line .stepper {
+  flex-shrink: 0;
+}
+
+.cart-line .stepper__button {
+  inline-size: 1.875rem;
+  min-block-size: 1.875rem;
+}
+
+.cart-line .stepper__input {
+  inline-size: 2.125rem;
+  min-block-size: 1.875rem;
+  font-size: var(--font-size-xs);
+}
+
+/* --- Summary -------------------------------------------------------------- */
+
+.cart__summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border-top: var(--border-width-hairline) solid var(--color-border);
+  background-color: var(--color-surface);
+}
+
+.cart__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.cart__row dt {
+  font-weight: var(--font-weight-regular);
+}
+
+.cart__row dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.cart__row--muted {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* Delivery is a placeholder line, clearly labelled as one. Shipping is
+   calculated server-side in a later phase. */
+.cart__row--placeholder dd {
+  color: var(--color-text-subtle);
+  font-style: italic;
+}
+
+.cart__row--total {
+  padding-block-start: var(--space-xs);
+  margin-block-start: var(--space-2xs);
+  border-top: var(--border-width-hairline) solid var(--color-border);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.cart__row--total dt {
+  font-weight: var(--font-weight-semibold);
+}
+
+.cart__row--total dd {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.cart__note {
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-subtle);
+  line-height: var(--line-height-snug);
+}
+
+.cart__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+/* --- Header count --------------------------------------------------------- */
+
+.cart__count {
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Free-shipping marker inside a line ---------------------------------- */
+
+.cart-line__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  font-size: var(--font-size-3xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-warning-text);
+}
+
+.cart-line__flag svg {
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
+}
+
+/* --- Cart page variant ----------------------------------------------------- */
+
+.cart-page {
+  display: grid;
+  gap: var(--space-2xl);
+  align-items: start;
+}
+
+@media (min-width: 64em) {
+  .cart-page {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    gap: var(--space-3xl);
+  }
+}
+
+.cart-page__summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+@media (min-width: 64em) {
+  .cart-page__summary {
+    position: sticky;
+    top: calc(var(--header-height) + var(--space-lg));
+  }
+}
+
+/* --- Table-style lines on the cart page ---------------------------------- */
+
+.cart-table {
+  inline-size: 100%;
+}
+
+.cart-table__head {
+  display: none;
+  padding-block: var(--space-xs);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-widest);
+  text-transform: var(--text-transform-label);
+  color: var(--color-text-subtle);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+}
+
+@media (min-width: 48em) {
+  .cart-table__head {
+    display: grid;
+    grid-template-columns: 6rem minmax(0, 1fr) 7rem 6.5rem 2.25rem;
+    gap: var(--space-md);
+    align-items: center;
+  }
+}
+
+@media (min-width: 48em) {
+  .cart-line--table {
+    grid-template-columns: 6rem minmax(0, 1fr) 7rem 6.5rem 2.25rem;
+    gap: var(--space-md);
+    align-items: center;
+    padding-inline: 0;
+  }
+}
+
+/* --- Digital delivery note ------------------------------------------------ */
+
+.cart-line__digital {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  font-size: var(--font-size-3xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-info-text);
+}
+
+.cart-line__digital svg {
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
+}

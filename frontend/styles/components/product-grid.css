@@ -1,0 +1,260 @@
+/* =============================================================================
+   PRODUCT GRID
+   Column counts come from `auto-fill` + `minmax`, not from breakpoints. That is
+   the reason the grid never forces a card wider than its container and never
+   produces a horizontal scrollbar: the browser solves for the number of
+   columns that fit the space that actually exists.
+
+     320px  -> 2 columns (min-inline is 9.5rem, so two always fit)
+     768px  -> 3-4 columns
+     1280px -> 4 columns at the standard min width
+     1440px -> 5 columns
+
+   `--grid-min` is a single knob for how much room a product needs to stay
+   legible. Lower it to fit more products per row; raise it for fewer, larger
+   cards.
+   ========================================================================== */
+
+.product-grid {
+  --grid-min: 9.5rem;
+  display: grid;
+  gap: var(--grid-gap-lg) var(--grid-gap-md);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--grid-min)), 1fr));
+  align-items: start;
+}
+
+/* Two columns from the smallest phone up. A single column on a 360px screen
+   would force a very tall page and hide the grid's comparison value, which is
+   the whole point of a product grid. */
+@media (min-width: 30em) {
+  .product-grid {
+    --grid-min: 10.5rem;
+  }
+}
+
+@media (min-width: 48em) {
+  .product-grid {
+    --grid-min: 13rem;
+    gap: var(--grid-gap-lg);
+  }
+}
+
+@media (min-width: 64em) {
+  .product-grid {
+    --grid-min: 14rem;
+  }
+}
+
+@media (min-width: 90em) {
+  .product-grid {
+    --grid-min: 15rem;
+  }
+}
+
+/* --- Density modifiers ---------------------------------------------------
+   Editorial (fewer, larger cards) and dense (max products per screen, used
+   where the grid is a discovery surface rather than a focal point). */
+
+.product-grid--editorial {
+  --grid-min: 16rem;
+}
+
+@media (min-width: 64em) {
+  .product-grid--editorial {
+    --grid-min: 19rem;
+  }
+}
+
+.product-grid--dense {
+  --grid-min: 8.5rem;
+  gap: var(--grid-gap-md);
+}
+
+/* --- Two-up on mobile ------------------------------------------------------
+   Explicitly pinned, because a fluid grid plus a very small viewport can land
+   on one column. */
+
+@media (max-width: 29.99em) {
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--grid-gap-md) var(--grid-gap-xs);
+  }
+}
+
+/* --- Toolbar above the grid ---------------------------------------------- */
+
+.collection-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-block: var(--space-sm) var(--space-md);
+  margin-block-end: var(--space-md);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+}
+
+.collection-toolbar__count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.collection-toolbar__count strong {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.collection-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* The mobile filter trigger only exists below the desktop breakpoint, where
+   the sidebar is hidden. */
+.collection-toolbar__filters {
+  display: inline-flex;
+}
+
+/* --- Sort control --------------------------------------------------------- */
+
+.sort-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.sort-control__label {
+  white-space: nowrap;
+}
+
+.sort-control .select {
+  min-block-size: var(--control-height-sm);
+  padding-block: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.sort-control .select:hover {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+/* --- Active filter chips --------------------------------------------------- */
+
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding-block-end: var(--space-md);
+}
+
+.active-filters:empty {
+  display: none;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  padding: var(--space-3xs) var(--space-2xs) var(--space-3xs) var(--space-xs);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-full);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.filter-chip:hover {
+  color: var(--color-error);
+  border-color: var(--color-error-border);
+  background-color: var(--color-error-bg);
+}
+
+.filter-chip svg {
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
+}
+
+/* The label states the group as well as the value, so removing a chip is
+   unambiguous when two groups share a value. */
+.filter-chip__group {
+  color: var(--color-text-subtle);
+  font-weight: var(--font-weight-regular);
+}
+
+.filter-chip:hover .filter-chip__group {
+  color: inherit;
+}
+
+/* --- Load more / pagination ------------------------------------------------ */
+
+.collection-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding-block: var(--space-2xl);
+}
+
+.collection-more__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+}
+
+.pagination__item {
+  display: grid;
+  place-items: center;
+  min-inline-size: 2.25rem;
+  block-size: 2.25rem;
+  padding-inline: var(--space-2xs);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md);
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.pagination__item:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-muted);
+}
+
+.pagination__item[aria-current='page'] {
+  color: var(--color-primary-contrast);
+  background-color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.pagination__item:disabled {
+  color: var(--color-text-subtle);
+  pointer-events: none;
+}
+
+.pagination__ellipsis {
+  display: grid;
+  place-items: center;
+  min-inline-size: 1.5rem;
+  color: var(--color-text-subtle);
+}

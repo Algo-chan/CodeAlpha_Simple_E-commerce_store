@@ -1,0 +1,403 @@
+/* =============================================================================
+   SITE HEADER
+   Three bands, in this order:
+     .announcement        scrolls away - it is a message, not navigation
+     .site-header__bar    sticky - brand, primary nav, actions
+     .category-strip      sticky beneath the bar - catalogue shortcuts
+
+   Splitting the sticky band means the promo message does not eat ~40px of
+   viewport on every scroll position.
+
+   The bar compacts on scroll (see `.is-scrolled`): padding and logo scale drop
+   slightly so a long product list keeps its context. Transitions are on
+   padding and font-size only - never on height - to avoid reflowing the page
+   underneath.
+   ========================================================================== */
+
+.site-header {
+  position: relative;
+  z-index: var(--z-header);
+}
+
+/* --- Announcement bar ----------------------------------------------------- */
+
+.announcement {
+  background-color: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-2xs);
+}
+
+.announcement__inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-block-size: var(--announcement-height);
+  padding-block: var(--space-2xs);
+  text-align: center;
+}
+
+/* One message is visible at a time; the crossfade is cheap and does not move
+   the bar height. */
+.announcement__message {
+  color: inherit;
+  letter-spacing: var(--letter-spacing-wide);
+  line-height: var(--line-height-snug);
+}
+
+.announcement__message strong {
+  font-weight: var(--font-weight-semibold);
+}
+
+.announcement__message a {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  color: inherit;
+}
+
+.announcement__message a:hover {
+  color: var(--bone-200);
+}
+
+.announcement__dots {
+  display: none;
+  align-items: center;
+  gap: var(--space-3xs);
+}
+
+@media (min-width: 48em) {
+  .announcement__dots {
+    display: flex;
+  }
+}
+
+.announcement__dot {
+  inline-size: 0.25rem;
+  block-size: 0.25rem;
+  padding: 0;
+  border-radius: var(--radius-full);
+  background-color: var(--ink-700);
+  transition:
+    background-color var(--duration-normal) var(--ease-standard),
+    inline-size var(--duration-normal) var(--ease-standard);
+}
+
+.announcement__dot[aria-current='true'] {
+  inline-size: 1rem;
+  background-color: var(--bone-200);
+}
+
+/* --- Bar ------------------------------------------------------------------ */
+
+.site-header__bar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  background-color: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: var(--border-width-hairline) solid transparent;
+  transition:
+    border-color var(--duration-normal) var(--ease-standard),
+    background-color var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard);
+}
+
+/* The hairline and blur only appear once content is underneath the bar, so a
+   page scrolled to the top does not start with a divider across nothing. */
+.site-header__bar.is-scrolled,
+.site-header__bar.is-stuck {
+  background-color: color-mix(in srgb, var(--color-bg) 95%, transparent);
+  border-bottom-color: var(--color-border);
+  box-shadow: var(--shadow-subtle);
+}
+
+.site-header__bar.is-hidden {
+  /* Direction-aware hide: released on scroll up, re-shown instantly on down. */
+  transform: translate3d(-100%, 0, 0);
+  transition:
+    transform var(--duration-slow) var(--ease-exit),
+    border-color var(--duration-normal) var(--ease-standard),
+    background-color var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard);
+}
+
+.site-header__bar.is-visible {
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform var(--duration-slow) var(--ease-enter),
+    border-color var(--duration-normal) var(--ease-standard),
+    background-color var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Hiding the header is a convenience, not information. Without smooth
+     motion it becomes disorienting, so the bar simply stays put. */
+  .site-header__bar.is-hidden {
+    transform: none;
+  }
+}
+
+.site-header__inner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  min-block-size: var(--header-height);
+  transition: min-block-size var(--duration-normal) var(--ease-standard);
+}
+
+.site-header__bar.is-compact .site-header__inner {
+  min-block-size: 3.5rem;
+}
+
+/* --- Brand ---------------------------------------------------------------- */
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--color-text);
+  flex-shrink: 0;
+}
+
+.brand:hover {
+  color: var(--color-text);
+}
+
+.brand__mark {
+  display: grid;
+  place-items: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  color: var(--color-primary-contrast);
+  background-color: var(--color-primary);
+  border-radius: var(--radius-sm);
+  transition:
+    transform var(--duration-normal) var(--ease-emphasized),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.brand:hover .brand__mark {
+  background-color: var(--color-primary-hover);
+}
+
+.brand__mark svg {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+}
+
+.brand__name {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tighter);
+  line-height: 1;
+  white-space: nowrap;
+  transition: font-size var(--duration-normal) var(--ease-standard);
+}
+
+.site-header__bar.is-compact .brand__name {
+  font-size: var(--font-size-md);
+}
+
+.brand__tagline {
+  display: none;
+}
+
+/* --- Actions -------------------------------------------------------------- */
+
+.site-header__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2xs);
+}
+
+.header-action {
+  position: relative;
+  display: grid;
+  place-items: center;
+  inline-size: var(--touch-target);
+  block-size: var(--touch-target);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md);
+  transition:
+    color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.header-action:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-muted);
+}
+
+.header-action svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.header-action[aria-expanded='true'],
+.header-action.is-active {
+  color: var(--color-text);
+}
+
+/* Count pill. `aria-hidden` is set in JS because the accessible name of the
+   button already includes the count as text for screen readers. */
+.header-action__count {
+  position: absolute;
+  inset-block-start: 0.25rem;
+  inset-inline-end: 0.125rem;
+  display: grid;
+  place-items: center;
+  min-inline-size: 1.125rem;
+  block-size: 1.125rem;
+  padding-inline: 0.25rem;
+  font-family: var(--font-sans);
+  font-size: 0.625rem;
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--color-primary-contrast);
+  background-color: var(--color-primary);
+  border: 2px solid var(--color-bg);
+  border-radius: var(--radius-full);
+}
+
+.site-header__bar.is-scrolled .header-action__count {
+  border-color: var(--color-bg);
+}
+
+.header-action__count[hidden] {
+  display: none;
+}
+
+/* The pop only fires on a real quantity change, never on first paint. */
+.header-action__count.is-bumping {
+  animation: cart-badge-pop var(--duration-slow) var(--ease-emphasized) both;
+}
+
+/* Wishlist uses the inverse treatment when saved, so the saved state is
+   visible at a glance in a grid of cards. */
+.header-action--saved {
+  color: var(--color-primary);
+}
+
+/* --- Category strip ------------------------------------------------------- */
+
+.category-strip {
+  position: sticky;
+  top: var(--header-height);
+  z-index: calc(var(--z-header) - 1);
+  background-color: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+}
+
+.category-strip__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  min-block-size: var(--nav-strip-height);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-snap-type: x proximity;
+}
+
+.category-strip__inner::-webkit-scrollbar {
+  display: none;
+}
+
+.category-strip__link {
+  position: relative;
+  flex-shrink: 0;
+  padding-block: var(--space-2xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  scroll-snap-align: start;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.category-strip__link:hover {
+  color: var(--color-text);
+}
+
+/* Active state uses an underline, not a colour swap, so it survives
+   greyscale and does not rely on hue alone. */
+.category-strip__link::after {
+  content: '';
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
+  block-size: 2px;
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform var(--duration-normal) var(--ease-enter);
+}
+
+.category-strip__link:hover::after,
+.category-strip__link[aria-current='page']::after {
+  transform: scaleX(1);
+}
+
+.category-strip__link[aria-current='page'] {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+/* --- Desktop-only affordances --------------------------------------------- */
+
+@media (max-width: 63.99em) {
+  .site-header__inner {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .brand__name {
+    font-size: var(--font-size-md);
+  }
+}
+
+@media (min-width: 64em) {
+  .site-header__inner {
+    gap: var(--space-lg);
+  }
+}
+
+/* --- Mobile search field replaces the icon trigger ------------------------ */
+
+@media (max-width: 47.99em) {
+  .header-search-field {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    block-size: 2.25rem;
+    padding-inline: var(--space-xs);
+    color: var(--color-text-muted);
+    background-color: var(--color-surface-muted);
+    border: var(--border-width-hairline) solid transparent;
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    text-align: start;
+  }
+
+  .header-search-field svg {
+    inline-size: 1rem;
+    block-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .header-search-field span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

@@ -1,0 +1,235 @@
+/* =============================================================================
+   VARIANT PICKER
+   Consumes generic variant data - an array of { value, available } per
+   attribute - and renders a control chosen by the attribute's type. Nothing
+   here knows what "size" or "colour" means, so a phone (storage / RAM /
+   colour) and a jacket (colour / size) work through the same component.
+
+   Control choice
+     - `color`   -> swatches, because colour is best identified by colour
+     - a short list (<= 6 values) -> text buttons, because the value is short
+       and the set is small
+     - anything longer -> a select, because 12 buttons is a wall
+
+   Availability is always communicated three ways: reduced opacity, a
+   not-allowed cursor, and a diagonal line on swatches. Colour alone is never
+   the signal, and `aria-disabled` + a text explanation are provided for AT.
+   ========================================================================== */
+
+.variant-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.variant-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.variant-group__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.variant-group__label {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: var(--text-transform-label);
+  color: var(--color-text-muted);
+}
+
+.variant-group__value {
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.variant-group__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.variant-group--select .variant-group__options {
+  display: block;
+}
+
+/* --- Text / size button ---------------------------------------------------- */
+
+.variant-option {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: 2.75rem;
+  min-block-size: 2.375rem;
+  padding-inline: var(--space-sm);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.variant-option:hover:not([aria-disabled='true']):not([aria-pressed='true']) {
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+  background-color: var(--color-surface-hover);
+}
+
+/* Selected: accent border + tint. The thicker inset ring keeps the state
+   legible at a glance and adds a non-colour cue. */
+.variant-option[aria-pressed='true'] {
+  color: var(--color-primary-hover);
+  background-color: var(--color-primary-subtle);
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Unavailable: struck through, so it does not read as a rendering bug. */
+.variant-option[aria-disabled='true'] {
+  color: var(--color-text-subtle);
+  background-color: var(--color-surface-muted);
+  cursor: not-allowed;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.variant-option--sm {
+  min-inline-size: 2.25rem;
+  min-block-size: 2rem;
+  font-size: var(--font-size-xs);
+}
+
+/* --- Colour swatch ---------------------------------------------------------- */
+
+.variant-swatch {
+  position: relative;
+  display: grid;
+  place-items: center;
+  inline-size: 2.375rem;
+  block-size: 2.375rem;
+  padding: 0;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  /* The ring is transparent at rest, so selection animates instead of
+     snapping. */
+  box-shadow: 0 0 0 0 transparent;
+  transition: box-shadow var(--duration-normal) var(--ease-standard);
+}
+
+.variant-swatch__chip {
+  inline-size: 1.625rem;
+  block-size: 1.625rem;
+  border-radius: var(--radius-full);
+  background-color: var(--swatch-color, var(--color-border));
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 14%),
+    0 1px 2px rgb(0 0 0 / 8%);
+  transition: transform var(--duration-normal) var(--ease-emphasized);
+}
+
+.variant-swatch:hover:not([aria-disabled='true']) .variant-swatch__chip {
+  transform: scale(1.08);
+}
+
+.variant-swatch[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3.5px var(--color-primary);
+}
+
+.variant-swatch[aria-disabled='true'] .variant-swatch__chip {
+  opacity: 0.4;
+  filter: grayscale(0.8);
+}
+
+/* A diagonal strike, matching the text option's line-through. */
+.variant-swatch[aria-disabled='true']::after {
+  content: '';
+  position: absolute;
+  inline-size: 2rem;
+  block-size: var(--border-width-hairline);
+  background-color: var(--color-text-subtle);
+  transform: rotate(-45deg);
+}
+
+.variant-swatch--sm {
+  inline-size: 1.875rem;
+  block-size: 1.875rem;
+}
+
+.variant-swatch--sm .variant-swatch__chip {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+/* --- Select fallback -------------------------------------------------------- */
+
+.variant-group--select .variant-group__label {
+  margin-block-end: var(--space-3xs);
+}
+
+/* --- Summary ----------------------------------------------------------------
+   A live sentence ("Black / 42") so a shopper can confirm the full
+   configuration without visually re-reading every group. */
+
+.variant-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.variant-summary__sku {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-3xs);
+  color: var(--color-text-subtle);
+  padding-inline: var(--space-3xs);
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-xs);
+}
+
+/* --- Unavailable notice ------------------------------------------------------ */
+
+.variant-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2xs);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  color: var(--color-warning-text);
+  background-color: var(--color-warning-bg);
+  border: var(--border-width-hairline) solid var(--color-warning-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.variant-warning svg {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  flex-shrink: 0;
+  margin-block-start: 0.15em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .variant-option,
+  .variant-swatch,
+  .variant-swatch__chip {
+    transition: none;
+  }
+}

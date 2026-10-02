@@ -1,0 +1,497 @@
+/* =============================================================================
+   PRODUCT CARD
+   The most-repeated object in the storefront, so it carries more design weight
+   than its size suggests. Decisions worth stating:
+
+   - No border and no resting shadow. A card that is boxed, and then repeated 24
+     times per page, becomes a wall of rectangles. Structure comes from the gap
+     grid and the type, and elevation appears only on hover.
+   - Square media with a fixed aspect ratio, so any mix of products keeps a
+     consistent visual rhythm regardless of source image dimensions.
+   - At most two badges. The component ranks candidates and renders the highest
+     priority ones; it never dumps every flag a product happens to carry.
+   - The wishlist control is always in the DOM and always reachable by keyboard;
+     it is only visually hidden on pointer devices until hover/focus.
+
+   Contexts: `.product-card--grid` (home, category, search) and
+   `.product-card--compact` (recommendations, cart drawer, wishlist panel). The
+   markup is identical - only the modifier changes.
+   ========================================================================== */
+
+.product-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-inline-size: 0;
+}
+
+.product-card--interactive {
+  cursor: pointer;
+}
+
+/* --- Media ---------------------------------------------------------------- */
+
+.product-card__media {
+  position: relative;
+  aspect-ratio: var(--product-card-media-ratio);
+  overflow: hidden;
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-lg);
+  isolation: isolate;
+}
+
+/* Two stacked <img> in one grid cell: the crossfade on hover is a compositor
+   transform, not a DOM swap, so there is no layout thrash and no flash of a
+   missing image. */
+.product-card__image {
+  grid-area: 1 / 1;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition:
+    opacity var(--duration-slow) var(--ease-standard),
+    transform var(--duration-slow) var(--ease-standard);
+}
+
+.product-card__media {
+  display: grid;
+}
+
+.product-card__image--secondary {
+  opacity: 0;
+}
+
+/* Hover swap only where a hover actually exists. */
+@media (hover: hover) and (pointer: fine) {
+  .product-card:hover .product-card__image--primary {
+    opacity: 0;
+  }
+
+  .product-card:hover .product-card__image--secondary {
+    opacity: 1;
+  }
+
+  /* A very slight scale reads as "picking the item up" without becoming a
+     gratuitous zoom effect. */
+  .product-card:hover .product-card__image {
+    transform: scale(1.035);
+  }
+}
+
+/* Sold out: desaturate so the media reads as unavailable at a glance, and stop
+   the hover swap from implying the item is buyable. */
+.product-card--unavailable .product-card__media {
+  opacity: 0.62;
+}
+
+.product-card--unavailable .product-card__media img {
+  filter: grayscale(0.7);
+}
+
+.product-card--unavailable:hover .product-card__image--primary {
+  opacity: 1;
+}
+
+/* --- Overlay controls ----------------------------------------------------- */
+
+.product-card__badges {
+  position: absolute;
+  inset-block-start: var(--space-2xs);
+  inset-inline-start: var(--space-2xs);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs);
+  max-inline-size: calc(100% - var(--space-md));
+  pointer-events: none;
+}
+
+.product-card__badges > * {
+  backdrop-filter: blur(4px);
+}
+
+.product-card__favourites {
+  position: absolute;
+  inset-block-start: var(--space-2xs);
+  inset-inline-end: var(--space-2xs);
+  z-index: 1;
+}
+
+/* The wishlist control stays in flow for keyboard users even when it is
+   visually hidden, so it is never an unreachable mouse-only affordance. */
+@media (hover: hover) and (pointer: fine) {
+  .product-card__favourites .wishlist-button {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+
+  .product-card:hover .wishlist-button,
+  .product-card:focus-within .wishlist-button,
+  .wishlist-button[aria-pressed='true'] {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.wishlist-button {
+  display: grid;
+  place-items: center;
+  inline-size: 2.125rem;
+  block-size: 2.125rem;
+  color: var(--color-text-secondary);
+  background-color: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  backdrop-filter: blur(6px);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-subtle);
+  transition:
+    opacity var(--duration-fast) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-emphasized),
+    color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.wishlist-button:hover {
+  color: var(--color-primary);
+  background-color: var(--color-surface);
+}
+
+.wishlist-button svg {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  transition: transform var(--duration-normal) var(--ease-emphasized);
+}
+
+/* Saved state: filled heart in the accent. The `aria-pressed` attribute is the
+   source of truth, so the styling has no independent state to drift. */
+.wishlist-button[aria-pressed='true'] {
+  color: var(--color-primary);
+  background-color: var(--color-surface);
+}
+
+.wishlist-button[aria-pressed='true'] svg {
+  animation: pop var(--duration-slow) var(--ease-emphasized) both;
+}
+
+/* --- Body ----------------------------------------------------------------- */
+
+.product-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  flex: 1 1 auto;
+}
+
+.product-card__brand {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-3xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: var(--text-transform-label);
+  color: var(--color-text-subtle);
+}
+
+/* The name is the card's link target and its accessible name. Two lines is the
+   hard cap - a third line breaks the grid rhythm. */
+.product-card__name {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+  letter-spacing: var(--letter-spacing-normal);
+  color: var(--color-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-card:hover .product-card__name {
+  color: var(--color-primary-hover);
+}
+
+/* Stretch the link over the whole card without nesting interactive elements. */
+.product-card__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.product-card__favourites,
+.product-card__media .quick-add,
+.product-card__quick-view {
+  z-index: 1;
+}
+
+/* --- Meta row ------------------------------------------------------------- */
+
+.product-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2xs);
+  margin-block-start: auto;
+  padding-block-start: var(--space-3xs);
+}
+
+.product-card__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-muted);
+}
+
+/* --- Price ---------------------------------------------------------------- */
+
+.price {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
+  flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.price__current {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.price__compare {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-subtle);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.price--lg .price__current {
+  font-family: var(--font-display);
+  font-size: var(--font-size-2xl);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.price--on-sale .price__current {
+  color: var(--color-primary-hover);
+}
+
+.price__from {
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
+}
+
+/* --- Rating ---------------------------------------------------------------- */
+
+.rating {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+}
+
+.rating__stars {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: var(--color-border-strong);
+  white-space: nowrap;
+}
+
+.rating__stars--fill {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  overflow: hidden;
+  color: var(--color-primary);
+  pointer-events: none;
+}
+
+.rating__value {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rating__count {
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-subtle);
+}
+
+/* --- Variant indicator ----------------------------------------------------
+   "3 options" or swatch dots, so the shopper knows a choice exists before
+   opening the card. */
+
+.product-card__variants {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  min-block-size: 1rem;
+}
+
+.variant-dots {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3xs);
+}
+
+.variant-dot {
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-border);
+  /* The ring is what makes a dark swatch visible against dark imagery. */
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
+}
+
+.variant-dots__more {
+  font-size: var(--font-size-3xs);
+  color: var(--color-text-subtle);
+}
+
+.variant-note {
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-subtle);
+}
+
+/* --- Stock note ----------------------------------------------------------- */
+
+.product-card__stock {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
+.product-card__stock--low {
+  color: var(--color-warning-text);
+}
+
+/* --- Quick view trigger --------------------------------------------------- */
+
+.product-card__quick-view {
+  position: absolute;
+  inset-block-start: var(--space-2xs);
+  inset-inline-start: var(--space-2xs);
+  z-index: 1;
+  opacity: 0;
+  transform: translate3d(0, -0.25rem, 0);
+  transition:
+    opacity var(--duration-normal) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-enter);
+  background-color: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--shadow-subtle);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .product-card:hover .product-card__quick-view,
+  .product-card:focus-within .product-card__quick-view {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* On touch there is no hover to reveal it, so it sits in the body instead. */
+@media (hover: none), (pointer: coarse) {
+  .product-card__quick-view {
+    position: static;
+    opacity: 1;
+    transform: none;
+    align-self: flex-start;
+    margin-block-start: var(--space-2xs);
+  }
+}
+
+/* --- Card elevation on hover --------------------------------------------- */
+
+@media (hover: hover) and (pointer: fine) {
+  .product-card:hover .product-card__media {
+    box-shadow: var(--shadow-card);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-card__image {
+    transform: none !important;
+  }
+
+  .wishlist-button[aria-pressed='true'] svg {
+    animation: none;
+  }
+}
+
+/* --- Compact variant ------------------------------------------------------
+   Used in the cart drawer, wishlist panel and recommendation rails where the
+   product is already in context and the card only needs to confirm identity. */
+
+.product-card--compact {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.product-card--compact .product-card__media {
+  inline-size: 4.5rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+}
+
+.product-card--compact .product-card__body {
+  gap: 0.1em;
+}
+
+.product-card--compact .product-card__name {
+  font-size: var(--font-size-xs);
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.product-card--compact .product-card__brand,
+.product-card--compact .product-card__rating,
+.product-card--compact .product-card__variants,
+.product-card--compact .product-card__quick-view,
+.product-card--compact .product-card__favourites {
+  display: none;
+}
+
+.product-card--compact .product-card__meta {
+  padding-block-start: 0;
+}
+
+.product-card--compact .price__current {
+  font-size: var(--font-size-sm);
+}
+
+/* --- Horizontal scroller (recommendations, wishlist) ---------------------- */
+
+.product-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(11rem, 1fr);
+  gap: var(--grid-gap-md);
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--container-pad);
+  padding-block-end: var(--space-sm);
+  /* Room for the focus ring of a card at the edge of the scrollport. */
+  padding-inline: 2px;
+  margin-inline: -2px;
+  scrollbar-width: thin;
+}
+
+.product-rail > * {
+  scroll-snap-align: start;
+}
+
+@media (min-width: 48em) {
+  .product-rail {
+    grid-auto-columns: minmax(13rem, 1fr);
+  }
+}

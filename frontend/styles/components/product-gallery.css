@@ -1,0 +1,338 @@
+/* =============================================================================
+   PRODUCT GALLERY
+   Desktop: a vertical thumbnail rail beside a large stage, with a zoom-on-
+   hover lens driven by `--zoom-x` / `--zoom-y` custom properties.
+
+   Mobile: a single stage with native horizontal scroll-snap and dots. Native
+   scrolling is used rather than a JS swipe handler because it keeps momentum
+   scrolling, works with a trackpad, and is reachable by keyboard for free.
+
+   Images are never distorted: `object-fit: cover` on a fixed-ratio stage, so a
+   portrait photo and a landscape photo both fill the frame without stretching.
+   ========================================================================== */
+
+.gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.gallery__stage {
+  position: relative;
+  aspect-ratio: var(--product-media-ratio);
+  overflow: hidden;
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-lg);
+  isolation: isolate;
+}
+
+/* --- Slide track ----------------------------------------------------------
+   A grid stack on desktop (one visible at a time, switched by class) and a
+   scroll-snap track on mobile. Same markup, two behaviours. */
+
+.gallery__track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  block-size: 100%;
+}
+
+.gallery__track::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery__slide {
+  position: relative;
+  flex: 0 0 100%;
+  inline-size: 100%;
+  block-size: 100%;
+  scroll-snap-align: center;
+}
+
+.gallery__image {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  object-position: center;
+  /* Keeps the zoomed layer from showing through as a hard edge. */
+  transform-origin: var(--zoom-x, 50%) var(--zoom-y, 50%);
+  transition: transform var(--duration-slow) var(--ease-standard);
+}
+
+/* The zoom layer is a second copy that only becomes visible on hover. Doing it
+   with two stacked images keeps the zoom perfectly in sync with the stage. */
+.gallery__image--zoom {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  z-index: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .gallery__stage.is-zoomable:hover .gallery__image--primary {
+    transform: scale(2);
+  }
+
+  .gallery__stage.is-zoomable:hover .gallery__image--zoom {
+    opacity: 1;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .gallery__stage.is-zoomable:hover {
+    cursor: zoom-in;
+  }
+
+  .gallery__stage.is-zoomed:hover {
+    cursor: zoom-out;
+  }
+}
+
+.gallery__stage.is-zoomed .gallery__image--zoom {
+  opacity: 1;
+}
+
+/* --- Stage overlays -------------------------------------------------------- */
+
+.gallery__badges {
+  position: absolute;
+  inset-block-start: var(--space-sm);
+  inset-inline-start: var(--space-sm);
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs);
+  pointer-events: none;
+}
+
+.gallery__zoom-toggle {
+  position: absolute;
+  inset-block-end: var(--space-sm);
+  inset-inline-end: var(--space-sm);
+  z-index: 2;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .gallery__stage:hover .gallery__zoom-toggle,
+  .gallery__zoom-toggle:focus-visible {
+    opacity: 1;
+  }
+}
+
+/* --- Dots (mobile) --------------------------------------------------------- */
+
+.gallery__dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  padding-block-start: var(--space-2xs);
+}
+
+.gallery__dot {
+  inline-size: 0.375rem;
+  block-size: 0.375rem;
+  padding: 0;
+  border-radius: var(--radius-full);
+  background-color: var(--color-border-strong);
+  transition:
+    inline-size var(--duration-normal) var(--ease-standard),
+    background-color var(--duration-normal) var(--ease-standard);
+}
+
+.gallery__dot[aria-current='true'] {
+  inline-size: 1.25rem;
+  background-color: var(--color-primary);
+}
+
+/* --- Thumbnail rail (desktop) ---------------------------------------------- */
+
+.gallery__thumbs {
+  display: none;
+}
+
+@media (min-width: 64em) {
+  .gallery {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  .gallery__thumbs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+    flex-shrink: 0;
+    inline-size: 4.5rem;
+    /* Cap the rail so a 9-image gallery cannot push the stage off-screen. */
+    max-block-size: 28rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    padding-inline-end: 2px;
+  }
+
+  .gallery__thumb {
+    position: relative;
+    inline-size: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background-color: var(--color-surface-muted);
+    border-radius: var(--radius-md);
+    /* A ring rather than a border, so the size does not shift on selection. */
+    box-shadow: 0 0 0 0 transparent;
+    transition:
+      box-shadow var(--duration-fast) var(--ease-standard),
+      opacity var(--duration-fast) var(--ease-standard);
+    opacity: 0.72;
+  }
+
+  .gallery__thumb img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  .gallery__thumb:hover {
+    opacity: 1;
+  }
+
+  .gallery__thumb[aria-current='true'] {
+    opacity: 1;
+    box-shadow: 0 0 0 2px var(--color-primary);
+  }
+
+  .gallery__dots {
+    display: none;
+  }
+
+  /* Desktop does not need a scroll track. */
+  .gallery__track {
+    display: grid;
+    overflow: visible;
+  }
+
+  .gallery__slide {
+    display: none;
+  }
+
+  .gallery__slide[data-active='true'] {
+    display: block;
+  }
+
+  .gallery__stage {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+  }
+}
+
+/* --- Fullscreen (lightbox) -------------------------------------------------- */
+
+.gallery-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: var(--space-lg);
+  background-color: rgb(22 21 26 / 92%);
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-standard);
+}
+
+.gallery-fullscreen.is-open {
+  opacity: 1;
+}
+
+.gallery-fullscreen.is-closing {
+  opacity: 0;
+}
+
+.gallery-fullscreen__image {
+  max-inline-size: 100%;
+  max-block-size: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  animation: scale-in var(--duration-normal) var(--ease-enter) both;
+}
+
+.gallery-fullscreen__close {
+  position: absolute;
+  inset-block-start: var(--space-md);
+  inset-inline-end: var(--space-md);
+  color: var(--bone-200);
+}
+
+.gallery-fullscreen__close:hover {
+  color: var(--white);
+  background-color: rgb(255 255 255 / 12%);
+}
+
+/* Counter, bottom left. */
+.gallery-fullscreen__counter {
+  position: absolute;
+  inset-block-end: var(--space-md);
+  inset-inline-start: var(--space-md);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--bone-300);
+}
+
+.gallery-fullscreen__nav {
+  position: absolute;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  inline-size: var(--touch-target);
+  block-size: var(--touch-target);
+  color: var(--bone-200);
+  background-color: rgb(255 255 255 / 10%);
+  border-radius: var(--radius-full);
+}
+
+.gallery-fullscreen__nav:hover {
+  color: var(--white);
+  background-color: rgb(255 255 255 / 20%);
+}
+
+.gallery-fullscreen__nav svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.gallery-fullscreen__nav--prev {
+  inset-inline-start: var(--space-md);
+}
+
+.gallery-fullscreen__nav--next {
+  inset-inline-end: var(--space-md);
+}
+
+@media (max-width: 47.99em) {
+  .gallery-fullscreen__nav {
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery__image {
+    transition: none;
+  }
+
+  /* Hover-zoom is a pointer affordance with no informational value, so it is
+     dropped entirely rather than merely shortened. */
+  .gallery__stage.is-zoomable:hover .gallery__image--primary {
+    transform: none;
+  }
+
+  .gallery__image--zoom {
+    display: none;
+  }
+}

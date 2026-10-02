@@ -1,0 +1,319 @@
+/* =============================================================================
+   BUTTONS
+   One base class, five colour intents, three sizes. Everything else (icon
+   buttons, loading, full width) is a modifier on the same box.
+
+   Sizing model: buttons never shrink below 2.25rem for pointer use, and
+   `.btn` at `--md` is sized to clear the 44px touch-target guideline on
+   mobile by default (`.btn--sm` is desktop-compact only and is used in dense
+   toolbars where a nearby larger target exists).
+   ========================================================================== */
+
+.btn {
+  --btn-height: var(--control-height);
+  --btn-pad-inline: var(--space-lg);
+  --btn-font-size: var(--font-size-sm);
+  --btn-gap: var(--space-xs);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--btn-gap);
+  min-block-size: var(--btn-height);
+  padding-inline: var(--btn-pad-inline);
+  font-family: var(--font-sans);
+  font-size: var(--btn-font-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-wide);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  vertical-align: middle;
+  border: var(--border-width-hairline) solid transparent;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition:
+    color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    opacity var(--duration-fast) var(--ease-standard),
+    transform var(--duration-instant) var(--ease-standard);
+}
+
+/* --- Colour intents -------------------------------------------------------
+   Primary is the only filled accent on the page. At most one primary action
+   should be visible per viewport region, which is what keeps a storefront
+   feeling calm rather than like a wall of orange. */
+
+.btn--primary {
+  color: var(--color-primary-contrast);
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.btn--primary:hover {
+  color: var(--color-primary-contrast);
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.btn--secondary {
+  color: var(--color-secondary-contrast);
+  background-color: var(--color-secondary);
+  border-color: var(--color-secondary);
+}
+
+.btn--secondary:hover {
+  color: var(--color-secondary-contrast);
+  background-color: var(--color-secondary-hover);
+  border-color: var(--color-secondary-hover);
+}
+
+/* Outline is the default "I have options" button. It needs an explicit border
+   because on a bone canvas a borderless outline button disappears. */
+.btn--outline {
+  color: var(--color-text);
+  background-color: transparent;
+  border-color: var(--color-border-strong);
+}
+
+.btn--outline:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border-color: var(--color-text);
+}
+
+.btn--ghost {
+  color: var(--color-text-secondary);
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.btn--ghost:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-muted);
+}
+
+.btn--danger {
+  color: var(--white);
+  background-color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+.btn--danger:hover {
+  color: var(--white);
+  background-color: var(--color-error-text);
+  border-color: var(--color-error-text);
+}
+
+.btn--danger-ghost {
+  color: var(--color-error);
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.btn--danger-ghost:hover {
+  color: var(--color-error-text);
+  background-color: var(--color-error-bg);
+}
+
+/* Quiet destructive action inside rows (remove-from-cart). */
+.btn--quiet-danger {
+  color: var(--color-text-muted);
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.btn--quiet-danger:hover {
+  color: var(--color-error);
+  background-color: var(--color-error-bg);
+}
+
+/* Link that behaves like a button without the chrome. */
+.btn--link {
+  min-block-size: auto;
+  padding-inline: 0;
+  color: var(--color-text-link);
+  background: none;
+  border: none;
+  border-radius: var(--radius-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-normal);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.btn--link:hover {
+  color: var(--color-primary);
+  text-decoration-thickness: 2px;
+}
+
+/* --- Sizes ---------------------------------------------------------------- */
+
+.btn--sm {
+  --btn-height: var(--control-height-sm);
+  --btn-pad-inline: var(--space-sm);
+  --btn-font-size: var(--font-size-xs);
+  --btn-gap: var(--space-3xs);
+}
+
+.btn--lg {
+  --btn-height: var(--control-height-lg);
+  --btn-pad-inline: var(--space-xl);
+  --btn-font-size: var(--font-size-base);
+}
+
+.btn--block {
+  display: flex;
+  inline-size: 100%;
+}
+
+.btn--auto {
+  inline-size: auto;
+}
+
+/* --- Icon button ----------------------------------------------------------
+   Square, no label of its own. `aria-label` is mandatory on every instance -
+   see ui/icon-button.js, which throws if the label is missing. */
+
+.btn--icon {
+  --btn-pad-inline: 0;
+  inline-size: var(--btn-height);
+  padding-inline: 0;
+  flex-shrink: 0;
+}
+
+.btn--icon.btn--sm {
+  inline-size: var(--control-height-sm);
+}
+
+/* A touch-sized variant that keeps the icon at 20px. */
+.btn--icon-lg {
+  --btn-height: var(--touch-target);
+  inline-size: var(--touch-target);
+}
+
+/* --- Interaction states --------------------------------------------------- */
+
+.btn:active:not(:disabled):not([aria-disabled='true']) {
+  transform: translateY(1px);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* --- Loading --------------------------------------------------------------
+   The label is hidden but NOT removed, so the button keeps its width and does
+   not reflow the row while loading. `aria-busy` carries the state for AT. */
+
+.btn--loading {
+  pointer-events: none;
+  color: transparent;
+}
+
+.btn--loading > * {
+  opacity: 0;
+}
+
+.btn__spinner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: currentcolor;
+}
+
+.btn--loading .btn__spinner {
+  color: var(--btn-spinner-color, currentcolor);
+}
+
+.btn--primary .btn__spinner {
+  --btn-spinner-color: var(--color-primary-contrast);
+}
+
+.btn--outline .btn__spinner,
+.btn--ghost .btn__spinner {
+  --btn-spinner-color: var(--color-text);
+}
+
+.btn--danger .btn__spinner {
+  --btn-spinner-color: var(--white);
+}
+
+.btn__spinner svg {
+  inline-size: 1.125em;
+  block-size: 1.125em;
+  animation: spin 800ms linear infinite;
+}
+
+/* --- Groups ---------------------------------------------------------------
+   Segmented controls share one border and one radius. */
+
+.btn-group {
+  display: inline-flex;
+}
+
+.btn-group > .btn {
+  border-radius: 0;
+}
+
+.btn-group > .btn:first-child {
+  border-start-start-radius: var(--radius-full);
+  border-end-start-radius: var(--radius-full);
+}
+
+.btn-group > .btn:last-child {
+  border-start-end-radius: var(--radius-full);
+  border-end-end-radius: var(--radius-full);
+}
+
+.btn-group > .btn + .btn {
+  margin-inline-start: -1px;
+}
+
+/* --- Quick add ------------------------------------------------------------
+   Slides up over the product media on pointer devices. Hidden entirely on
+   touch, where there is no hover to reveal it and it would cover the image. */
+
+.quick-add {
+  position: absolute;
+  inset-inline: var(--space-sm);
+  inset-block-end: var(--space-sm);
+  opacity: 0;
+  transform: translate3d(0, 0.5rem, 0);
+  transition:
+    opacity var(--duration-normal) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-enter);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .product-card:hover .quick-add,
+  .product-card:focus-within .quick-add {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .quick-add {
+    position: static;
+    opacity: 1;
+    transform: none;
+    margin-block-start: var(--space-xs);
+  }
+}

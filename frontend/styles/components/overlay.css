@@ -1,0 +1,341 @@
+/* =============================================================================
+   OVERLAYS — modal, drawer, bottom sheet
+   One primitive covers all four surfaces. The JS (ui/overlay.js) owns focus
+   trapping, Escape, click-outside, scroll locking and stacking; this file owns
+   geometry and motion only.
+
+   Markup contract
+     .overlay                      root, fixed to the viewport
+       .overlay__scrim             backdrop, click target for dismiss
+       .overlay__panel             the surface, role="dialog" + aria-modal
+         .overlay__header          title + close, optional
+         .overlay__body            scrollable content
+         .overlay__footer          pinned actions, optional
+
+   Presence is driven by `.is-open` (entering / open) and `.is-closing`
+   (leaving). Nothing here transitions `display`, because a display change
+   cannot be animated.
+   ========================================================================== */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-drawer);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.overlay.is-open,
+.overlay.is-closing {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* --- Scrim ---------------------------------------------------------------- */
+
+.overlay__scrim {
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-overlay);
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-standard);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+.overlay.is-open .overlay__scrim {
+  opacity: 1;
+}
+
+.overlay.is-closing .overlay__scrim {
+  opacity: 0;
+}
+
+/* --- Panel base ----------------------------------------------------------- */
+
+.overlay__panel {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface-elevated);
+  box-shadow: var(--shadow-modal);
+  /* `dvh` matters here: on mobile browsers the URL bar changes the visible
+     height, and `100vh` overflows behind it. */
+  max-block-size: 100dvh;
+  overflow: hidden;
+}
+
+/* --- Trailing-edge drawer (cart, filters on tablet) ----------------------- */
+
+.overlay__panel--drawer-end {
+  inset-block: 0;
+  inset-inline-end: 0;
+  inline-size: var(--drawer-width);
+  max-inline-size: 100%;
+  border-inline-start: var(--border-width-hairline) solid var(--color-border);
+  transform: translate3d(100%, 0, 0);
+}
+
+.overlay__panel--drawer-start {
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: var(--mobile-nav-width);
+  max-inline-size: 100%;
+  border-inline-end: var(--border-width-hairline) solid var(--color-border);
+  transform: translate3d(-100%, 0, 0);
+}
+
+.overlay.is-open .overlay__panel--drawer-end {
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--duration-slow) var(--ease-enter);
+}
+
+.overlay.is-open .overlay__panel--drawer-start {
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--duration-slow) var(--ease-enter);
+}
+
+/* --- Centre modal (quick view) -------------------------------------------- */
+
+/* Centred with `inset: 0` + `margin: auto` rather than `translate(-50%,-50%)`,
+   so the scale transform is free to do the entrance motion on its own. */
+.overlay__panel--center {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  inline-size: min(var(--quickview-width), calc(100% - var(--space-lg)));
+  block-size: fit-content;
+  max-block-size: min(52rem, calc(100dvh - var(--space-2xl)));
+  border-radius: var(--radius-xl);
+  transform: scale(0.97);
+  opacity: 0;
+}
+
+.overlay.is-open .overlay__panel--center {
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity var(--duration-fast) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-enter);
+}
+
+/* --- Bottom sheet (mobile cart, mobile filters) --------------------------- */
+
+.overlay__panel--sheet {
+  inset-inline: 0;
+  inset-block-end: 0;
+  max-block-size: 90dvh;
+  border-start-start-radius: var(--radius-2xl);
+  border-start-end-radius: var(--radius-2xl);
+  transform: translate3d(0, 100%, 0);
+}
+
+.overlay.is-open .overlay__panel--sheet {
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--duration-slow) var(--ease-enter);
+}
+
+/* --- Drag affordance on sheets -------------------------------------------- */
+
+.overlay__grip {
+  flex-shrink: 0;
+  inline-size: 2.25rem;
+  block-size: 0.25rem;
+  margin: var(--space-xs) auto 0;
+  border-radius: var(--radius-full);
+  background-color: var(--color-border-strong);
+}
+
+/* --- Panel internals ------------------------------------------------------ */
+
+.overlay__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-shrink: 0;
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+}
+
+.overlay__title {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-normal);
+  line-height: var(--line-height-snug);
+}
+
+.overlay__subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
+}
+
+.overlay__body {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-md);
+}
+
+.overlay__body--flush {
+  padding: 0;
+}
+
+.overlay__footer {
+  flex-shrink: 0;
+  padding: var(--space-md);
+  border-top: var(--border-width-hairline) solid var(--color-border);
+  background-color: var(--color-surface);
+}
+
+/* --- Mobile adaptation ----------------------------------------------------
+   Below the desktop breakpoint a trailing drawer becomes a bottom sheet and a
+   centre modal becomes a full-height sheet. Forcing the desktop geometry onto a
+   phone is the single most common responsive mistake in commerce UIs. */
+
+@media (max-width: 63.99em) {
+  .overlay__panel--drawer-end,
+  .overlay__panel--drawer-start {
+    inset: auto 0 0 0;
+    inline-size: auto;
+    max-block-size: 92dvh;
+    border: none;
+    border-start-start-radius: var(--radius-2xl);
+    border-start-end-radius: var(--radius-2xl);
+    transform: translate3d(0, 100%, 0);
+  }
+
+  .overlay.is-open .overlay__panel--drawer-end,
+  .overlay.is-open .overlay__panel--drawer-start {
+    transform: translate3d(0, 0, 0);
+  }
+
+  .overlay__panel--drawer-start {
+    /* The nav drawer keeps its side-panel identity: it is a navigation
+       surface, not a transactional one, so a full-width sheet would feel
+       wrong on open. */
+    inset: 0 auto 0 0;
+    inline-size: min(var(--mobile-nav-width), 86vw);
+    max-block-size: 100dvh;
+    border: none;
+    border-end-end-radius: 0;
+    border-start-end-radius: var(--radius-2xl);
+    transform: translate3d(-100%, 0, 0);
+  }
+
+  .overlay.is-open .overlay__panel--drawer-start {
+    transform: translate3d(0, 0, 0);
+  }
+
+  .overlay__panel--center {
+    inset: auto 0 0 0;
+    margin: 0;
+    inline-size: auto;
+    max-block-size: 94dvh;
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    transform: translate3d(0, 100%, 0);
+    opacity: 1;
+  }
+
+  .overlay.is-open .overlay__panel--center {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+/* --- Exit states ----------------------------------------------------------
+   The closing animation must mirror the opening one per variant, otherwise a
+   panel slides in from the right and exits downward. */
+
+.overlay--drawer .overlay__panel--drawer-end.is-closing,
+.overlay--drawer .overlay__panel--drawer-start.is-closing {
+  animation: slide-out-down var(--duration-normal) var(--ease-exit) both;
+}
+
+@media (min-width: 64em) {
+  .overlay--drawer .overlay__panel--drawer-end.is-closing {
+    animation: slide-out-right var(--duration-normal) var(--ease-exit) both;
+  }
+
+  .overlay--drawer .overlay__panel--drawer-start.is-closing {
+    animation: slide-out-left var(--duration-normal) var(--ease-exit) both;
+  }
+}
+
+.overlay--sheet.is-closing .overlay__panel,
+.overlay--modal.is-closing .overlay__panel--center {
+  animation: slide-out-down var(--duration-normal) var(--ease-exit) both;
+}
+
+@media (min-width: 64em) {
+  .overlay--modal.is-closing .overlay__panel--center {
+    animation: scale-out var(--duration-fast) var(--ease-exit) both;
+  }
+}
+
+/* --- Dropdown / popover ---------------------------------------------------
+   A lighter overlay: anchored, non-modal, no scrim. Used by the desktop nav
+   and the account menu. Shares the reveal animation with the sheet. */
+
+.dropdown {
+  position: absolute;
+  z-index: var(--z-dropdown);
+  min-inline-size: 13rem;
+  padding: var(--space-xs);
+  background-color: var(--color-surface-elevated);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated);
+  opacity: 0;
+  visibility: hidden;
+  transform: translate3d(0, -0.375rem, 0);
+  transition:
+    opacity var(--duration-fast) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-enter),
+    visibility var(--duration-fast) step-start;
+}
+
+.dropdown.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity var(--duration-fast) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-enter),
+    visibility 0s step-start;
+}
+
+.dropdown--end {
+  inset-inline-end: 0;
+}
+
+.dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  inline-size: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md);
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.dropdown__item:hover,
+.dropdown__item:focus-visible {
+  color: var(--color-text);
+  background-color: var(--color-surface-muted);
+}
+
+.dropdown__divider {
+  block-size: var(--border-width-hairline);
+  margin-block: var(--space-2xs);
+  background-color: var(--color-border);
+  border: none;
+}

@@ -1,0 +1,50 @@
+/* =============================================================================
+   MAIN STYLESHEET
+   The only stylesheet any page loads. Import order is load order and matters:
+
+     1. tokens        variables only, produces no CSS output
+     2. reset         normalisation, no opinion
+     3. base          element defaults, typography, global a11y
+     4. layout        shell, containers, section rhythm
+     5. utilities     single-purpose helpers
+     6. animations    keyframes + motion utilities
+     7. components    one file per component family
+
+   Components are imported in dependency order (primitives before the
+   components that compose them) so a later rule always wins at equal
+   specificity, and no component needs `!important` to override another.
+   ========================================================================== */
+
+@import url('./tokens.css');
+@import url('./reset.css');
+@import url('./base.css');
+@import url('./layout.css');
+@import url('./utilities.css');
+@import url('./animations.css');
+
+/* --- Primitives ------------------------------------------------------------ */
+@import url('./components/button.css');
+@import url('./components/form.css');
+@import url('./components/overlay.css');
+@import url('./components/toast.css');
+@import url('./components/skeleton.css');
+@import url('./components/states.css');
+
+/* --- Storefront shell ------------------------------------------------------ */
+@import url('./components/header.css');
+@import url('./components/navigation.css');
+@import url('./components/mobile-nav.css');
+@import url('./components/footer.css');
+@import url('./components/search.css');
+
+/* --- Commerce surfaces ------------------------------------------------------ */
+@import url('./components/product-card.css');
+@import url('./components/product-grid.css');
+@import url('./components/product-gallery.css');
+@import url('./components/variant-picker.css');
+@import url('./components/quick-view.css');
+@import url('./components/cart.css');
+@import url('./components/wishlist.css');
+@import url('./components/filters.css');
+@import url('./components/collection.css');
+@import url('./components/home.css');

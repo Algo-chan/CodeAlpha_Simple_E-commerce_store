@@ -1,0 +1,183 @@
+/* =============================================================================
+   MOBILE NAVIGATION
+   An off-canvas drawer built from the same category tree as the desktop nav,
+   using disclosure disclosure (<button aria-expanded>) instead of page hops.
+
+   Touch targets are at least 44px throughout, and the parent rows carry a
+   count so a shopper can tell whether a branch is worth opening.
+   ========================================================================== */
+
+@media (min-width: 64em) {
+  .mobile-nav {
+    display: none !important;
+  }
+}
+
+/* --- Drawer body ---------------------------------------------------------- */
+
+.mobile-nav__body {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+/* --- Account / utility block at the top ----------------------------------- */
+
+.mobile-nav__utility {
+  padding: var(--space-md);
+  background-color: var(--color-surface-muted);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+}
+
+.mobile-nav__utility-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-block-size: var(--touch-target);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.mobile-nav__utility-link svg {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  color: var(--color-text-subtle);
+}
+
+/* --- Root list ------------------------------------------------------------ */
+
+.mobile-nav__list {
+  display: flex;
+  flex-direction: column;
+  padding-block: var(--space-2xs);
+}
+
+.mobile-nav__row {
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+.mobile-nav__row:last-child {
+  border-bottom: none;
+}
+
+/* One row is a link plus a disclosure button, so both remain independently
+   focusable instead of nesting an interactive element inside another. */
+.mobile-nav__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-block-size: var(--touch-target);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+}
+
+.mobile-nav__link svg.nav-mobile-trailing {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  color: var(--color-text-subtle);
+  margin-inline-start: auto;
+}
+
+.mobile-nav__toggle {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: var(--touch-target);
+  min-block-size: var(--touch-target);
+  margin-inline-end: var(--space-2xs);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md);
+}
+
+.mobile-nav__toggle:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-muted);
+}
+
+.mobile-nav__toggle svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  transition: transform var(--duration-normal) var(--ease-standard);
+}
+
+.mobile-nav__toggle[aria-expanded='true'] svg {
+  transform: rotate(90deg);
+}
+
+/* --- Children -------------------------------------------------------------
+   Indented and inset with a leading rule, so depth is readable without
+   relying on a heavier font. */
+
+.mobile-nav__sublist {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--duration-normal) var(--ease-standard);
+}
+
+.mobile-nav__sublist-inner {
+  overflow: hidden;
+  min-block-size: 0;
+}
+
+.mobile-nav__item.is-open .mobile-nav__sublist {
+  grid-template-rows: 1fr;
+}
+
+.mobile-nav__sublist .mobile-nav__link {
+  padding-inline-start: var(--space-xl);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  position: relative;
+}
+
+/* Depth marker. */
+.mobile-nav__sublist .mobile-nav__link::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: var(--space-md);
+  inline-size: var(--border-width-hairline);
+  background-color: var(--color-border);
+}
+
+.mobile-nav__sublist .mobile-nav__sublist .mobile-nav__link {
+  padding-inline-start: var(--space-2xl);
+}
+
+.mobile-nav__sublist .mobile-nav__sublist .mobile-nav__link::before {
+  inset-inline-start: var(--space-lg);
+}
+
+/* --- Promotional footer inside the drawer --------------------------------- */
+
+.mobile-nav__promo {
+  margin-block-start: var(--space-md);
+  padding: var(--space-md);
+  background-color: var(--color-primary-subtle);
+  border: var(--border-width-hairline) solid var(--color-primary-border);
+  border-radius: var(--radius-lg);
+}
+
+.mobile-nav__promo-title {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-hover);
+}
+
+.mobile-nav__promo-text {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
+}
+
+/* --- Reduced motion ------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  /* The accordion height transition is the one place a duration collapse can
+     visibly break the layout, so the drawer switches to a plain toggle. */
+  .mobile-nav__sublist {
+    transition: none;
+  }
+}

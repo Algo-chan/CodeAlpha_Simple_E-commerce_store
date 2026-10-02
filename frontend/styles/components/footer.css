@@ -1,0 +1,200 @@
+/* =============================================================================
+   FOOTER
+   A dark band so the page ends on a different plane than it began. Four
+   regions: a value-prop row, the link columns, a payment/trust row and the
+   legal line.
+
+   The link columns are the actual work of a footer; the newsletter block is
+   above them rather than beside them so it does not steal column width.
+   ========================================================================== */
+
+.site-footer {
+  margin-block-start: auto;
+  padding-block: var(--space-3xl) var(--space-lg);
+  background-color: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
+}
+
+@media (min-width: 48em) {
+  .site-footer {
+    padding-block: var(--space-4xl) var(--space-xl);
+  }
+}
+
+/* --- Value props ---------------------------------------------------------- */
+
+.footer__values {
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  padding-block-end: var(--space-2xl);
+  margin-block-end: var(--space-2xl);
+  border-bottom: var(--border-width-hairline) solid var(--ink-800);
+}
+
+.footer__value {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+}
+
+.footer__value-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  color: var(--bone-200);
+  background-color: var(--ink-800);
+  border-radius: var(--radius-md);
+}
+
+.footer__value-icon svg {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+}
+
+.footer__value-title {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.footer__value-text {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-inverse-muted);
+}
+
+/* --- Grid ----------------------------------------------------------------- */
+
+.footer__brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-inline-size: 26rem;
+}
+
+.footer__brand .brand {
+  color: var(--color-text-inverse);
+}
+
+.footer__brand .brand:hover {
+  color: var(--white);
+}
+
+.footer__brand-text {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-inverse-muted);
+}
+
+/* --- Link columns --------------------------------------------------------- */
+
+.footer__column-title {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-widest);
+  text-transform: var(--text-transform-label);
+  color: var(--bone-300);
+  margin-block-end: var(--space-sm);
+}
+
+.footer__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.footer__list-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  inline-size: fit-content;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-inverse-muted);
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.footer__list-link:hover {
+  color: var(--white);
+}
+
+/* --- Payment / trust row -------------------------------------------------- */
+
+.footer__trust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-block: var(--space-lg);
+  margin-block-start: var(--space-2xl);
+  border-top: var(--border-width-hairline) solid var(--ink-800);
+}
+
+.footer__trust-label {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-2xs);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: var(--text-transform-label);
+  color: var(--color-text-inverse-muted);
+}
+
+.footer__methods {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.footer__method {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  padding: var(--space-3xs) var(--space-xs);
+  font-size: var(--font-size-3xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--bone-300);
+  background-color: var(--ink-800);
+  border-radius: var(--radius-sm);
+}
+
+.footer__method svg {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+}
+
+/* --- Legal ---------------------------------------------------------------- */
+
+.footer__legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-block-start: var(--space-md);
+  border-top: var(--border-width-hairline) solid var(--ink-800);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-inverse-muted);
+}
+
+.footer__legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.footer__legal-link {
+  color: var(--color-text-inverse-muted);
+}
+
+.footer__legal-link:hover {
+  color: var(--white);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}

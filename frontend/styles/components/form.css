@@ -1,0 +1,442 @@
+/* =============================================================================
+   FORMS
+   Primitives for login, registration, address, checkout, search and admin.
+   Built so a field can express every state a future form needs without new CSS:
+   default, hover, focus, filled, disabled, readonly, error, success, loading.
+
+   Contract
+     - Every control has a real `<label>` bound by `for`/`id`. Placeholders are
+       hints, never labels.
+     - Error text lives in an element referenced by `aria-describedby`, and the
+       control gets `aria-invalid="true"`.
+     - Errors are communicated by icon + text, never by red alone.
+   ========================================================================== */
+
+/* --- Field wrapper -------------------------------------------------------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.field--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.field__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  line-height: var(--line-height-snug);
+}
+
+.field__required {
+  color: var(--color-error);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Rendered from an asterisk, so remove it from the accessibility tree. */
+.field__optional {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-subtle);
+}
+
+.field__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-snug);
+}
+
+.field__message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+  color: var(--color-error-text);
+}
+
+.field__message svg {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  margin-block-start: 0.1em;
+}
+
+.field__message--success {
+  color: var(--color-success-text);
+}
+
+/* --- Control base --------------------------------------------------------- */
+
+.input,
+.select,
+.textarea {
+  inline-size: 100%;
+  min-block-size: var(--control-height);
+  padding: var(--space-xs) var(--space-sm);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-snug);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+  appearance: none;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.input:hover:not(:disabled),
+.select:hover:not(:disabled),
+.textarea:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+}
+
+.input:focus-visible,
+.select:focus-visible,
+.textarea:focus-visible {
+  outline: none;
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.textarea {
+  min-block-size: 6rem;
+  padding: var(--space-sm);
+  line-height: var(--line-height-base);
+  resize: vertical;
+}
+
+.input:disabled,
+.select:disabled,
+.textarea:disabled,
+.input[readonly],
+.textarea[readonly] {
+  color: var(--color-text-muted);
+  background-color: var(--color-surface-muted);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+}
+
+.input[readonly] {
+  cursor: text;
+}
+
+/* --- Validation states ---------------------------------------------------- */
+
+.input[aria-invalid='true'],
+.select[aria-invalid='true'],
+.textarea[aria-invalid='true'] {
+  border-color: var(--color-error);
+}
+
+.input[aria-invalid='true']:focus-visible,
+.select[aria-invalid='true']:focus-visible,
+.textarea[aria-invalid='true']:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-error-border);
+}
+
+.field--invalid .input,
+.field--invalid .select,
+.field--invalid .textarea {
+  border-color: var(--color-error);
+}
+
+.field--valid .input,
+.field--valid .select {
+  border-color: var(--color-success);
+}
+
+.field--loading .input {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-skeleton-sheen) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-sheen 1.4s linear infinite;
+}
+
+/* --- Select ---------------------------------------------------------------
+   A custom chevron, because the native arrow is unstyleable and varies by
+   platform. The chevron inherits the invalid colour automatically. */
+
+.select {
+  padding-inline-end: var(--space-xl);
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, currentcolor 50%),
+    linear-gradient(135deg, currentcolor 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.125rem) calc(50% + 1px),
+    calc(100% - 0.8125rem) calc(50% + 1px);
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}
+
+.select:disabled {
+  cursor: not-allowed;
+}
+
+/* --- Checkbox / radio -----------------------------------------------------
+   Native inputs are kept and visually replaced, so keyboard behaviour,
+   form serialisation and `:checked` all keep working. */
+
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  cursor: pointer;
+  line-height: var(--line-height-snug);
+}
+
+.choice__input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.choice__control {
+  position: relative;
+  flex-shrink: 0;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  margin-block-start: 0.2em;
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-strong);
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+/* The tick is a rotated border, so there is no extra image request. */
+.choice__control--checkbox {
+  border-radius: var(--radius-xs);
+}
+
+.choice__control--checkbox::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 0.125rem;
+  inset-inline-start: 0.3125rem;
+  inline-size: 0.3125rem;
+  block-size: 0.625rem;
+  border: solid var(--white);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0.4);
+  opacity: 0;
+  transition:
+    transform var(--duration-fast) var(--ease-emphasized),
+    opacity var(--duration-instant) var(--ease-standard);
+}
+
+.choice__control--radio {
+  border-radius: var(--radius-full);
+}
+
+.choice__control--radio::after {
+  content: '';
+  position: absolute;
+  inset: 0.25rem;
+  border-radius: var(--radius-full);
+  background-color: var(--white);
+  transform: scale(0);
+  transition: transform var(--duration-fast) var(--ease-emphasized);
+}
+
+.choice__input:checked + .choice__control {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.choice__input:checked + .choice__control--checkbox::after {
+  opacity: 1;
+  transform: rotate(45deg) scale(1);
+}
+
+.choice__input:checked + .choice__control--radio::after {
+  transform: scale(1);
+}
+
+.choice__input:focus-visible + .choice__control {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.choice__input:disabled + .choice__control {
+  background-color: var(--color-surface-muted);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+}
+
+.choice--disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.choice__label {
+  font-size: var(--font-size-sm);
+}
+
+.choice__count {
+  margin-inline-start: auto;
+  padding-inline-start: var(--space-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-subtle);
+}
+
+/* --- Quantity stepper ----------------------------------------------------- */
+
+.stepper {
+  display: inline-flex;
+  align-items: stretch;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background-color: var(--color-surface);
+}
+
+.stepper__button {
+  display: grid;
+  place-items: center;
+  inline-size: var(--control-height);
+  min-block-size: var(--control-height);
+  color: var(--color-text-secondary);
+  background-color: transparent;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.stepper__button:hover:not(:disabled) {
+  color: var(--color-text);
+  background-color: var(--color-surface-muted);
+}
+
+.stepper__button:disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+
+.stepper__input {
+  inline-size: 3rem;
+  min-block-size: var(--control-height);
+  padding: 0;
+  text-align: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  border: none;
+  border-inline: var(--border-width-hairline) solid var(--color-border);
+  background-color: transparent;
+  appearance: textfield;
+}
+
+.stepper__input::-webkit-outer-spin-button,
+.stepper__input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.stepper__input:focus-visible {
+  outline: none;
+  background-color: var(--color-primary-subtle);
+}
+
+.stepper--sm .stepper__button {
+  inline-size: 2rem;
+  min-block-size: 2rem;
+}
+
+.stepper--sm .stepper__input {
+  inline-size: 2.25rem;
+  min-block-size: 2rem;
+}
+
+/* --- Grouped control rows ------------------------------------------------- */
+
+.field-group {
+  display: grid;
+  gap: var(--space-md);
+}
+
+@media (min-width: 30em) {
+  .field-group--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 48em) {
+  .field-group--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* --- Form actions --------------------------------------------------------- */
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.form-actions--end {
+  justify-content: flex-end;
+}
+
+/* --- Form-level feedback -------------------------------------------------- */
+
+.form-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+  border: var(--border-width-hairline) solid transparent;
+}
+
+.form-alert svg {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  flex-shrink: 0;
+  margin-block-start: 0.1em;
+}
+
+.form-alert--error {
+  color: var(--color-error-text);
+  background-color: var(--color-error-bg);
+  border-color: var(--color-error-border);
+}
+
+.form-alert--success {
+  color: var(--color-success-text);
+  background-color: var(--color-success-bg);
+  border-color: var(--color-success-border);
+}
+
+.form-alert--info {
+  color: var(--color-info-text);
+  background-color: var(--color-info-bg);
+  border-color: var(--color-info-border);
+}

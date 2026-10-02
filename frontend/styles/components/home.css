@@ -1,0 +1,457 @@
+/* =============================================================================
+   HOMEPAGE
+   Editorial rather than promotional. The brief explicitly rules out gradients,
+   glassmorphism and floating decorations, so the page gets its character from
+   typography, whitespace and an asymmetric image collage instead.
+
+   The collage is a CSS grid, not absolutely-positioned decorations: it reflows
+   predictably, needs no JS, and cannot overlap text at any width.
+   ========================================================================== */
+
+/* --- Hero ------------------------------------------------------------------ */
+
+.hero {
+  position: relative;
+  padding-block: var(--space-2xl) var(--space-3xl);
+  overflow: hidden;
+}
+
+@media (min-width: 48em) {
+  .hero {
+    padding-block: var(--space-3xl) var(--space-4xl);
+  }
+}
+
+.hero__grid {
+  display: grid;
+  gap: var(--space-2xl);
+  align-items: center;
+}
+
+@media (min-width: 64em) {
+  .hero__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: var(--space-4xl);
+  }
+}
+
+.hero__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-md);
+  max-inline-size: 34rem;
+}
+
+.hero__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-widest);
+  text-transform: var(--text-transform-label);
+  color: var(--color-primary-hover);
+}
+
+.hero__eyebrow::before {
+  content: '';
+  inline-size: 1.5rem;
+  block-size: var(--border-width-thick);
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+/* Fluid display size, capped hard so a 4K screen does not produce a billboard. */
+.hero__title {
+  font-size: var(--font-size-5xl);
+  line-height: 0.98;
+  letter-spacing: var(--letter-spacing-tighter);
+  text-wrap: balance;
+}
+
+.hero__title em {
+  font-style: italic;
+  color: var(--color-primary);
+}
+
+.hero__lead {
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  max-inline-size: 42ch;
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-block-start: var(--space-2xs);
+}
+
+.hero__assurance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-lg);
+  padding-block-start: var(--space-md);
+  margin-block-start: var(--space-sm);
+  border-top: var(--border-width-hairline) solid var(--color-border);
+  inline-size: 100%;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.hero__assurance-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+}
+
+.hero__assurance-item svg {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+/* --- Collage ----------------------------------------------------------------
+   Two images, one deliberately offset and taller. Reads as an editorial
+   layout rather than a centred hero image. */
+
+.hero__collage {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.hero__figure {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-lg);
+  aspect-ratio: 3 / 4;
+}
+
+.hero__figure--tall {
+  margin-block-start: var(--space-2xl);
+}
+
+.hero__figure img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.hero__figure--primary {
+  aspect-ratio: 4 / 5;
+}
+
+/* A price tag anchored to the primary figure. It is a real link, so it is
+   keyboard reachable and announced normally. */
+.hero__tag {
+  position: absolute;
+  inset-block-end: var(--space-sm);
+  inset-inline-start: var(--space-sm);
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.1em;
+  padding: var(--space-xs) var(--space-sm);
+  background-color: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-enter);
+}
+
+.hero__tag:hover {
+  color: inherit;
+  transform: translate3d(0, -2px, 0);
+}
+
+.hero__tag-label {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-3xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: var(--text-transform-label);
+  color: var(--color-text-muted);
+}
+
+.hero__tag-name {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.hero__tag-price {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary-hover);
+}
+
+/* --- Category tiles ---------------------------------------------------------
+   Image-led, hairline-separated, no card chrome. */
+
+.category-grid {
+  display: grid;
+  gap: var(--grid-gap-md);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+}
+
+@media (min-width: 48em) {
+  .category-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+    gap: var(--grid-gap-lg);
+  }
+}
+
+.category-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.category-tile__media {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-lg);
+}
+
+.category-tile__media img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  transition: transform var(--duration-slow) var(--ease-standard);
+}
+
+.category-tile:hover .category-tile__media img {
+  transform: scale(1.04);
+}
+
+.category-tile__count {
+  position: absolute;
+  inset-block-end: var(--space-2xs);
+  inset-inline-end: var(--space-2xs);
+  padding: var(--space-3xs) var(--space-2xs);
+  font-size: var(--font-size-3xs);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+  background-color: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  border-radius: var(--radius-full);
+}
+
+.category-tile__name {
+  font-family: var(--font-display);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--color-text);
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.category-tile:hover .category-tile__name {
+  color: var(--color-primary-hover);
+}
+
+/* --- Split feature band ------------------------------------------------------ */
+
+.feature {
+  display: grid;
+  gap: var(--space-xl);
+  align-items: center;
+}
+
+@media (min-width: 48em) {
+  .feature {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3xl);
+  }
+}
+
+.feature__media {
+  overflow: hidden;
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-lg);
+  aspect-ratio: 4 / 3;
+}
+
+.feature__media img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.feature__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  max-inline-size: 32rem;
+}
+
+.feature__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  margin-block-start: var(--space-2xs);
+}
+
+.feature__list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.feature__list-item svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  flex-shrink: 0;
+  margin-block-start: 0.2em;
+  color: var(--color-primary);
+}
+
+/* --- Numbered editorial list -------------------------------------------------
+   "01 / 02 / 03" markers give the section an index feel without an image for
+   each row, which keeps the page light. */
+
+.indexed-list {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+@media (min-width: 48em) {
+  .indexed-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-xl);
+  }
+}
+
+.indexed-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding-block-start: var(--space-sm);
+  border-top: var(--border-width-thick) solid var(--color-text);
+}
+
+.indexed-item__index {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  font-style: italic;
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+.indexed-item__title {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-normal);
+  line-height: var(--line-height-snug);
+}
+
+.indexed-item__text {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+/* --- Trust strip -------------------------------------------------------------- */
+
+.trust-strip {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+}
+
+.trust-item {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+}
+
+.trust-item__icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  color: var(--color-primary);
+  background-color: var(--color-primary-subtle);
+  border-radius: var(--radius-md);
+}
+
+.trust-item__icon svg {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+}
+
+.trust-item__title {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.trust-item__text {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-muted);
+}
+
+/* --- Newsletter band ---------------------------------------------------------- */
+
+.newsletter {
+  display: grid;
+  gap: var(--space-lg);
+  align-items: center;
+  padding: var(--space-2xl);
+  background-color: var(--color-bg-subtle);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+@media (min-width: 64em) {
+  .newsletter {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-3xl);
+    padding: var(--space-3xl);
+  }
+}
+
+.newsletter__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+@media (min-width: 30em) {
+  .newsletter__form {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .newsletter__form .field {
+    flex: 1 1 auto;
+  }
+}
+
+/* --- Reduced motion ---------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__tag:hover,
+  .category-tile:hover .category-tile__media img {
+    transform: none;
+  }
+}

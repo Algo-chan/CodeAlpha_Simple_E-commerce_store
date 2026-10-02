@@ -1,0 +1,156 @@
+/* =============================================================================
+   TOASTS
+   A polite live region. The container is rendered once into the document and
+   reused; toasts are appended and removed. Placement flips to the bottom on
+   mobile so it never covers the header or the cart button.
+
+   Rules encoded here
+     - Entrance slides from the edge the region is anchored to, so the motion
+       explains where the message came from.
+     - The dismiss control is a real button with a visible hit area.
+     - Colour is never the only signal: each variant carries an icon and text.
+   ========================================================================== */
+
+.toast-region {
+  position: fixed;
+  z-index: var(--z-toast);
+  inset-block-end: var(--space-md);
+  inset-inline-end: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  inline-size: min(var(--toast-width), calc(100vw - var(--space-lg)));
+  pointer-events: none;
+}
+
+@media (max-width: 47.99em) {
+  .toast-region {
+    inset-block-end: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
+    inset-inline: var(--space-sm);
+    inline-size: auto;
+  }
+}
+
+/* --- Toast ---------------------------------------------------------------- */
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-md);
+  pointer-events: auto;
+  background-color: var(--color-surface-elevated);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated);
+  animation: rise-in var(--duration-normal) var(--ease-enter) both;
+}
+
+.toast.is-closing {
+  animation: fade-out var(--duration-fast) var(--ease-standard) both;
+}
+
+.toast__icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  margin-block-start: 0.1em;
+  color: var(--toast-color, var(--color-text-secondary));
+}
+
+.toast__icon svg {
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.toast__content {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  padding-block-start: 0.05em;
+}
+
+.toast__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  color: var(--color-text);
+}
+
+.toast__message {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
+}
+
+.toast__message:empty {
+  display: none;
+}
+
+/* Optional inline action, e.g. "Undo". */
+.toast__action {
+  align-self: center;
+  flex-shrink: 0;
+  padding: var(--space-3xs) var(--space-xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-hover);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.toast__action:hover {
+  background-color: var(--color-primary-subtle);
+}
+
+.toast__close {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  margin-inline-start: auto;
+  color: var(--color-text-subtle);
+  border-radius: var(--radius-sm);
+  transition:
+    color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.toast__close:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-muted);
+}
+
+.toast__close svg {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+}
+
+/* --- Variants ------------------------------------------------------------- */
+
+.toast--success {
+  --toast-color: var(--color-success);
+  border-inline-start: var(--border-width-thick) solid var(--color-success);
+}
+
+.toast--error {
+  --toast-color: var(--color-error);
+  border-inline-start: var(--border-width-thick) solid var(--color-error);
+}
+
+.toast--warning {
+  --toast-color: var(--color-warning);
+  border-inline-start: var(--border-width-thick) solid var(--color-warning);
+}
+
+.toast--info {
+  --toast-color: var(--color-info);
+  border-inline-start: var(--border-width-thick) solid var(--color-info);
+}
+
+.toast--neutral {
+  --toast-color: var(--color-text-muted);
+  border-inline-start: var(--border-width-thick) solid var(--color-border-strong);
+}

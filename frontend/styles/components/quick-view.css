@@ -1,0 +1,251 @@
+/* =============================================================================
+   QUICK VIEW
+   A two-column modal on desktop (media left, buy panel right) that becomes a
+   full-height sheet on mobile, where it stacks with the media first and the
+   primary action pinned to the bottom within thumb reach.
+
+   The overlay chrome (scrim, header, footer, close, focus trap) comes from
+   overlay.css. This file owns only the inner layout.
+   ========================================================================== */
+
+.quickview {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  block-size: 100%;
+  max-block-size: inherit;
+}
+
+/* --- Layout ---------------------------------------------------------------- */
+
+.quickview__layout {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.quickview__media {
+  position: relative;
+  background-color: var(--color-surface-muted);
+}
+
+.quickview__media .gallery__stage {
+  border-radius: 0;
+  aspect-ratio: 1;
+}
+
+.quickview__media .gallery__thumbs {
+  inline-size: 3.75rem;
+}
+
+.quickview__info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+}
+
+.quickview__footer {
+  flex-shrink: 0;
+  padding: var(--space-md) var(--space-lg);
+  border-top: var(--border-width-hairline) solid var(--color-border);
+  background-color: var(--color-surface);
+}
+
+@media (min-width: 64em) {
+  .quickview__layout {
+    grid-template-rows: none;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .quickview__media {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .quickview__info {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--space-xl);
+  }
+
+  .quickview__footer {
+    display: none;
+  }
+}
+
+/* --- Identity --------------------------------------------------------------- */
+
+.quickview__brand {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-3xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: var(--text-transform-label);
+  color: var(--color-text-subtle);
+}
+
+.quickview__title {
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tighter);
+}
+
+.quickview__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.quickview__sku {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-3xs);
+  color: var(--color-text-subtle);
+}
+
+.quickview__description {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+/* --- Price block ------------------------------------------------------------- */
+
+.quickview__pricing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding-block: var(--space-sm);
+  border-block: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+.quickview__save {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-hover);
+}
+
+.quickview__save svg {
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+}
+
+/* --- Stock line -------------------------------------------------------------- */
+
+.stock-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.stock-line__dot {
+  inline-size: 0.4375rem;
+  block-size: 0.4375rem;
+  border-radius: var(--radius-full);
+  background-color: currentcolor;
+  flex-shrink: 0;
+}
+
+.stock-line--in {
+  color: var(--color-success-text);
+}
+
+.stock-line--low {
+  color: var(--color-warning-text);
+}
+
+.stock-line--out {
+  color: var(--color-error-text);
+}
+
+/* --- Buy row ----------------------------------------------------------------- */
+
+.quickview__buy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.quickview__buy .stepper {
+  flex-shrink: 0;
+}
+
+.quickview__buy .btn {
+  flex: 1 1 10rem;
+}
+
+.quickview__secondary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* --- Delivery promise ------------------------------------------------------- */
+
+.quickview__assurance {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding-block-start: var(--space-sm);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.quickview__assurance-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.quickview__assurance-item svg {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  color: var(--color-text-subtle);
+  flex-shrink: 0;
+}
+
+/* --- Unavailable -------------------------------------------------------------- */
+
+.quickview__unavailable {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background-color: var(--color-surface-muted);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.quickview__unavailable-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.quickview__unavailable-title svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: var(--color-warning);
+  flex-shrink: 0;
+}
+
+.quickview__unavailable-text {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
+}
