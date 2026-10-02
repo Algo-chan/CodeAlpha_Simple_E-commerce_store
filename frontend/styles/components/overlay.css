@@ -158,6 +158,23 @@
   border-bottom: var(--border-width-hairline) solid var(--color-border);
 }
 
+/* Title and subtitle are one column, not two flex children: as siblings they
+   would sit either side of the header's `space-between` and the subtitle would
+   drift to the far edge. */
+.overlay__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1em;
+  min-inline-size: 0;
+}
+
+/* Sits at the end of the header row and stays put as the title wraps, so the
+   dismiss control is always in the same place at every panel width. */
+.overlay__close {
+  flex-shrink: 0;
+  margin-inline-end: calc(var(--space-md) * -1);
+}
+
 .overlay__title {
   font-family: var(--font-sans);
   font-size: var(--font-size-md);

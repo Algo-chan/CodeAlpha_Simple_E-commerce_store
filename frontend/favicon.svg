@@ -1,0 +1,14 @@
+<!--
+  Aster & Oak mark: an ink square with an ember asterisk, drawn at 32px and
+  scaled by the browser. Inlined rather than linked from a CDN so the tab icon
+  never depends on the network, and `currentColor` is not available in a favicon
+  context so the two brand colours are literal here.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Aster and Oak">
+  <rect width="32" height="32" rx="7" fill="#16151a" />
+  <g stroke="#c25f3d" stroke-width="3.2" stroke-linecap="round">
+    <path d="M16 8.5v15" />
+    <path d="M10.4 12.25l11.2 7.5" />
+    <path d="M21.6 12.25l-11.2 7.5" />
+  </g>
+</svg>

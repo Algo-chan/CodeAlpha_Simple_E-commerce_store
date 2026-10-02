@@ -1,11 +1,18 @@
 /**
  * Checkbox and radio groups.
  *
- * Filter facets and the newsletter opt-in. The visible box is a sibling of the
- * real input rather than a styled input, because `appearance: none` on a
- * checkbox cannot express the hover and focus states this design uses, and
- * because hiding the real input with `opacity: 0` breaks pointer events on
- * some touch browsers.
+ * Generic form primitives: a checkbox, a radio, and a fieldset of checkboxes.
+ *
+ * NOTE: the collection filter panel does not use these. It builds its own
+ * `.filter-radio-row` controls inside a `<details>` disclosure so the group can
+ * carry a summary and animated indicator, which this component has no slot for.
+ * That duplication is real and is worth collapsing, but it is a deliberate
+ * difference rather than an oversight - see `collection/collection-page.js`.
+ *
+ * The visible box is a sibling of the real input rather than a styled input,
+ * because `appearance: none` on a checkbox cannot express the hover and focus
+ * states this design uses, and because hiding the real input with `opacity: 0`
+ * breaks pointer events on some touch browsers.
  *
  * The input stays in the DOM, visually hidden but focusable, so:
  *   - Tab reaches it,
@@ -70,10 +77,10 @@ export function checkbox({
 }
 
 /**
- * A radio group. Grouped checkboxes (`variant_picker`) use this so the field
- * semantics are correct even though the visual control is a swatch.
+ * A radio group. Grouped checkboxes with a single selectable value, e.g. a
+ * delivery speed or a one-of-three delivery address.
  * @param {{ name:string, label:string, value:string, checked?:boolean,
- *           disabled?:boolean, onChange?:Function, optionCount?:number }} options
+ *           disabled?:boolean, onChange?:Function }} options
  */
 export function radio({ name, label, value, checked = false, disabled = false, onChange }) {
   sequence += 1;
@@ -130,13 +137,14 @@ export function checkboxGroup({
 
   for (const node of hiddenNodes) node.hidden = true;
 
-  const toggle = collapsible && hidden.length > 0
-    ? el('button.choice__more', {
-        type: 'button',
-        'aria-expanded': 'false',
-        text: `Show ${hidden.length} more`,
-      })
-    : null;
+  const toggle =
+    collapsible && hidden.length > 0
+      ? el('button.choice__more', {
+          type: 'button',
+          'aria-expanded': 'false',
+          text: `Show ${hidden.length} more`,
+        })
+      : null;
 
   const list = el('div.choice__list', {}, [...visibleNodes, ...hiddenNodes]);
 

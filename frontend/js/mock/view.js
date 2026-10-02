@@ -163,7 +163,7 @@ export function buildProductView(product, { variants: rawVariants, reviews, cate
     variants,
     // A digital product with no variant is still purchasable, so the UI needs a
     // synthetic line to sell. This mirrors how the API must behave too.
-    default_variant: variants[0] ?? buildSyntheticDigitalVariant(product),
+    default_variant: variants[0] ?? buildSyntheticDigitalVariant(product, primary_image),
 
     price_min_minor,
     price_max_minor,
@@ -228,15 +228,20 @@ function buildVariantView(variant, product, primaryImage) {
  * A digital product has no variant rows at all, so the UI still needs one thing
  * to sell. The id is derived from the product id so it is stable across loads
  * and survives being put in a cart.
+ *
+ * The image is passed in rather than read off `product`: this receives the raw
+ * database row, which has no `primary_image` - that field only exists on the
+ * view model built above. Without it, every digital basket line would render
+ * with a blank thumbnail.
  */
-function buildSyntheticDigitalVariant(product) {
+function buildSyntheticDigitalVariant(product, primaryImage) {
   return {
     id: `digital:${product.id}`,
     product_id: String(product.id),
     product: {
       slug: product.slug,
       name: product.name,
-      primary_image: product.primary_image ?? null,
+      primary_image: primaryImage ?? null,
     },
     sku: null,
     price_minor: product.price_minor ?? DEFAULT_DIGITAL_PRICE_MINOR,
@@ -382,7 +387,14 @@ function summariseRating(reviews) {
  * Badges, most urgent first, capped so a card never becomes a wall of pills.
  * @returns {string[]}
  */
-function buildBadges({ is_on_sale, discount_percent, is_low_stock, in_stock, is_digital, is_featured }) {
+function buildBadges({
+  is_on_sale,
+  discount_percent,
+  is_low_stock,
+  in_stock,
+  is_digital,
+  is_featured,
+}) {
   const badges = [];
 
   // Sold out wins outright. It is the only badge that changes what the shopper

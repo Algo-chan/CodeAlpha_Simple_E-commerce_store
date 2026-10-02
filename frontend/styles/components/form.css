@@ -122,6 +122,49 @@
   resize: vertical;
 }
 
+/* --- Select ----------------------------------------------------------------
+   `appearance: none` above removes the native arrow, so one has to be drawn or
+   the control stops looking like a dropdown at all. The chevron is a CSS border
+   rather than an inline SVG: it is one shape, it inherits `currentColor`, and it
+   costs no extra request.
+
+   It is a sibling rather than a background-image on the select so the open/closed
+   state is a DOM question instead of a selector that has to know which side the
+   label is on. */
+
+.select-wrapper {
+  position: relative;
+  display: flex;
+}
+
+.select-wrapper .select {
+  padding-inline-end: calc(var(--space-lg) + var(--space-sm));
+}
+
+.select__chevron {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: var(--space-sm);
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  margin-block-start: -0.3rem;
+  pointer-events: none;
+  border-inline-end: 1.5px solid var(--color-text-secondary);
+  border-block-end: 1.5px solid var(--color-text-secondary);
+  transform: rotate(45deg);
+}
+
+.select-wrapper:hover .select__chevron {
+  border-color: var(--color-text);
+}
+
+.select:disabled + .select__chevron {
+  opacity: 0.4;
+}
+
+/* The chevron sits inside the control's padding box, so the focus ring drawn on
+   the select already encloses it. Nothing extra is needed here. */
+
 .input:disabled,
 .select:disabled,
 .textarea:disabled,
@@ -180,7 +223,8 @@
 .select {
   padding-inline-end: var(--space-xl);
   cursor: pointer;
-  background-image: linear-gradient(45deg, transparent 50%, currentcolor 50%),
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentcolor 50%),
     linear-gradient(135deg, currentcolor 50%, transparent 50%);
   background-position:
     calc(100% - 1.125rem) calc(50% + 1px),
@@ -302,6 +346,44 @@
   padding-inline-start: var(--space-sm);
   font-size: var(--font-size-xs);
   color: var(--color-text-subtle);
+}
+
+/* The list of facets inside a group. `.choice__count` pushes the count to the far
+   right with `margin-inline-start: auto`, which only lines up if every child is
+   a full-width row, so this is a column rather than a wrap row. */
+.choice__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+/* "Show 6 more" / "Show fewer". A quiet text button, not a bordered control: a
+   facet list should not contain something that looks like a selectable option. */
+.choice__more {
+  align-self: flex-start;
+  margin-block-start: var(--space-xs);
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-secondary);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: var(--border-width-hairline);
+}
+
+.choice__more:hover {
+  color: var(--color-text);
+}
+
+.choice__more:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--space-2xs);
+  border-radius: var(--radius-xs);
 }
 
 /* --- Quantity stepper ----------------------------------------------------- */
@@ -433,6 +515,15 @@
   color: var(--color-success-text);
   background-color: var(--color-success-bg);
   border-color: var(--color-success-border);
+}
+
+/* Warning rather than error: a saved product that is no longer in the catalogue
+   is a thing to tidy up, not something the shopper did wrong. Reusing the error
+   treatment would imply they caused it. */
+.form-alert--warning {
+  color: var(--color-warning-text);
+  background-color: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
 }
 
 .form-alert--info {

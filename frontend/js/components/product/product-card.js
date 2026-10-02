@@ -63,6 +63,10 @@ export function productCard({
   const href = `/product.html?slug=${encodeURIComponent(product.slug)}`;
   const cleanups = [];
 
+  // A quick-view trigger without a handler is a button that does nothing, so
+  // asking for one implies a callback. Callers should not have to pass both.
+  const quickViewEnabled = showQuickView || Boolean(onQuickView);
+
   // The name link is the card's only tab stop; it stretches over the card via
   // `::after`. Wrapping the card in an <a> instead would nest the wishlist
   // button and quick-view trigger inside a link.
@@ -79,18 +83,15 @@ export function productCard({
 
   const body = el('div.product-card__body', {}, [
     product.brand ? el('p.product-card__brand', { text: product.brand }) : null,
-    el('h3.product-card__name', {}, [
-      el('a.product-card__link', { href, text: product.name }),
-    ]),
+    el('h3.product-card__name', {}, [el('a.product-card__link', { href, text: product.name })]),
     showRating && !compact ? ratingSlot(product) : null,
     variantIndicator(product),
-    el('div.product-card__meta', {}, [
-      stockNote(product),
-      priceSlot(product),
-    ]),
+    el('div.product-card__meta', {}, [stockNote(product), priceSlot(product)]),
   ]);
 
-  root.append(mediaSection({ product, eager, showQuickView, onQuickView, cleanups }));
+  root.append(
+    mediaSection({ product, eager, showQuickView: quickViewEnabled, onQuickView, cleanups })
+  );
   root.append(body);
 
   if (wishlist && !compact) {
@@ -154,7 +155,7 @@ function mediaSection({ product, eager, showQuickView, onQuickView, cleanups }) 
     });
     trigger.append(icon('eye'), el('span', { text: 'Quick view' }));
     media.append(trigger);
-    cleanups.push(on(trigger, 'click', () => onQuickView(product)));
+    cleanups.push(on(trigger, 'click', () => onQuickView(product, trigger)));
   }
 
   return media;
@@ -220,16 +221,11 @@ function variantIndicator(product) {
       ? el(
           'span.variant-dots',
           { 'aria-hidden': 'true' },
-          swatches.map((value) =>
-            el('span.variant-dot', { dataset: { value }, title: value })
-          )
+          swatches.map((value) => el('span.variant-dot', { dataset: { value }, title: value }))
         )
       : null,
     el('span.variant-note', {
-      text:
-        swatches.length > 0 && remaining > 0
-          ? `+${remaining} options`
-          : `${total} options`,
+      text: swatches.length > 0 && remaining > 0 ? `+${remaining} options` : `${total} options`,
     }),
   ]);
 }
@@ -275,9 +271,11 @@ function priceSlot(product) {
  * @param {number} [options.skeletons]
  * @param {boolean} [options.compact]
  * @param {object} [options.wishlist]
- * @param {boolean} [options.eagerCount]  how many cards load eagerly
+ * @param {number} [options.eagerCount]  how many cards load eagerly
  * @param {string} [options.variant]      grid variant from product-grid.css
  * @param {string} [options.ariaLabel]
+ * @param {Function} [options.onQuickView] `(product, trigger) => void`
+ * @param {Function} [options.onSavedChange]
  * @returns {{ element: HTMLElement, setProducts(products): void, destroy(): void }}
  */
 export function productGrid({
@@ -288,6 +286,8 @@ export function productGrid({
   eagerCount = 4,
   variant = '',
   ariaLabel = 'Products',
+  onQuickView,
+  onSavedChange,
 } = {}) {
   const cards = [];
   // Declared before `setProducts` so the first call - made during construction -
@@ -313,6 +313,10 @@ export function productGrid({
         product,
         wishlist,
         compact,
+        onSavedChange,
+        // The trigger is passed through so the quick view can return focus to
+        // the exact card it was opened from, which is what makes Back feel right.
+        onQuickView: onQuickView ? (target, trigger) => onQuickView(target, trigger) : undefined,
         // Only the first screenful is eager. Eager-loading 24 images is the
         // single easiest way to make a storefront feel slow on mobile data.
         eager: index < eagerCount,
@@ -358,7 +362,12 @@ export function productGrid({
  * it keyboard-scrollable - a scrollable region that cannot be reached with Tab
  * is unusable without a mouse.
  */
-export function productRail({ products = [], wishlist = null, ariaLabel = 'Recommended products' }) {
+export function productRail({
+  products = [],
+  wishlist = null,
+  ariaLabel = 'Recommended products',
+  onQuickView,
+} = {}) {
   const rail = el('div.product-rail', {
     role: 'list',
     'aria-label': ariaLabel,
@@ -366,7 +375,12 @@ export function productRail({ products = [], wishlist = null, ariaLabel = 'Recom
   });
 
   const cards = products.map((product) => {
-    const card = productCard({ product, wishlist, compact: false });
+    const card = productCard({
+      product,
+      wishlist,
+      compact: false,
+      onQuickView,
+    });
     card.element.setAttribute('role', 'listitem');
     rail.append(card.element);
     return card;
@@ -384,7 +398,8 @@ export function productRail({ products = [], wishlist = null, ariaLabel = 'Recom
  */
 export function productLine({ product, meta = null, trailing = null, eager = false }) {
   const card = productCard({ product, compact: true, showRating: false, eager });
-  if (meta) card.element.querySelector('.product-card__body').append(el('p.variant-note', { text: meta }));
+  if (meta)
+    card.element.querySelector('.product-card__body').append(el('p.variant-note', { text: meta }));
   if (trailing) card.element.querySelector('.product-card__meta').append(trailing);
   return card;
 }

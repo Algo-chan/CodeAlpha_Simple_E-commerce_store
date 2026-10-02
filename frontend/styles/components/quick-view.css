@@ -93,6 +93,34 @@
   letter-spacing: var(--letter-spacing-tighter);
 }
 
+/* The title is a link to the full product page - the way out of the modal to
+   everything the modal does not carry, like the spec table and the reviews.
+   Inheriting the heading's colour keeps the hierarchy; only the affordance is
+   added, so it does not read as a second, competing heading. */
+.quickview__title-link {
+  color: inherit;
+}
+
+.quickview__title-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.quickview__title-link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+  border-radius: var(--radius-xs);
+}
+
+/* Stock sits under the pinned buy button on mobile and is hidden with that
+   footer on desktop, where the stock line appears in the info column instead.
+   Both are the same `stockHost` node, moved - so this rule only has to stop it
+   collapsing when it is briefly empty. */
+.quickview__stock:not(:empty) {
+  display: block;
+  margin-block-start: var(--space-xs);
+}
+
 .quickview__meta {
   display: flex;
   flex-wrap: wrap;

@@ -18,6 +18,7 @@
  */
 import { el } from '../../core/dom.js';
 import { formatMoney } from '../../utils/format.js';
+import { LOW_STOCK_THRESHOLD } from '../../mock/view.js';
 
 /**
  * @typedef {object} PriceOptions
@@ -46,8 +47,7 @@ export function price({
 
   const upper = Number(to);
   const isRange = Number.isFinite(upper) && upper > amount;
-  const wasOnSale =
-    compareAt !== null && compareAt !== undefined && Number(compareAt) > amount;
+  const wasOnSale = compareAt !== null && compareAt !== undefined && Number(compareAt) > amount;
 
   // Built as one list rather than spread across conditional `className` keys:
   // duplicate keys in an object literal mean the last one silently wins, which
@@ -69,9 +69,7 @@ export function price({
   node.append(el('span.price__current', { text: formatMoney(amount) }));
 
   if (isRange) {
-    node.append(
-      el('span.price__from.price__from--range', { text: `– ${formatMoney(upper)}` })
-    );
+    node.append(el('span.price__from.price__from--range', { text: `– ${formatMoney(upper)}` }));
   }
 
   if (wasOnSale) {
@@ -99,4 +97,40 @@ export function shippingHint(remainingMinor) {
   return `${formatMoney(remainingMinor)} away from free delivery`;
 }
 
-export default { price, shippingHint };
+/**
+ * The availability line for a variant.
+ *
+ * Shared rather than duplicated, because "Sold out" is the string that decides
+ * whether a shopper believes they can buy something. Two surfaces wording it
+ * differently is how a product looks purchasable in a modal and unavailable on
+ * the page behind it.
+ *
+ * @param {object} variant
+ * @param {number|null} available `null` for digital goods, which are not tracked
+ * @returns {HTMLElement}
+ */
+export function stockLine(variant, available) {
+  if (!variant.is_purchasable) {
+    return el('p.stock-line.stock-line--out', {}, [el('span.stock-line__dot'), 'Sold out']);
+  }
+
+  // Untracked stock is not unlimited stock: it means the catalogue does not count
+  // it, so the honest statement is that it is available, not that there are many.
+  if (available === null) {
+    return el('p.stock-line.stock-line--in', {}, [
+      el('span.stock-line__dot'),
+      variant.digital ? 'Available immediately' : 'Available to order',
+    ]);
+  }
+
+  if (available <= LOW_STOCK_THRESHOLD) {
+    return el('p.stock-line.stock-line--low', {}, [
+      el('span.stock-line__dot'),
+      `Only ${available} left`,
+    ]);
+  }
+
+  return el('p.stock-line.stock-line--in', {}, [el('span.stock-line__dot'), 'In stock']);
+}
+
+export default { price, shippingHint, stockLine };

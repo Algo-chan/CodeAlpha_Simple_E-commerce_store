@@ -122,6 +122,62 @@
   color: var(--white);
 }
 
+/* The columns are equal-width tracks in one grid, so a three-item group and a
+   five-item group still line up. `auto-fit` with a floor rather than a fixed
+   count, so a fourth column on wide screens does not collapse into four
+   unreadably narrow ones. */
+.footer__grid {
+  display: grid;
+  gap: var(--space-xl);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  padding-block-end: var(--space-2xl);
+}
+
+@media (min-width: 48em) {
+  .footer__grid {
+    gap: var(--space-2xl) var(--space-xl);
+  }
+}
+
+/* The brand column carries a logo, prose, contact details and payment methods, so
+   it needs more room than a link list and spans the full width on mobile. */
+@media (min-width: 64em) {
+  .footer__grid {
+    grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr);
+  }
+}
+
+.footer__column {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.footer__column--newsletter .newsletter__form {
+  margin-block: var(--space-sm);
+}
+
+.footer__contact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.footer__list-icon {
+  inline-size: 1rem;
+  block-size: 1rem;
+  flex-shrink: 0;
+  color: var(--bone-300);
+}
+
+/* The newsletter column is wider than a link list but is not a link list, so it
+   carries no heading rule beyond the shared column title. */
+.footer__note {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-inverse-muted);
+}
+
 /* --- Payment / trust row -------------------------------------------------- */
 
 .footer__trust {
@@ -168,6 +224,24 @@
   block-size: 0.875rem;
 }
 
+.footer__method-label {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-3xs);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: var(--text-transform-label);
+  color: var(--color-text-inverse-muted);
+  margin-inline-end: var(--space-2xs);
+}
+
+/* Methods flow as chips beside their label on wide screens and wrap beneath it on
+   narrow ones, where a single row of four chips would overflow. */
+.footer__method-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
 /* --- Legal ---------------------------------------------------------------- */
 
 .footer__legal {
@@ -197,4 +271,14 @@
   color: var(--white);
   text-decoration: underline;
   text-underline-offset: 0.2em;
+}
+
+/* The copyright line sits opposite the legal links. On a narrow footer they wrap
+   onto their own line, so it is allowed to shrink rather than forcing the row
+   wider than the container. */
+.footer__copyright {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-inverse-muted);
+  text-wrap: pretty;
 }

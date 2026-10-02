@@ -135,6 +135,36 @@
   text-underline-offset: 0.2em;
 }
 
+/* The fieldset variant of a group, used by `forms/choice.js` `checkboxGroup()`.
+   A `<legend>` cannot be a flex child of a flex fieldset in every engine, so it
+   is given the same weight and tracking as the disclosure's own label instead. */
+.filter-group__legend {
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin-block-end: var(--space-xs);
+}
+
+/* Values past the collapse threshold. Kept in the DOM and toggled with `hidden`
+   so they leave the tab order for free; the "Show more" button unhides them
+   without a redraw, which is what keeps already-ticked controls ticked. */
+.filter-group__hidden {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+/* The two number inputs sit inside the bordered `.filter-price__inputs` box, so
+   they must not draw a second border of their own - but they still need a focus
+   ring, and the outer box cannot show it because focus is on the input. */
+.filter-price__inputs .filter-price__input:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+  border-radius: var(--radius-xs);
+}
+
 /* --- Price range ----------------------------------------------------------- */
 
 .filter-price {
@@ -241,28 +271,46 @@
   padding-block-end: var(--space-md);
 }
 
+/* A swatch row is a normal filter row with a colour chip before the label. The
+   chip is `aria-hidden` in the markup, because the label already names the
+   colour - a chip announced as "brown square" tells a screen reader nothing. */
+.filter-radio-row--swatch {
+  gap: var(--space-sm);
+}
+
 .filter-swatch {
   position: relative;
   display: grid;
   place-items: center;
-  inline-size: 2rem;
-  block-size: 2rem;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  box-shadow: 0 0 0 0 transparent;
-  transition: box-shadow var(--duration-normal) var(--ease-standard);
+  flex-shrink: 0;
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
 }
 
 .filter-swatch__chip {
-  inline-size: 1.375rem;
-  block-size: 1.375rem;
+  inline-size: 100%;
+  block-size: 100%;
   border-radius: var(--radius-full);
   background-color: var(--swatch-color, var(--color-border));
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 14%);
+  transition: box-shadow var(--duration-fast) var(--ease-standard);
 }
 
-.filter-swatch[aria-pressed='true'] {
-  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3.5px var(--color-primary);
+/* The swatch is a real checkbox, so the selected state comes from the input
+   rather than from an aria-pressed attribute the markup does not set. `:has()`
+   rather than a sibling combinator, because the chip is nested one level down. */
+.filter-radio-row--swatch:has(input:checked) .filter-swatch__chip {
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 14%),
+    0 0 0 2px var(--color-surface),
+    0 0 0 3.5px var(--color-primary);
+}
+
+.filter-radio-row--swatch:has(input:focus-visible) .filter-swatch__chip {
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 14%),
+    0 0 0 2px var(--color-surface),
+    0 0 0 3.5px var(--color-focus);
 }
 
 /* --- Availability ---------------------------------------------------------- */

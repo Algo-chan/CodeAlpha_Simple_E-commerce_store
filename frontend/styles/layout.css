@@ -122,6 +122,16 @@
   }
 }
 
+/* The stacked column of eyebrow, title and lede. It exists so the eyebrow stays
+   above the title on desktop too: without it, `.section-head` going horizontal at
+   48em would place the eyebrow *beside* the title. */
+.section-head__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-inline-size: 0;
+}
+
 .section-head__eyebrow {
   font-family: var(--font-sans);
   font-size: var(--font-size-2xs);
@@ -133,6 +143,14 @@
 
 .section-head__title {
   font-size: var(--font-size-3xl);
+  text-wrap: balance;
+}
+
+/* A section heading is a heading, not the page title, so it never reaches display
+   size. `.section-head` is shared by both and this is the only thing telling them
+   apart visually. */
+.section-head__body > .section-head__title {
+  font-size: var(--font-size-2xl);
 }
 
 .section-head__description {

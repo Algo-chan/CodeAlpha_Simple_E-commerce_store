@@ -6,8 +6,11 @@
  * page - is how pages end up with an h2 as their first heading, which breaks the
  * heading outline for anyone navigating by heading.
  *
- * Exactly one `level: 'h1'` exists per document, and it is the first thing in
- * the main region.
+ * Exactly one `level: 'h1'` exists per document, and it is the first thing in the
+ * main region.
+ *
+ * Class names come from the `.section-head` block in `layout.css`, so page titles
+ * and section headings share one set of rules instead of drifting apart.
  */
 import { el } from '../../core/dom.js';
 
@@ -17,24 +20,29 @@ import { el } from '../../core/dom.js';
  * @returns {HTMLElement}
  */
 export function pageTitle(text, { eyebrow = null, lede = null, level = 'h1' } = {}) {
-  return el('div.page-header__text', {}, [
-    eyebrow ? el('p.page-header__eyebrow', { text: eyebrow }) : null,
-    el(`${level}.page-header__title`, { text }),
-    lede ? el('p.page-header__lede', { text: lede }) : null,
+  return el('div.section-head', {}, [
+    el('div.section-head__body', {}, [
+      eyebrow ? el('p.section-head__eyebrow', { text: eyebrow }) : null,
+      el(`${level}.section-head__title`, { text }),
+      lede ? el('p.section-head__description', { text: lede }) : null,
+    ]),
   ]);
 }
 
 /**
- * A section heading with an optional action on the right - "All products" with
- * a "View all" link. Uses h2 so it sits correctly under the page h1.
+ * A section heading with an optional action on the right - "Shop by category" with
+ * a "All products" link. Uses h2 so it sits correctly under the page h1.
  */
-export function sectionHeading(text, { eyebrow = null, action = null, level = 'h2', id = null } = {}) {
-  return el('div.section-heading', {}, [
-    el('div.section-heading__text', {}, [
-      eyebrow ? el('p.section-heading__eyebrow', { text: eyebrow }) : null,
-      el(`${level}.section-heading__title`, { ...(id ? { id } : {}), text }),
+export function sectionHeading(
+  text,
+  { eyebrow = null, action = null, level = 'h2', id = null } = {}
+) {
+  return el('div.section-head', {}, [
+    el('div.section-head__body', {}, [
+      eyebrow ? el('p.section-head__eyebrow', { text: eyebrow }) : null,
+      el(`${level}.section-head__title`, { ...(id ? { id } : {}), text }),
     ]),
-    action,
+    action ? el('div.section-head__actions', {}, [action]) : null,
   ]);
 }
 

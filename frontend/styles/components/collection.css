@@ -1,151 +1,257 @@
 /* =============================================================================
-   COLLECTION HEADER
-   The top of a category or search-results page: breadcrumb, title,
-   description, count and an optional hero image. Deliberately compact - a
-   collection page's job is to get the shopper to the grid, so the header
-   occupies at most a quarter of the first viewport.
+   COLLECTION PAGE
+   Heading, toolbar, active-filter chips, result grid, pager and the
+   "load more" fallback.
 
-   `.collection-header--hero` is the one place the page uses a wide image, and
-   it is capped in height so it can never push the toolbar off-screen.
+   The heading itself is not here: it is the shared `pageTitle()` from
+   `layout/page-header.js`, which every page uses, so the eyebrow / title / lede
+   stack is identical on the homepage, the collection, a product and the cart.
+   Only what is specific to a browsable result set lives here.
+
+   The toolbar is sticky below the header. A shopper who has scrolled 40 products
+   down and wants to change the sort should not have to climb back to the top to
+   do it.
+
+   The page element is also the container: it owns the gutters as well as the
+   vertical rhythm, so no section below has to add its own top margin and any band
+   that wants a full-bleed background can simply not add one.
    ========================================================================== */
 
-.collection-header {
-  position: relative;
-  padding-block: var(--space-lg) var(--space-xl);
+.collection-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
 }
 
-@media (min-width: 48em) {
-  .collection-header {
-    padding-block: var(--space-xl) var(--space-2xl);
+/* --- Toolbar ---------------------------------------------------------------- */
+
+.collection-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm) var(--space-md);
+  padding-block: var(--space-sm);
+  border-block: var(--border-width-hairline) solid var(--color-border-subtle);
+  background-color: var(--color-surface);
+}
+
+@media (min-width: 64em) {
+  .collection-toolbar {
+    position: sticky;
+    inset-block-start: var(--header-height);
+    z-index: 2;
+    /* The border and background have to extend into the container's side padding,
+       or the sticky bar visibly narrows as it pins. */
+    margin-inline: calc(var(--container-pad) * -1);
+    padding-inline: var(--container-pad);
   }
 }
 
-.collection-header--hero {
-  padding-block: var(--space-xl) var(--space-2xl);
-  margin-inline: calc(var(--container-pad) * -1);
-  padding-inline: var(--container-pad);
-  overflow: hidden;
-  background-color: var(--color-surface-muted);
-}
-
-.collection-header__inner {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  max-inline-size: 46rem;
-}
-
-.collection-header__eyebrow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2xs);
-}
-
-.collection-header__title {
-  font-size: var(--font-size-3xl);
-}
-
-.collection-header__description {
-  font-size: var(--font-size-md);
-  line-height: var(--line-height-relaxed);
+.collection-toolbar__count {
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  max-inline-size: var(--content-measure);
+  font-variant-numeric: tabular-nums;
 }
 
-/* --- Meta row: count + optional rating average --------------------------- */
+.collection-toolbar__count strong {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
 
-.collection-header__meta {
+/* Result count on the left, sort and filter on the right, collapsing to one
+   wrapped row on narrow screens. */
+.collection-toolbar__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-sm);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  margin-inline-start: auto;
 }
 
-.collection-header__meta-item {
-  display: inline-flex;
+/* --- Sort ------------------------------------------------------------------- */
+
+/* An implicit label: the visible word "Sort" is the `<label>` for the select, so
+   it must sit beside it and be associated rather than merely nearby. */
+.sort-control {
+  display: flex;
   align-items: center;
-  gap: var(--space-3xs);
+  gap: var(--space-xs);
 }
 
-.collection-header__meta-item svg {
-  inline-size: 0.875rem;
-  block-size: 0.875rem;
-  color: var(--color-text-subtle);
-}
-
-/* --- Hero image, decorative ---------------------------------------------- */
-
-.collection-header__figure {
-  display: none;
-  margin-block-start: var(--space-lg);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  aspect-ratio: 21 / 9;
-  background-color: var(--color-surface-muted);
-}
-
-@media (min-width: 64em) {
-  .collection-header__figure {
-    display: block;
-  }
-}
-
-.collection-header__figure img {
-  inline-size: 100%;
-  block-size: 100%;
-  object-fit: cover;
-}
-
-/* --- Search-results variant ------------------------------------------------
-   The query is quoted back so the shopper can see exactly what was searched
-   and correct it, rather than guessing why the results look wrong. */
-
-.collection-header__query {
-  font-family: var(--font-display);
-  font-style: italic;
-  color: var(--color-text);
-}
-
-.collection-header__query::before,
-.collection-header__query::after {
-  content: '"';
-  color: var(--color-text-subtle);
-}
-
-.collection-header__query::after {
-  content: '"';
-}
-
-/* --- No-results block ------------------------------------------------------ */
-
-.collection-header__reset {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3xs);
-  align-self: flex-start;
-  margin-block-start: var(--space-2xs);
-  font-size: var(--font-size-sm);
+.sort-control__label {
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  color: var(--color-primary-hover);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: var(--text-transform-label);
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
-.collection-header__reset:hover {
+.sort-control .select {
+  min-block-size: var(--control-height-sm);
+  inline-size: auto;
+  padding-block: var(--space-2xs);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+/* --- Active filter chips ------------------------------------------------------ */
+
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+/* A chip is a removable filter: it shows what is applied, and clicking it removes
+   that one filter rather than resetting the lot. */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-block-size: 1.875rem;
+  padding: var(--space-3xs) var(--space-xs) var(--space-3xs) var(--space-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface-muted);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.filter-chip:hover {
+  border-color: var(--color-border-strong);
+  background-color: var(--color-surface);
+}
+
+.filter-chip:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.filter-chip__group {
+  white-space: nowrap;
+}
+
+.filter-chip svg {
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+  flex-shrink: 0;
+  color: var(--color-text-subtle);
+}
+
+/* "Clear all" is an action on the set, not a filter in it, so it is set apart from
+   the chips: no fill, no border, no close icon. */
+.filter-chip--clear {
+  margin-inline-start: var(--space-2xs);
+  color: var(--color-text-muted);
+  background-color: transparent;
+  border-color: transparent;
   text-decoration: underline;
   text-underline-offset: 0.2em;
+  text-decoration-thickness: var(--border-width-hairline);
 }
 
-.collection-header__reset svg {
-  inline-size: 0.875rem;
-  block-size: 0.875rem;
+.filter-chip--clear:hover {
+  color: var(--color-error);
+  background-color: transparent;
+  border-color: transparent;
 }
 
-/* --- Result grid offset -----------------------------------------------------
-   When a sidebar is present the grid must not inherit the rail's width, so the
-   results column is `minmax(0, 1fr)` in layout.css and the grid fills it. */
+/* --- Results ----------------------------------------------------------------- */
+
+.collection__results {
+  min-inline-size: 0;
+}
 
 .collection__results > .product-grid {
   inline-size: 100%;
+}
+
+/* While a query is in flight the region announces itself and stops being
+   interactive, so a click cannot land on a grid that is about to be replaced. */
+.collection__results[aria-busy='true'] {
+  pointer-events: none;
+}
+
+/* --- Pagination -------------------------------------------------------------- */
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+}
+
+.pagination__item {
+  display: grid;
+  place-items: center;
+  min-inline-size: var(--control-height);
+  min-block-size: var(--control-height);
+  padding-inline: var(--space-2xs);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+  border: var(--border-width-hairline) solid transparent;
+  border-radius: var(--radius-md);
+  transition:
+    color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.pagination__item:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-muted);
+}
+
+.pagination__item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* The current page is filled rather than outlined, so "where am I" is answered by
+   position in the row rather than by reading the number. */
+.pagination__item[aria-current='page'] {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-contrast);
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.pagination__item[aria-current='page']:hover {
+  color: var(--color-primary-contrast);
+  background-color: var(--color-primary-hover);
+}
+
+.pagination__ellipsis {
+  display: grid;
+  place-items: center;
+  min-inline-size: var(--control-height);
+  min-block-size: var(--control-height);
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-sm);
+}
+
+/* --- Load more ----------------------------------------------------------------
+   A fallback for the pager: whichever is present, the grid is the same. The hint
+   states the range so the two are not redundant. */
+
+.collection-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.collection-more__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }

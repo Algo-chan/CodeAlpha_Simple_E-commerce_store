@@ -162,6 +162,51 @@
   transition: transform var(--duration-normal) var(--ease-emphasized);
 }
 
+/* Named on the element rather than left to `.wishlist-button svg`, because the
+   component passes it explicitly - and a page can override the icon size
+   without having to fight the descendant selector's specificity. */
+.wishlist-button__icon {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+}
+
+/* The bulk variant is a labelled button in a page toolbar, not the round overlay
+   control on a card. It keeps the same states but drops the card affordances:
+   no frosted backdrop, no shadow, and a width that fits its own label. */
+.wishlist-button--bulk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-block-size: var(--control-height);
+  inline-size: auto;
+  block-size: auto;
+  padding-inline: var(--space-md);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-full);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.wishlist-button--bulk .wishlist-button__icon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.wishlist-button--bulk:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.wishlist-button--bulk[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-subtle);
+}
+
 /* Saved state: filled heart in the accent. The `aria-pressed` attribute is the
    source of truth, so the styling has no independent state to drift. */
 .wishlist-button[aria-pressed='true'] {
@@ -284,6 +329,22 @@
   font-weight: var(--font-weight-regular);
 }
 
+/* The same class does double duty: it is the word "From", and it is also the top
+   of a price range. On a card the two can share a size, but on the product page
+   `.price--lg` blows the current price up to display size - and a range whose
+   upper bound stayed at `--font-size-2xs` would read as "ETB 120 – ETB 40",
+   which is backwards at a glance. So the bound follows the price it bounds. */
+.price__from--range {
+  font-size: inherit;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.price--lg .price__from--range {
+  font-size: var(--font-size-xl);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
 /* --- Rating ---------------------------------------------------------------- */
 
 .rating {
@@ -310,6 +371,15 @@
   overflow: hidden;
   color: var(--color-primary);
   pointer-events: none;
+}
+
+/* The stars are inline SVG sized in `em` against `.rating__stars`'s own font-size,
+   which the component overrides per instance. Sizing them here rather than in the
+   markup keeps the five stars identical at every rating size. */
+.rating__star {
+  display: block;
+  inline-size: 1em;
+  block-size: 1em;
 }
 
 .rating__value {

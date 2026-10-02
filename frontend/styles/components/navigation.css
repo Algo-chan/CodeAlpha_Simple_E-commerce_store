@@ -172,6 +172,15 @@
   gap: var(--space-2xs);
 }
 
+/* The trailing "All <category>" column. It is a fourth grid cell, but it holds
+   one link rather than a list, so it is pinned to the bottom of the row to sit
+   level with the foot of the columns beside it. */
+.nav__mega-column--all {
+  justify-content: flex-end;
+  padding-block-start: var(--space-sm);
+  border-block-start: var(--border-width-hairline) solid var(--color-border);
+}
+
 .nav__mega-heading {
   font-family: var(--font-sans);
   font-size: var(--font-size-2xs);
@@ -266,6 +275,15 @@
   gap: var(--space-3xs);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+/* The list is a flex row of items, and each item holds a link plus its separator.
+   The item itself must not grow, or the separators spread to the far edge. */
+.breadcrumb__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  min-inline-size: 0;
 }
 
 .breadcrumb__link {

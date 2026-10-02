@@ -29,6 +29,7 @@ import { createFilterStore } from './state/filters.js';
 import { createHeader } from './components/layout/header.js';
 import { createFooter } from './components/layout/footer.js';
 import { createCartDrawer } from './components/cart/cart-drawer.js';
+import { createQuickView } from './components/product/quick-view.js';
 import { createSearchOverlay } from './components/search/search-overlay.js';
 import { createToastRegion } from './components/feedback/toast.js';
 import { errorState } from './components/feedback/states.js';
@@ -51,6 +52,7 @@ const pages = {
  * @property {object} ui
  * @property {object} filters
  * @property {object} cartDrawer
+ * @property {object} quickView
  * @property {object} search
  * @property {object} config
  * @property {string|null} categorySlug  active category, for nav highlighting
@@ -105,6 +107,9 @@ async function boot() {
 
   const cartDrawer = createCartDrawer({ cart, toasts: ui });
   const search = createSearchOverlay({ api: mockApi });
+  // One quick view for the whole session, like the cart drawer: a panel per card
+  // would mean dozens of registered panels and dozens of history entries.
+  const quickView = createQuickView({ cart, wishlist, ui });
 
   const header = createHeader({
     categories,
@@ -121,7 +126,7 @@ async function boot() {
   document.body.prepend(header.element);
   document.body.append(footer);
 
-  teardown.push(header.destroy, cartDrawer.destroy);
+  teardown.push(header.destroy, cartDrawer.destroy, quickView.destroy);
 
   // Now that the catalogue exists, a basket restored from storage can be checked
   // against live price and availability.
@@ -135,6 +140,7 @@ async function boot() {
     ui,
     filters,
     cartDrawer,
+    quickView,
     search,
     config,
     categorySlug,
@@ -199,8 +205,7 @@ function bindGlobalKeys({ search, cartDrawer }) {
       const target = event.target;
       const typing =
         target instanceof HTMLElement &&
-        (target.isContentEditable ||
-          ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+        (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
       if (event.key === '/' && !typing) {
         event.preventDefault();
@@ -263,6 +268,11 @@ function bindRevealOnScroll(cleanups) {
 /**
  * Runs the page module. It owns exactly one thing: filling `#main-content`. If
  * it throws, the page reports it in place rather than leaving an empty region.
+ *
+ * A page module may return anything with a `destroy()` - `collection.js` returns
+ * the controller, the others return a small handle - and that teardown is
+ * registered with the shell. Page modules subscribe to stores; without this the
+ * subscriptions would outlive the page they were created for.
  */
 async function startPage(pageName) {
   const host = qs('#main-content');
@@ -270,7 +280,12 @@ async function startPage(pageName) {
 
   try {
     const module = await load();
-    await module.default?.({ ...context, host });
+    const page = await module.default?.({ ...context, host });
+
+    if (typeof page?.destroy === 'function') {
+      teardown.push(() => page.destroy());
+    }
+
     if (host) host.dataset.pageState = 'ready';
   } catch (error) {
     console.error(`[app] page "${pageName}" failed`, error);

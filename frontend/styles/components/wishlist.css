@@ -1,146 +1,23 @@
 /* =============================================================================
-   WISHLIST
+   WISHLIST PAGE
    The heart control itself lives in product-card.css (`.wishlist-button`)
-   because it appears on cards. This file covers the saved-items panel.
+   because it appears on cards. This file covers the saved-items page.
+
+   The page is a product grid, not a bespoke list: the same `productGrid` the
+   collection page uses renders the saved items, so a saved product looks
+   identical to the same product in search results. Only the page frame and the
+   orphan warning are specific to this view.
 
    Nothing here persists: the wishlist lives in the client store and clears on
    reload in this phase. The empty state is therefore a real, reachable state,
    not a theoretical one.
+
+   The page element is also the container, so it owns the gutters as well as the
+   vertical rhythm - the same contract `.collection-page` has.
    ========================================================================== */
 
-.wishlist-panel__intro {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  padding-block-end: var(--space-sm);
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
-}
-
-.wishlist-panel__list {
+.wishlist-page {
   display: flex;
   flex-direction: column;
-}
-
-.wishlist-item {
-  display: grid;
-  grid-template-columns: 4.5rem minmax(0, 1fr);
-  gap: var(--space-sm);
-  padding-block: var(--space-sm);
-  position: relative;
-}
-
-.wishlist-item + .wishlist-item {
-  border-block-start: var(--border-width-hairline) solid var(--color-border-subtle);
-}
-
-.wishlist-item.is-removing {
-  opacity: 0;
-  transform: translate3d(1.5rem, 0, 0);
-  transition:
-    opacity var(--duration-fast) var(--ease-standard),
-    transform var(--duration-normal) var(--ease-exit);
-}
-
-.wishlist-item__media {
-  inline-size: 4.5rem;
-  aspect-ratio: 1;
-  overflow: hidden;
-  background-color: var(--color-surface-muted);
-  border-radius: var(--radius-md);
-}
-
-.wishlist-item__media img {
-  inline-size: 100%;
-  block-size: 100%;
-  object-fit: cover;
-}
-
-.wishlist-item__body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3xs);
-  min-inline-size: 0;
-}
-
-.wishlist-item__top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-2xs);
-}
-
-.wishlist-item__name {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-  line-height: var(--line-height-snug);
-}
-
-.wishlist-item__name:hover {
-  color: var(--color-primary-hover);
-}
-
-.wishlist-item__remove {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  inline-size: 1.75rem;
-  block-size: 1.75rem;
-  margin-inline-start: auto;
-  margin-block-start: -0.125rem;
-  color: var(--color-text-subtle);
-  border-radius: var(--radius-sm);
-  opacity: 0.6;
-  transition:
-    opacity var(--duration-fast) var(--ease-standard),
-    color var(--duration-fast) var(--ease-standard),
-    background-color var(--duration-fast) var(--ease-standard);
-}
-
-.wishlist-item__remove:hover {
-  opacity: 1;
-  color: var(--color-error);
-  background-color: var(--color-error-bg);
-}
-
-.wishlist-item__remove svg {
-  inline-size: 0.875rem;
-  block-size: 0.875rem;
-}
-
-.wishlist-item__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2xs);
-  margin-block-start: var(--space-2xs);
-}
-
-/* --- Page header summary -------------------------------------------------- */
-
-.wishlist-header__count {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  padding: var(--space-3xs) var(--space-xs);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  background-color: var(--color-surface);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-full);
-}
-
-.wishlist-header__clear {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-muted);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-
-.wishlist-header__clear:hover {
-  color: var(--color-error);
+  gap: var(--space-lg);
 }

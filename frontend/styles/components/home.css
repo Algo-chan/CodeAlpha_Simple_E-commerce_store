@@ -8,6 +8,14 @@
    predictably, needs no JS, and cannot overlap text at any width.
    ========================================================================== */
 
+/* The page wrapper. It exists so a page-level rule can address the homepage as a
+   whole - "the homepage gets no bottom padding, because the last section's
+   background runs to the edge" - without every section having to know which page
+   it is on. It deliberately carries no other styles. */
+.home {
+  display: flow-root;
+}
+
 /* --- Hero ------------------------------------------------------------------ */
 
 .hero {

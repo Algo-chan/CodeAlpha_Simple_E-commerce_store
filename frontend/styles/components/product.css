@@ -1,0 +1,484 @@
+/* =============================================================================
+   PRODUCT PAGE
+   A two-column layout on desktop - gallery left, buy column right - and a
+   single column on mobile with the gallery first.
+
+   The buy column is `position: sticky` so the price and the add button stay in
+   view while a shopper scrolls through a long description, which is the whole
+   point of splitting the page in two. It stops sticking once the gallery runs
+   out, because a sticky column taller than its content would otherwise float
+   over the footer.
+
+   Everything here is layout and typography. Buttons, price, badges, swatches and
+   the gallery itself own their own CSS files.
+   ========================================================================== */
+
+/* --- Page shell ------------------------------------------------------------ */
+
+/* The container and the vertical rhythm in one element: the breadcrumb, the
+   two-column buy view, the details, the reviews and the related rail are a single
+   column of content, so the gutters and the gaps are decided here once.
+   `.cart-shell`, `.collection-page` and `.wishlist-page` have the same contract.
+
+   `display: flex` rather than margins on the children, so the accordion sections
+   can carry their own backgrounds without inheriting a gap as transparent space
+   outside them. */
+.product-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+@media (min-width: 48em) {
+  .product-shell {
+    gap: var(--space-3xl);
+  }
+}
+
+.product {
+  display: grid;
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+@media (min-width: 64em) {
+  .product {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: var(--grid-gap-xl);
+  }
+}
+
+/* --- Media ----------------------------------------------------------------- */
+
+.product__media {
+  min-inline-size: 0;
+}
+
+/* --- Buy column ------------------------------------------------------------ */
+
+.product__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-inline-size: 0;
+}
+
+@media (min-width: 64em) {
+  .product__panel {
+    /* `align-self: start` is what makes sticky work inside a grid item; without
+       it the column stretches to the gallery's height and nothing can stick. */
+    align-self: start;
+    position: sticky;
+    inset-block-start: calc(var(--header-height) + var(--space-md));
+  }
+}
+
+.product__brand {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-3xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: var(--text-transform-label);
+  color: var(--color-text-subtle);
+}
+
+.product__title {
+  font-size: var(--font-size-3xl);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tighter);
+  /* Long names must wrap rather than push the layout wider than the viewport. */
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.product__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.product__sku {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-3xs);
+  color: var(--color-text-subtle);
+}
+
+/* A link back to the category, so a shopper who landed here from search can walk
+   upwards instead of back. */
+.product__category {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-subtle);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.product__category:hover {
+  color: var(--color-primary-hover);
+}
+
+/* Price and stock sit together, directly under the title, before the prose. The
+   order matters: a shopper decides whether to keep reading based on price and
+   availability, not on a description. */
+.product__price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xs) var(--space-sm);
+}
+
+.product__saving {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-accent);
+}
+
+.product__saving svg {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+}
+
+.product__stock {
+  min-block-size: 1.5rem;
+}
+
+.product__description {
+  max-inline-size: var(--content-measure);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  white-space: pre-line;
+}
+
+/* --- Buy block -------------------------------------------------------------- */
+
+.product__buy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-block: var(--space-sm);
+  border-block: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+.product__buy .stepper {
+  flex-shrink: 0;
+}
+
+.product__buy .btn {
+  flex: 1 1 12rem;
+}
+
+.product__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.product__assurance {
+  display: grid;
+  gap: var(--space-2xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.product__assurance-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.product__assurance-item svg {
+  inline-size: 0.9375rem;
+  block-size: 0.9375rem;
+  color: var(--color-text-subtle);
+  flex-shrink: 0;
+}
+
+/* --- Details (accordion) ------------------------------------------------------ */
+
+.product-details {
+  margin-block-start: var(--space-2xl);
+  border-block-start: var(--border-width-hairline) solid var(--color-border);
+}
+
+.accordion {
+  border-block-end: var(--border-width-hairline) solid var(--color-border);
+}
+
+.accordion__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-block: var(--space-md);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: var(--text-transform-label);
+  color: var(--color-text);
+  cursor: pointer;
+  list-style: none;
+}
+
+.accordion__summary::-webkit-details-marker {
+  display: none;
+}
+
+.accordion__summary:hover {
+  color: var(--color-primary-hover);
+}
+
+.accordion__marker {
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: var(--color-text-subtle);
+  transition: transform var(--duration-fast) var(--ease-standard);
+  flex-shrink: 0;
+}
+
+.accordion__summary[aria-expanded='true'] .accordion__marker {
+  transform: rotate(90deg);
+}
+
+.accordion__panel {
+  padding-block-end: var(--space-md);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.accordion__panel > * + * {
+  margin-block-start: var(--space-sm);
+}
+
+.accordion__panel ul {
+  display: grid;
+  gap: var(--space-2xs);
+  padding-inline-start: var(--space-md);
+  list-style: disc;
+}
+
+/* --- Specification list ------------------------------------------------------
+   A definition list rather than a table: the terms are labels, not columns, and
+   a `<table>` here would imply a row header for every value and announce eight
+   rows to a screen reader where two would do. */
+
+.spec-list {
+  display: grid;
+  gap: 0;
+}
+
+.spec-list__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs) var(--space-sm);
+  padding-block: var(--space-2xs);
+  border-block-end: var(--border-width-hairline) solid var(--color-border-subtle);
+  font-size: var(--font-size-sm);
+}
+
+.spec-list__row:last-child {
+  border-block-end: 0;
+}
+
+.spec-list dt {
+  flex: 0 0 10rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.spec-list dd {
+  margin: 0;
+  flex: 1 1 12rem;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 29.99em) {
+  .spec-list__row {
+    flex-direction: column;
+  }
+
+  .spec-list dt {
+    flex-basis: auto;
+  }
+}
+
+/* --- Size table -------------------------------------------------------------- */
+
+.size-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-xs);
+}
+
+.size-table caption {
+  text-align: start;
+  color: var(--color-text-muted);
+  padding-block-end: var(--space-2xs);
+}
+
+.size-table th,
+.size-table td {
+  padding: var(--space-2xs) var(--space-xs);
+  border-block-end: var(--border-width-hairline) solid var(--color-border-subtle);
+  text-align: start;
+}
+
+.size-table thead th {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* --- Reviews ----------------------------------------------------------------- */
+
+.reviews {
+  margin-block-start: var(--space-3xl);
+}
+
+.reviews__summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--grid-gap-lg);
+  align-items: center;
+  padding-block-end: var(--space-lg);
+  border-block-end: var(--border-width-hairline) solid var(--color-border);
+}
+
+@media (max-width: 47.99em) {
+  .reviews__summary {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-sm);
+  }
+}
+
+.reviews__score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3xs);
+}
+
+.reviews__score-value {
+  font-family: var(--font-display);
+  font-size: var(--font-size-4xl);
+  line-height: var(--line-height-none);
+  letter-spacing: var(--letter-spacing-tighter);
+}
+
+.reviews__score-count {
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-muted);
+}
+
+.reviews__bars {
+  display: grid;
+  gap: var(--space-3xs);
+  max-inline-size: 28rem;
+}
+
+.reviews__bar-row {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr) 2.5rem;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-secondary);
+}
+
+.reviews__bar-track {
+  block-size: 0.375rem;
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.reviews__bar-fill {
+  block-size: 100%;
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+.reviews__bar-value {
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  color: var(--color-text-muted);
+}
+
+.review-list {
+  display: grid;
+  gap: var(--space-lg);
+  margin-block-start: var(--space-lg);
+}
+
+.review {
+  display: grid;
+  gap: var(--space-2xs);
+  padding-block-end: var(--space-lg);
+  border-block-end: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+.review:last-child {
+  border-block-end: 0;
+  padding-block-end: 0;
+}
+
+.review__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.review__author {
+  font-weight: var(--font-weight-semibold);
+}
+
+.review__date {
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-muted);
+}
+
+.review__title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+}
+
+.review__body {
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  max-inline-size: var(--content-measure);
+}
+
+.review__verified {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  font-size: var(--font-size-3xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: var(--text-transform-label);
+  color: var(--color-success-text);
+}
+
+.review__verified svg {
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+}
+
+/* --- Related ------------------------------------------------------------------ */
+
+/* No spacing of its own: `.related` is a direct child of `.product-shell`, which
+   already spaces its children. The `div.container` inside it is what keeps the
+   rail aligned with the rest of the page while the band's background runs
+   edge to edge. */
+
+@media (prefers-reduced-motion: reduce) {
+  .accordion__marker {
+    transition: none;
+  }
+}

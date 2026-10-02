@@ -20,23 +20,11 @@
  * of pretending to submit an order.
  */
 import { el, clear } from '../../core/dom.js';
-import { icon } from '../../utils/icons.js';
-import { formatMoney, formatMoneyPrecise } from '../../utils/format.js';
+import { formatMoney } from '../../utils/format.js';
 import { button } from '../ui/button.js';
-import { stepper } from '../forms/stepper.js';
 import { createPanel } from '../feedback/overlay.js';
 import { emptyCartState } from '../feedback/states.js';
-import { shippingHint } from '../product/price.js';
-
-/** Why a line is flagged, in the shopper's words. */
-const UNAVAILABLE_COPY = {
-  missing: 'This product is no longer available',
-  inactive: 'This option has been withdrawn',
-  'sold-out': 'Sold out while it was in your cart',
-};
-
-/** How long the row takes to fade, before it is removed from the store. */
-const REMOVE_MS = 180;
+import { cartLineItem, cartShippingProgress } from './cart-line.js';
 
 /**
  * @param {object} options
@@ -59,7 +47,7 @@ export function createCartDrawer({ cart, toasts = null, onCheckout = null }) {
         clear(inner);
 
         const lines = cart.selectLines();
-        inner.append(shippingProgress(cart.selectShippingProgress(), lines.length > 0));
+        inner.append(cartShippingProgress(cart.selectShippingProgress(), lines.length > 0));
 
         if (lines.length === 0) {
           inner.append(emptyCartState());
@@ -108,81 +96,8 @@ export function createCartDrawer({ cart, toasts = null, onCheckout = null }) {
 
   function lineList(lines) {
     const list = el('ul.cart__lines', { role: 'list' });
-    for (const line of lines) list.append(cartLine(line));
+    for (const line of lines) list.append(cartLineItem({ line, cart, toasts }));
     return list;
-  }
-
-  function cartLine(line) {
-    const flagged = Boolean(line.unavailableReason);
-    const href = `/product.html?slug=${encodeURIComponent(line.slug)}`;
-
-    const remove = button({
-      variant: 'quiet-danger',
-      size: 'sm',
-      iconOnly: true,
-      icon: 'trash',
-      label: `Remove ${line.name} from cart`,
-      className: 'cart-line__remove',
-    }).element;
-
-    const root = el('li.cart-line', {
-      className: flagged ? 'cart-line cart-line--flagged' : 'cart-line',
-    });
-
-    root.append(
-      el('div.cart-line__top', {}, [
-        el('a.cart-line__media', { href, tabindex: '-1', 'aria-hidden': 'true' }, [
-          line.image
-            ? el('img', { src: line.image, alt: '', width: 96, height: 120, loading: 'lazy' })
-            : el('div.skeleton.skeleton--text', { style: 'block-size:100%' }),
-        ]),
-        el('div.cart-line__body', {}, [
-          el('div.cart-line__top', {}, [
-            el('a.cart-line__name', { href, text: line.name }),
-            remove,
-          ]),
-          line.variantName
-            ? el('p.cart-line__variant', {}, [
-                el('span.cart-line__variant-dot', { 'aria-hidden': 'true' }),
-                line.variantName,
-              ])
-            : null,
-          flagged ? flagNote(line.unavailableReason) : null,
-        ]),
-      ]),
-
-      el('div.cart-line__bottom', {}, [
-        flagged
-          ? el('span.cart-line__flag', {}, [icon('info'), UNAVAILABLE_COPY[line.unavailableReason]])
-          : el('span.cart-line__unit', { text: `${formatMoneyPrecise(line.unitPrice)} each` }),
-        flagged
-          ? el('span.cart-line__total', { text: formatMoney(line.lineTotal) })
-          : stepper({
-              value: line.quantity,
-              min: 1,
-              max: line.maxQuantity,
-              small: true,
-              label: `Quantity for ${line.name}`,
-              onChange: (next) => cart.setQuantity(line.variantId, next),
-            }).element,
-      ])
-    );
-
-    remove.addEventListener('click', () => {
-      // Fade first, then mutate. Removing from the store immediately would make
-      // the list jump, and the animation is the only evidence the tap landed.
-      root.classList.add('is-removing');
-      setTimeout(() => cart.remove(line.variantId), REMOVE_MS);
-
-      toasts?.pushToast({
-        title: `${line.name} removed`,
-        tone: 'info',
-        actionLabel: 'Undo',
-        onAction: () => cart.restoreLine(line),
-      });
-    });
-
-    return root;
   }
 
   function summary() {
@@ -191,7 +106,10 @@ export function createCartDrawer({ cart, toasts = null, onCheckout = null }) {
 
     return el('div.cart__summary', {}, [
       el('dl', {}, [
-        el('div.cart__row', {}, [el('dt', { text: 'Subtotal' }), el('dd', { text: formatMoney(subtotal) })]),
+        el('div.cart__row', {}, [
+          el('dt', { text: 'Subtotal' }),
+          el('dd', { text: formatMoney(subtotal) }),
+        ]),
         // Stated as unknown rather than invented. A made-up delivery fee becomes
         // a support ticket the moment it disagrees with the real one.
         el('div.cart__row.cart__row--muted', {}, [
@@ -242,44 +160,10 @@ export function createCartDrawer({ cart, toasts = null, onCheckout = null }) {
 
     return [
       checkout,
-      button({ label: 'View full cart', href: '/cart.html', variant: 'ghost', block: true }).element,
+      button({ label: 'View full cart', href: '/cart.html', variant: 'ghost', block: true })
+        .element,
     ];
   }
-}
-
-function flagNote(reason) {
-  return el('p.cart-line__sku', { text: UNAVAILABLE_COPY[reason] ?? 'No longer available' });
-}
-
-/**
- * The free-delivery nudge.
- *
- * `role="progressbar"` with the value in the attributes, because a shrinking
- * gap is exactly the kind of change that needs announcing - and it is only
- * re-rendered on real cart changes, so it is not announced on every keystroke.
- */
-function shippingProgress(progress, visible) {
-  const node = el('div.cart__progress', {
-    ...(visible ? {} : { hidden: true }),
-    role: 'progressbar',
-    'aria-valuemin': '0',
-    'aria-valuemax': '100',
-    'aria-valuenow': String(progress.percent),
-    'aria-valuetext': shippingHint(progress.remaining),
-  });
-
-  node.append(
-    el('p.cart__progress-text', {}, [
-      progress.qualifies
-        ? icon('truck', { className: 'cart__progress-icon' })
-        : el('strong', { text: shippingHint(progress.remaining) }),
-    ]),
-    el('div.cart__progress-track', {}, [
-      el('div.cart__progress-bar', { style: `inline-size:${progress.percent}%` }),
-    ])
-  );
-
-  return node;
 }
 
 export default { createCartDrawer };

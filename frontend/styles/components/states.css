@@ -65,9 +65,30 @@
 
 /* --- Copy ---------------------------------------------------------------- */
 
+/* The title and description are wrapped so they stack as a unit: without this the
+   icon, title and description become three separate flex children and the
+   paragraph's own margin decides the rhythm between them. */
+.state__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
 .state__title {
   font-size: var(--font-size-xl);
   line-height: var(--line-height-snug);
+}
+
+/* The optional summary of what was filtered out, e.g. "12 of 48 products". Sits
+   above the icon and is set as a label rather than as body copy. */
+.state__divider-text {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-widest);
+  text-transform: var(--text-transform-label);
+  color: var(--color-text-muted);
+  margin-block-end: var(--space-2xs);
 }
 
 .state--compact .state__title {

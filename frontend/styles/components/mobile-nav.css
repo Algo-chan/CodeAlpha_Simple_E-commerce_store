@@ -72,6 +72,16 @@
   color: var(--color-text);
 }
 
+/* The parent link shares its row with the disclosure button, so it has to take
+   the remaining width - otherwise the two are separated by an empty gap that
+   reads as a third, invisible target. */
+.mobile-nav__link--primary {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+/* A trailing icon inside a link is pushed to the far edge, which is what makes
+   a list of links read as one column of targets. */
 .mobile-nav__link svg.nav-mobile-trailing {
   inline-size: 0.875rem;
   block-size: 0.875rem;
@@ -95,14 +105,16 @@
   background-color: var(--color-surface-muted);
 }
 
-.mobile-nav__toggle svg {
+/* The chevron rotates a quarter turn rather than flipping, because the drawer
+   expands downward and a chevron pointing right opens that way too. */
+.mobile-nav__chevron {
   inline-size: 1rem;
   block-size: 1rem;
   transition: transform var(--duration-normal) var(--ease-standard);
 }
 
-.mobile-nav__toggle[aria-expanded='true'] svg {
-  transform: rotate(90deg);
+.mobile-nav__toggle[aria-expanded='true'] .mobile-nav__chevron {
+  transform: rotate(180deg);
 }
 
 /* --- Children -------------------------------------------------------------
@@ -129,6 +141,13 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   position: relative;
+}
+
+/* Every link in a sublist is a child of the parent row, at any depth. The class is
+   what makes that true independent of how the list is nested, which a
+   descendant selector alone would not guarantee. */
+.mobile-nav__link--child {
+  min-block-size: var(--control-height);
 }
 
 /* Depth marker. */

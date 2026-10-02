@@ -51,41 +51,58 @@ export function createHeader({ categories = [], cart, wishlist, activeSlug, hook
   const cartCount = el('span.header-action__count', { hidden: true, 'aria-hidden': 'true' });
   const wishlistCount = el('span.header-action__count', { hidden: true, 'aria-hidden': 'true' });
 
-  const cartButton = el('button.header-action', { type: 'button', 'aria-label': 'Open cart, empty' }, [
-    icon('cart'),
-    cartCount,
-  ]);
+  const cartButton = el(
+    'button.header-action',
+    { type: 'button', 'aria-label': 'Open cart, empty' },
+    [icon('cart'), cartCount]
+  );
 
-  const wishlistLink = el('a.header-action.header-action--saved', {
-    href: '/wishlist.html',
-    'aria-label': 'Saved items, none saved',
-  }, [icon('heart'), wishlistCount]);
+  const wishlistLink = el(
+    'a.header-action.header-action--saved',
+    {
+      href: '/wishlist.html',
+      'aria-label': 'Saved items, none saved',
+    },
+    [icon('heart'), wishlistCount]
+  );
 
   // Account is a later phase. It renders disabled with an explanation rather
   // than as a link that 404s, which is the difference between "not yet" and
   // "broken".
-  const accountAction = el('span.header-action.header-action--disabled', {
-    'aria-hidden': 'true',
-    title: 'Accounts arrive in a later phase',
-  }, [icon('user')]);
+  const accountAction = el(
+    'span.header-action.header-action--disabled',
+    {
+      'aria-hidden': 'true',
+      title: 'Accounts arrive in a later phase',
+    },
+    [icon('user')]
+  );
 
-  const searchTrigger = el('button.search-trigger', {
-    type: 'button',
-    'aria-label': 'Search products',
-    onClick: (event) => onOpenSearch?.(event.currentTarget),
-  }, [
-    icon('search', { className: 'search-trigger__icon' }),
-    el('span.search-trigger__label', { text: 'Search' }),
-    // A visible shortcut hint is noise on macOS and useful on Windows/Linux,
-    // so it is only rendered on the latter.
-    ...(isAppleLike() ? [] : [el('kbd.kbd', { text: '/' })]),
-  ]);
+  const searchTrigger = el(
+    'button.search-trigger',
+    {
+      type: 'button',
+      'aria-label': 'Search products',
+      onClick: (event) => onOpenSearch?.(event.currentTarget),
+    },
+    [
+      icon('search', { className: 'search-trigger__icon' }),
+      el('span.search-trigger__label', { text: 'Search' }),
+      // A visible shortcut hint is noise on macOS and useful on Windows/Linux,
+      // so it is only rendered on the latter.
+      ...(isAppleLike() ? [] : [el('kbd.kbd', { text: '/' })]),
+    ]
+  );
 
-  const mobileSearchTrigger = el('button.header-search-field', {
-    type: 'button',
-    'aria-label': 'Search products',
-    onClick: (event) => onOpenSearch?.(event.currentTarget),
-  }, [icon('search'), el('span', { text: 'Search products' })]);
+  const mobileSearchTrigger = el(
+    'button.header-search-field',
+    {
+      type: 'button',
+      'aria-label': 'Search products',
+      onClick: (event) => onOpenSearch?.(event.currentTarget),
+    },
+    [icon('search'), el('span', { text: 'Search products' })]
+  );
 
   const actions = el('div.site-header__actions', {}, [
     searchTrigger,
@@ -97,13 +114,17 @@ export function createHeader({ categories = [], cart, wishlist, activeSlug, hook
 
   /* --- Navigation ---------------------------------------------------------- */
 
-  const menuToggle = el('button.header-action.header-action--menu', {
-    type: 'button',
-    'aria-label': 'Open menu',
-    'aria-expanded': 'false',
-    'aria-controls': 'mobile-nav-panel',
-    onClick: (event) => mobileNav.open(event.currentTarget),
-  }, [icon('menu')]);
+  const menuToggle = el(
+    'button.header-action.header-action--menu',
+    {
+      type: 'button',
+      'aria-label': 'Open menu',
+      'aria-expanded': 'false',
+      'aria-controls': 'mobile-nav-panel',
+      onClick: (event) => mobileNav.open(event.currentTarget),
+    },
+    [icon('menu')]
+  );
 
   const desktopNav = createNav(categories, { activeSlug });
   const mobileNav = createMobileNav(categories, {
@@ -131,6 +152,10 @@ export function createHeader({ categories = [], cart, wishlist, activeSlug, hook
     // Selectors mean these only fire when the count actually changes, so an
     // unrelated re-render never animates the badge. A selector subscriber is
     // handed the selected value, not the whole store.
+    //
+    // `immediate` is required, not an optimisation: a returning shopper's basket
+    // is already in storage before the header exists, and without it the badge
+    // would read "empty" until they happened to change something.
     cart.subscribe(
       (count) => {
         setCounter(cartButton, cartCount, count, (value) =>
@@ -139,7 +164,7 @@ export function createHeader({ categories = [], cart, wishlist, activeSlug, hook
         bumpIfChanged(cartCount, lastCartCount, count);
         lastCartCount = count;
       },
-      { selector: cart.selectCount }
+      { selector: cart.selectCount, immediate: true }
     ),
 
     wishlist.subscribe(
@@ -153,7 +178,7 @@ export function createHeader({ categories = [], cart, wishlist, activeSlug, hook
         // The inverse treatment makes the saved state obvious across a grid.
         wishlistLink.classList.toggle('is-active', count > 0);
       },
-      { selector: wishlist.selectCount }
+      { selector: wishlist.selectCount, immediate: true }
     ),
 
     on(cartButton, 'click', () => onOpenCart?.()),

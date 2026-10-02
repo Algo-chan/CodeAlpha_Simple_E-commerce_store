@@ -199,6 +199,39 @@
   inline-size: var(--touch-target);
 }
 
+/* --- Icon internals --------------------------------------------------------
+   The slot exists so `setLoading()` can swap the icon for a spinner in place
+   without changing the button's width. Sizing is on the svg, not the slot, so
+   swapping the two never moves the label. */
+
+.btn__icon-slot {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.btn__icon {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+}
+
+.btn--sm .btn__icon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.btn--lg .btn__icon {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+/* A wrapper span around the text is what lets `setLabel()` rewrite the visible
+   text without touching the icon slot beside it. */
+.btn__label {
+  display: inline-flex;
+  align-items: center;
+  min-inline-size: 0;
+}
+
 /* --- Interaction states --------------------------------------------------- */
 
 .btn:active:not(:disabled):not([aria-disabled='true']) {

@@ -284,6 +284,46 @@
   color: var(--color-primary);
 }
 
+/* The menu toggle only exists below the breakpoint where the desktop nav is
+   hidden, so it is removed from the layout above it rather than left as an
+   invisible third tab stop. */
+.header-action--menu {
+  display: none;
+}
+
+@media (max-width: 63.99em) {
+  .header-action--menu {
+    display: grid;
+  }
+}
+
+/* Accounts are a later phase. The placeholder keeps its place in the action row
+   so the cart does not jump left when accounts arrive, but it must not look
+   tappable: no hover, no cursor, and no pointer events. `aria-hidden` and a
+   `title` are set in JS, since the explanation belongs to the control. */
+.header-action--disabled {
+  color: var(--color-text-subtle);
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+.header-action--disabled:hover {
+  color: var(--color-text-subtle);
+  background-color: transparent;
+}
+
+/* --- Search trigger --------------------------------------------------------
+   A text button rather than an icon button, because "Search" as a word is faster
+   to recognise than a magnifier at this size, and the `<kbd>` hint beside it only
+   renders on platforms where `/` is the shortcut. */
+
+.search-trigger__icon {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  flex-shrink: 0;
+}
+
 /* --- Category strip ------------------------------------------------------- */
 
 .category-strip {

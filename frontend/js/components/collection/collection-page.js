@@ -23,6 +23,9 @@ import { noResultsState } from '../feedback/states.js';
 import { pageTitle } from '../layout/page-header.js';
 import { createPanel, getPanel } from '../feedback/overlay.js';
 import { button } from '../ui/button.js';
+// `swatchColour` is shared with the product page's variant picker, so a facet and
+// a variant cannot disagree about what "clay" looks like.
+import { swatchColour } from '../product/variant-picker.js';
 
 /** How many attribute values a group shows before "Show more". */
 const COLLAPSED_VALUES = 6;
@@ -33,19 +36,31 @@ const COLLAPSED_VALUES = 6;
  * @param {object} options.catalogue catalogue store
  * @param {object} options.wishlist  wishlist store
  * @param {object} [options.ui]      ui store, for toasts
+ * @param {(product: object, trigger: HTMLElement) => void} [options.onQuickView]
  * @returns {{ element: HTMLElement, openFilters(trigger?): void, destroy(): void }}
  */
-export function createCollectionPage({ filters, catalogue, wishlist, ui = null }) {
+export function createCollectionPage({
+  filters,
+  catalogue,
+  wishlist,
+  ui = null,
+  onQuickView = null,
+}) {
   const cleanups = [];
 
-  const heading = el('div.page-header');
+  const heading = el('div.section-head');
   const toolbar = el('div.collection-toolbar');
   const chips = el('div.active-filters', { 'aria-label': 'Active filters' });
   const resultsHost = el('section.collection__results');
   const pagerHost = el('nav', { 'aria-label': 'Pagination' });
   const moreHost = el('div.collection-more');
 
-  const grid = productGrid({ skeletons: 8, wishlist, ariaLabel: 'Products' });
+  const grid = productGrid({
+    skeletons: 8,
+    wishlist,
+    ariaLabel: 'Products',
+    onQuickView,
+  });
 
   const element = el('div.collection-page', {}, [
     heading,
@@ -174,10 +189,13 @@ export function createCollectionPage({ filters, catalogue, wishlist, ui = null }
 
     clear(heading);
     heading.append(
-      pageTitle(state.search ? `Results for “${state.search}”` : (category?.name ?? 'All products'), {
-        eyebrow: trail.length > 0 ? trail.map((node) => node.name).join(' / ') : 'Catalogue',
-        lede: category?.description ?? `${formatCount(total, 'product')} to browse.`,
-      })
+      pageTitle(
+        state.search ? `Results for “${state.search}”` : (category?.name ?? 'All products'),
+        {
+          eyebrow: trail.length > 0 ? trail.map((node) => node.name).join(' / ') : 'Catalogue',
+          lede: category?.description ?? `${formatCount(total, 'product')} to browse.`,
+        }
+      )
     );
   }
 
@@ -342,7 +360,9 @@ function sortControl(current, onChange) {
   const select = el('select.select', { 'aria-label': 'Sort products' });
 
   for (const [value, option] of Object.entries(SORT_OPTIONS)) {
-    select.append(el('option', { value, text: option.label, ...(value === current ? { selected: true } : {}) }));
+    select.append(
+      el('option', { value, text: option.label, ...(value === current ? { selected: true } : {}) })
+    );
   }
 
   on(select, 'change', (event) => onChange(event.target.value));
@@ -364,7 +384,11 @@ function filterSummary(filters) {
     }),
     count === 0
       ? null
-      : el('button.filter-summary__clear', { type: 'button', text: 'Clear all', dataset: { clearFilters: '' } }),
+      : el('button.filter-summary__clear', {
+          type: 'button',
+          text: 'Clear all',
+          dataset: { clearFilters: '' },
+        }),
   ]);
 }
 
@@ -385,7 +409,9 @@ function checkboxRow({ checked, label, facet, count = null }) {
   return el('label.filter-radio-row', {}, [
     el('input', { type: 'checkbox', checked: checked || null, dataset: { facet }, value: facet }),
     el('span.filter-radio-row__label', { text: label }),
-    count === null ? null : el('span.filter-radio-row__count', { text: formatCount(count, 'product') }),
+    count === null
+      ? null
+      : el('span.filter-radio-row__count', { text: formatCount(count, 'product') }),
   ]);
 }
 
@@ -444,6 +470,29 @@ function attributeGroups(filters, facets) {
     const visible = collapse ? facet.values.slice(0, COLLAPSED_VALUES) : facet.values;
     const hidden = collapse ? facet.values.slice(COLLAPSED_VALUES) : [];
 
+    // Colour gets a swatch chip *beside* the row rather than instead of the
+    // label: the row must stay a row, because it also carries the value name and
+    // the count. A colour alone cannot be read by anyone who cannot see it, so
+    // "Black" is never dropped in favour of a brown dot.
+    const option = (entry, selected) =>
+      el('label.filter-radio-row', { className: isColour ? 'filter-radio-row--swatch' : null }, [
+        el('input', {
+          type: 'checkbox',
+          value: entry.value,
+          checked: selected || null,
+          dataset: { facet: 'attribute', key: facet.key },
+        }),
+        isColour
+          ? el(
+              'span.filter-swatch',
+              { 'aria-hidden': 'true', style: `--swatch-color:${swatchColour(entry.value)}` },
+              [el('span.filter-swatch__chip')]
+            )
+          : null,
+        el('span.filter-radio-row__label', { text: entry.label }),
+        el('span.filter-radio-row__count', { text: String(entry.count) }),
+      ]);
+
     return filterGroup({
       title: facet.label,
       open: active.length > 0,
@@ -451,35 +500,11 @@ function attributeGroups(filters, facets) {
         el(
           'div.filter-group__options',
           isColour ? { className: 'filter-group__options filter-group__swatches' } : {},
-          visible.map((entry) =>
-            el('label.filter-radio-row', isColour ? { className: 'filter-radio-row filter-swatch' } : {}, [
-              el('input', {
-                type: 'checkbox',
-                value: entry.value,
-                checked: active.includes(entry.value) || null,
-                dataset: { facet: 'attribute', key: facet.key },
-              }),
-              isColour
-                ? el('span.filter-swatch__chip', { dataset: { colour: entry.value }, 'aria-hidden': 'true' })
-                : null,
-              el('span.filter-radio-row__label', { text: entry.label }),
-              el('span.filter-radio-row__count', { text: String(entry.count) }),
-            ])
-          )
+          visible.map((entry) => option(entry, active.includes(entry.value)))
         ),
         hidden.length > 0
           ? el('div.filter-group__hidden', { hidden: true }, [
-              ...hidden.map((entry) =>
-                el('label.filter-radio-row', {}, [
-                  el('input', {
-                    type: 'checkbox',
-                    value: entry.value,
-                    dataset: { facet: 'attribute', key: facet.key },
-                  }),
-                  el('span.filter-radio-row__label', { text: entry.label }),
-                  el('span.filter-radio-row__count', { text: String(entry.count) }),
-                ])
-              ),
+              ...hidden.map((entry) => option(entry, false)),
             ])
           : null,
         hidden.length > 0

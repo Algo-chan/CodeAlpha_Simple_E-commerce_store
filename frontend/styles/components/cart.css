@@ -46,6 +46,17 @@
   transition: inline-size var(--duration-slow) var(--ease-standard);
 }
 
+/* The truck marks the state where the basket has reached the free-delivery
+   threshold. Without a size it inherits the icon default and renders larger than
+   the line it sits on. */
+.cart__progress-icon {
+  display: inline-block;
+  vertical-align: -0.15em;
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  margin-inline-end: var(--space-3xs);
+}
+
 /* --- Lines ----------------------------------------------------------------- */
 
 .cart__lines {
@@ -78,6 +89,36 @@
   transition:
     opacity var(--duration-fast) var(--ease-standard),
     transform var(--duration-normal) var(--ease-exit);
+}
+
+/* The drawer's whole body is this one flex column. The line list is the only
+   part allowed to scroll; the progress meter and the totals stay put, because a
+   subtotal that scrolls out of view while the shopper is changing a quantity is
+   worse than not showing one at all. */
+.cart-panel {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+.cart-panel .cart__lines {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.cart-panel .cart__summary {
+  flex-shrink: 0;
+}
+
+/* On the cart page the meter is a standalone block rather than the drawer's
+   pinned header, so it needs its own rounded panel and vertical rhythm. */
+.cart-page .cart__progress {
+  border: var(--border-width-hairline) solid var(--color-primary-border);
+  border-radius: var(--radius-lg);
+  margin-block: var(--space-lg);
 }
 
 .cart-line__media {
@@ -168,6 +209,34 @@
 .cart-line__sku {
   font-family: var(--font-mono);
   color: var(--color-text-subtle);
+}
+
+/* A line that cannot be bought stays in the basket, flagged rather than deleted.
+   The flag is a left rule plus a tinted field, not a red background: the row is
+   still readable and still looks like part of the basket rather than an error
+   page, which matters because the shopper's own items are in it. */
+.cart-line--flagged {
+  background-color: var(--color-warning-bg);
+  box-shadow: inset 3px 0 0 var(--color-warning-border);
+}
+
+.cart-line--flagged:hover {
+  background-color: var(--color-warning-bg);
+}
+
+/* The reason is prose, not a code - "Sold out while it was in your cart" - so it
+   takes the sans face instead of the monospace the SKU uses. */
+.cart-line--flagged .cart-line__sku {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-2xs);
+  color: var(--color-warning-text);
+}
+
+/* A flagged line has no stepper (the quantity cannot be changed), so the total
+   goes on the right on its own rather than being paired with nothing. */
+.cart-line--flagged .cart-line__bottom {
+  justify-content: flex-start;
+  gap: var(--space-md);
 }
 
 .cart-line__bottom {
@@ -274,6 +343,22 @@
   line-height: var(--line-height-snug);
 }
 
+/* Sits directly under the checkout button it replaces. It takes focus when the
+   shopper asks why checkout is inert, so it needs a visible ring of its own
+   rather than relying on the button's - which is gone by then. */
+.cart__note--inline {
+  padding: var(--space-xs) var(--space-sm);
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+.cart__note--inline:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .cart__actions {
   display: flex;
   flex-direction: column;
@@ -307,6 +392,18 @@
 }
 
 /* --- Cart page variant ----------------------------------------------------- */
+
+/* --- Page frame ------------------------------------------------------------
+   The container and the vertical rhythm in one element: the breadcrumb, the
+   two-column grid and the recommendations are a single column of content, so the
+   gutters and the gaps are decided here once. `.collection-page` and
+   `.wishlist-page` have the same contract. */
+
+.cart-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
 
 .cart-page {
   display: grid;

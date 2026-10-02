@@ -175,3 +175,25 @@
   gap: var(--space-2xs);
   flex-wrap: wrap;
 }
+
+/* --- Size modifiers --------------------------------------------------------
+   `.skeleton-stack` is used at three scales: page blocks, cart lines and inline
+   text. Only the gap differs, so the scale lives in one modifier instead of a
+   second set of component names. */
+
+.skeleton-stack--xs {
+  gap: var(--space-3xs);
+}
+
+.skeleton-stack--sm {
+  gap: var(--space-2xs);
+}
+
+/* --- Grid while loading ----------------------------------------------------
+   The real grid fades its own content in, so this modifier only needs to stop the
+   skeletons being interactive. `pointer-events: none` rather than
+   `visibility: hidden`, so the shape is still painted. */
+
+.product-grid--loading {
+  pointer-events: none;
+}

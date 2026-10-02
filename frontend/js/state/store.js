@@ -119,11 +119,14 @@ export function createStore(initialState, options = {}) {
     const entry = {
       listener,
       selector: selector ?? null,
-      last: selector ? selector(state) : null,
+      // `undefined` is the "never computed" sentinel, not `null`: a selector is
+      // perfectly allowed to return `null`, and treating that as "no value yet"
+      // would make `immediate` hand the whole state to a selector subscriber.
+      last: selector ? selector(state) : undefined,
     };
     subscribers.add(entry);
 
-    if (immediate) listener(entry.last ?? state, entry.last ?? state);
+    if (immediate) listener(entry.last, entry.last);
 
     return () => subscribers.delete(entry);
   }
