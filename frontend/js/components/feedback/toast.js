@@ -84,11 +84,15 @@ export function createToastRegion({ store }) {
     }
 
     node.append(
-      el('button.toast__close', {
-        type: 'button',
-        'aria-label': 'Dismiss notification',
-        onClick: () => store.dismissToast(toast.id),
-      }, [icon('close')])
+      el(
+        'button.toast__close',
+        {
+          type: 'button',
+          'aria-label': 'Dismiss notification',
+          onClick: () => store.dismissToast(toast.id),
+        },
+        [icon('close')]
+      )
     );
 
     // Hovering or tabbing into a toast pauses its timer.
@@ -123,7 +127,10 @@ export function createToastRegion({ store }) {
     }),
   ];
 
-  const unsubscribe = store.subscribe(({ toasts }) => render(toasts), {
+  // A selector subscriber is handed the *selection*, not the whole state, so the
+  // listener takes the array directly. Destructuring `{ toasts }` here would pass
+  // `undefined` to `render`, which then fails on `for (const toast of toasts)`.
+  const unsubscribe = store.subscribe(render, {
     selector: (state) => state.toasts,
     immediate: true,
   });
