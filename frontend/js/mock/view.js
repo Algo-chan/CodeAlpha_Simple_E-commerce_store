@@ -385,11 +385,15 @@ function summariseRating(reviews) {
 function buildBadges({ is_on_sale, discount_percent, is_low_stock, in_stock, is_digital, is_featured }) {
   const badges = [];
 
-  if (is_on_sale && discount_percent) badges.push(`sale-${discount_percent}`);
-  if (is_digital) badges.push('digital');
+  // Sold out wins outright. It is the only badge that changes what the shopper
+  // can do, so it must never be pushed off a card by a marketing one.
   if (!in_stock) badges.push('sold-out');
-  else if (is_low_stock) badges.push('low-stock');
-  if (is_featured) badges.push('featured');
+  else {
+    if (is_on_sale && discount_percent) badges.push(`sale-${discount_percent}`);
+    if (is_low_stock) badges.push('low-stock');
+    if (is_digital) badges.push('digital');
+    if (is_featured) badges.push('featured');
+  }
 
   return badges.slice(0, 2);
 }

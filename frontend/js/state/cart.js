@@ -31,7 +31,8 @@ export const FREE_SHIPPING_THRESHOLD_MINOR = majorToMinor(5000);
 const initialState = {
   /** @type {Array<{variantId:string, productId:string, slug:string, name:string,
    *                variantName:string|null, image:string|null,
-   *                unitPrice:number, quantity:number, maxQuantity:number}>} */
+   *                unitPrice:number, quantity:number, maxQuantity:number,
+   *                unavailableReason?: 'missing'|'inactive'|'sold-out'|null}>} */
   lines: [],
   isOpen: false,
   /** Product id of the most recent add, so a card can flash "Added". */
@@ -137,13 +138,40 @@ export function createCartStore(deps = {}) {
     return setQuantity(variantId, line.quantity + delta);
   }
 
-  /** @param {number} variantId */
+  /** @param {string} variantId */
   function remove(variantId) {
     store.setState((prev) => ({
       lines: prev.lines.filter((item) => item.variantId !== variantId),
       lastAddedVariantId:
         prev.lastAddedVariantId === variantId ? null : prev.lastAddedVariantId,
     }));
+  }
+
+  /**
+   * Puts a captured line back exactly as it was. This exists for undo.
+   *
+   * Rebuilding the line by re-adding a hand-assembled variant looks equivalent
+   * and is not: a synthetic variant object carries no availability of its own,
+   * so an undo could resurrect something that sold out a second ago. Restoring
+   * the captured line keeps undo honest, and `reconcile` still re-checks it
+   * against the catalogue.
+   *
+   * @param {object} line a previously removed line
+   */
+  function restoreLine(line) {
+    if (!line || line.variantId === undefined) return { ok: false, reason: 'invalid' };
+
+    const { lines } = store.getState();
+    if (lines.some((item) => item.variantId === line.variantId)) {
+      return { ok: false, reason: 'already-in-cart' };
+    }
+
+    store.setState((prev) => ({
+      lines: [...prev.lines, { ...line, unavailableReason: null }],
+      lastAddedVariantId: line.variantId,
+    }));
+
+    return { ok: true };
   }
 
   function clear() {
@@ -170,28 +198,43 @@ export function createCartStore(deps = {}) {
    * Called after the mock catalogue loads and whenever the shopper returns to
    * the tab. This is what stops a stale persisted basket from quoting a price
    * or a quantity that no longer exists.
+   *
+   * An unbuyable line is FLAGGED, not deleted. Silently dropping it would make
+   * a basket change without explanation, and a shopper who comes back to a
+   * smaller basket has no way to tell whether they imagined the item. Flagging
+   * lets the drawer say "no longer available" and offer removal, which is the
+   * only honest handling of a line that cannot be bought.
    */
   function reconcile() {
     const { lines } = store.getState();
     if (lines.length === 0) return;
 
-    const next = [];
     let changed = false;
-
-    for (const line of lines) {
+    const next = lines.map((line) => {
       const variant = resolveVariant(line.variantId);
-      if (!variant || variant.stock?.is_active === false) {
+
+      if (!variant) {
         changed = true;
-        continue; // The line is dropped; the UI reports it separately.
+        return { ...line, unavailableReason: 'missing' };
+      }
+
+      if (variant.stock?.is_active === false) {
+        changed = true;
+        return { ...line, unavailableReason: 'inactive' };
       }
 
       const ceiling = resolveCeiling(variant);
+      // `stock === null` means digital or untracked, so there is no ceiling.
+      const unavailableReason = ceiling !== null && ceiling <= 0 ? 'sold-out' : null;
       const quantity =
-        ceiling === null ? line.quantity : Math.min(line.quantity, Math.max(1, ceiling));
+        unavailableReason === 'sold-out'
+          ? line.quantity
+          : ceiling === null
+            ? line.quantity
+            : Math.min(line.quantity, Math.max(1, ceiling));
       const unitPrice = Number(variant.price_minor) || 0;
 
-      if (quantity !== line.quantity || unitPrice !== line.unitPrice) changed = true;
-      next.push({
+      const updated = {
         ...line,
         name: variant.product?.name ?? line.name,
         slug: variant.product?.slug ?? line.slug,
@@ -199,44 +242,77 @@ export function createCartStore(deps = {}) {
         unitPrice,
         quantity,
         maxQuantity: ceiling ?? MAX_QUANTITY,
-      });
-    }
+        unavailableReason,
+      };
+
+      if (
+        quantity !== line.quantity ||
+        unitPrice !== line.unitPrice ||
+        unavailableReason !== (line.unavailableReason ?? null)
+      ) {
+        changed = true;
+      }
+
+      return updated;
+    });
 
     if (changed) store.setState({ lines: next });
   }
 
-  /* --- Derived values -------------------------------------------------------- */
+/* --- Derived values -------------------------------------------------------- */
 
-  const selectLines = store.select(({ lines }) =>
+const selectLines = store.select(({ lines }) =>
     lines.map((line) => ({ ...line, lineTotal: line.unitPrice * line.quantity }))
   );
 
-  const selectCount = store.select(({ lines }) =>
-    lines.reduce((total, line) => total + line.quantity, 0)
+const selectCount = store.select(({ lines }) =>
+    lines.reduce((total, line) => total + (line.unavailableReason ? 0 : line.quantity), 0)
   );
 
-  const selectSubtotal = store.select(({ lines }) =>
-    lines.reduce((total, line) => total + line.unitPrice * line.quantity, 0)
+/**
+   * Totals ignore flagged lines.
+   *
+   * A line that can no longer be bought must not inflate the subtotal or count
+   * towards free delivery - the shopper would be told they qualify for free
+   * shipping on the strength of an item they cannot order, and would then find
+   * out at checkout. It stays in `lines` so the drawer can explain itself.
+   */
+const selectSubtotal = store.select(({ lines }) =>
+    lines.reduce(
+      (total, line) => total + (line.unavailableReason ? 0 : line.unitPrice * line.quantity),
+      0
+    )
   );
 
-  const selectIsEmpty = store.select(({ lines }) => lines.length === 0);
+const selectIsEmpty = store.select(({ lines }) => lines.length === 0);
 
-  const selectShippingProgress = store.select(({ lines }) => {
-    const subtotal = lines.reduce((total, line) => total + line.unitPrice * line.quantity, 0);
+/** True when every line has been flagged, i.e. nothing in here is buyable. */
+const selectIsUnfulfillable = store.select(
+  ({ lines }) => lines.length > 0 && lines.every((line) => Boolean(line.unavailableReason))
+);
+
+const selectShippingProgress = store.select(({ lines }) => {
+    const subtotal = lines.reduce(
+      (total, line) => total + (line.unavailableReason ? 0 : line.unitPrice * line.quantity),
+      0
+    );
     const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD_MINOR - subtotal);
     return {
       remaining,
       qualifies: subtotal >= FREE_SHIPPING_THRESHOLD_MINOR,
-      percent: Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD_MINOR) * 100)),
+      // A zero subtotal would divide by the threshold and produce NaN, which
+      // renders as a bar with no width rather than an empty one.
+      percent: subtotal <= 0 ? 0 : Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD_MINOR) * 100)),
     };
   });
 
-  return {
+return {
     ...store,
     add,
     setQuantity,
     step,
     remove,
+    restoreLine,
     clear,
     open,
     close,
@@ -246,6 +322,7 @@ export function createCartStore(deps = {}) {
     selectCount,
     selectSubtotal,
     selectIsEmpty,
+    selectIsUnfulfillable,
     selectShippingProgress,
   };
 }

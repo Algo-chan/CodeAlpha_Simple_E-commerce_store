@@ -27,6 +27,8 @@ const initialState = {
   products: [],
   /** @type {Array<object>} normalised categories, tree shape */
   categories: [],
+  /** Depth-first flat copy of `categories`, parents before children. */
+  categoryList: [],
   /**
    * All maps are keyed by String(id). Phase 2 uses UUID primary keys, and
    * `Number(uuid)` is NaN, so normalising to string once here means no caller
@@ -40,8 +42,6 @@ const initialState = {
   slugMap: new Map(),
   /** @type {Map<string, object>} category id -> category */
   categoryMap: new Map(),
-  /** @type {string[]} category ids in display order, parents before children */
-  categoryOrder: [],
   /** Millisecond timestamps of the last load, shown as "prices as of ...". */
   loadedAt: null,
 };
@@ -64,21 +64,22 @@ export function createCatalogueStore() {
       }
     }
 
-    const categoryMap = new Map();
-    for (const category of flattenCategories(categories)) {
-      categoryMap.set(String(category.id), category);
-    }
+    // Flattened once here. The filter panel and the collection page both need
+    // the flat list on every render, and re-walking the tree per render is the
+    // kind of cost that shows up as a stutter when six facets are open.
+    const categoryList = flattenCategories(categories);
+    const categoryMap = new Map(categoryList.map((category) => [String(category.id), category]));
 
     store.setState({
       status: LOAD_STATUS.ready,
       error: null,
       products,
       categories,
+      categoryList,
       productMap,
       slugMap,
       variantMap,
       categoryMap,
-      categoryOrder: categoryMap.keys(),
       loadedAt: Date.now(),
     });
   }
@@ -251,6 +252,8 @@ export function createCatalogueStore() {
     selectNewArrivals,
     selectRelated,
     selectFacets,
+    /** Depth-first flat copy of `categories`, parents before children. */
+    selectCategories: store.select(({ categoryList }) => categoryList),
   };
 }
 

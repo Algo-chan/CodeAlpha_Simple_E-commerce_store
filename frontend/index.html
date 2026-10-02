@@ -3,83 +3,80 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Aster &amp; Oak &middot; Considered clothing, footwear and homeware</title>
     <meta
       name="description"
-      content="Modern single-vendor e-commerce storefront - architecture setup phase."
+      content="Aster &amp; Oak selects considered clothing, footwear and homeware for how they hold up to daily use. Delivered across Addis Ababa."
     />
-    <title>Storefront &middot; Setup</title>
-    <link rel="stylesheet" href="/css/main.css" />
+
+    <!-- The theme colour is what a mobile browser tints its own chrome with, so
+         it matches the canvas rather than being left to guess. -->
+    <meta name="theme-color" content="#faf7f2" />
+
+    <!-- Open Graph, so a shared link is not a blank card. Absolute image URLs
+         are required here and are only meaningful in a deployed environment,
+         so the logo is inlined as a data URI. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Aster &amp; Oak" />
+    <meta property="og:site_name" content="Aster &amp; Oak" />
+    <meta
+      property="og:description"
+      content="Considered clothing, footwear and homeware, selected for how it holds up to daily use."
+    />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles/main.css" />
+
+    <!-- Self-hosted webfonts, loaded non-blockingly: the stylesheet is applied
+         first and the display face swaps in when it arrives, so text is never
+         invisible waiting on a network round trip. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      rel="icon"
-      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>&#9670;</text></svg>"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+      />
+    </noscript>
   </head>
 
   <body>
+    <!-- The skip link is the first focusable thing on the page. Without it a
+         keyboard user has to Tab through the entire navigation on every page
+         load to reach the content. -->
     <a class="skip-link" href="#main-content">Skip to main content</a>
 
+    <!-- The header, footer, cart drawer, search dialog and toast region are
+         mounted here by js/app.js. They are built in script because they are
+         reactive; see the comment at the top of app.js. -->
     <div class="page">
-      <!-- Navbar partial is injected here by js/main.js -->
-      <div data-partial="navbar"></div>
-
       <main class="page__main" id="main-content">
         <div class="container">
-          <section class="hero" aria-labelledby="page-title">
-            <h1 class="hero__title" id="page-title">Architecture setup in progress</h1>
-            <p class="hero__subtitle mt-4">
-              The storefront UI, catalogue, cart and checkout are intentionally not built yet. This
-              page exists to verify that the frontend, the REST API and PostgreSQL are wired
-              together correctly.
-            </p>
-          </section>
-
-          <section class="page__section" aria-labelledby="status-title">
-            <h2 class="mb-4" id="status-title">System status</h2>
-
-            <div class="card">
-              <div class="card__body">
-                <div class="status-list" data-health-status>
-                  <div class="status-list__row">
-                    <span class="status-list__label">API server</span>
-                    <span class="badge">checking…</span>
-                  </div>
-                  <div class="status-list__row">
-                    <span class="status-list__label">Database</span>
-                    <span class="badge">checking…</span>
-                  </div>
-                  <div class="status-list__row">
-                    <span class="status-list__label">Environment</span>
-                    <span class="badge">…</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <p class="mt-6 text-sm text-muted">
-              Endpoint: <code>GET /api/v1/health</code> &mdash; see
-              <code>docs/architecture.md</code> for how a request travels from the browser to
-              PostgreSQL.
-            </p>
-          </section>
-
-          <section class="page__section" aria-labelledby="next-title">
-            <h2 class="mb-4" id="next-title">What comes next</h2>
-            <ul class="stack list-reset text-muted">
-              <li>Brand identity, typography and the full design system</li>
-              <li>ER diagram and PostgreSQL schema, then migrations</li>
-              <li>Authentication (customers + admin) and role-based access control</li>
-              <li>Catalogue: categories, products, variants, search and filtering</li>
-              <li>Cart, wishlist, checkout, Cash on Delivery and orders</li>
-              <li>Admin dashboard, inventory, discounts and analytics</li>
-            </ul>
-          </section>
+          <div class="skeleton-page">
+            <div class="skeleton skeleton--title"></div>
+            <div class="skeleton skeleton--text"></div>
+          </div>
         </div>
       </main>
-
-      <!-- Footer partial is injected here by js/main.js -->
-      <div data-partial="footer"></div>
     </div>
 
-    <script type="module" src="/js/main.js" data-page="home"></script>
+    <noscript>
+      <div class="container noscript-notice">
+        <h1>This shop needs JavaScript</h1>
+        <p>
+          The catalogue, cart and saved items all run in the browser. Please enable JavaScript, or
+          <a href="/collection.html">browse the collection</a>.
+        </p>
+      </div>
+    </noscript>
+
+    <script type="module" src="/js/app.js" data-page="home"></script>
   </body>
 </html>

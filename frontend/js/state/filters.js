@@ -187,17 +187,23 @@ export function createFilterStore() {
 
 /**
  * Applies every facet. Products must already be normalised by the mock layer.
+ *
  * @param {FilterableProduct[]} products
  * @param {object} filters
+ * @param {{ categoryIds?: Set<string>|null }} [options] the selected category and
+ *        its descendants, precomputed by the caller
  * @returns {FilterableProduct[]}
  */
-export function filterProducts(products, filters) {
+export function filterProducts(products, filters, { categoryIds = null } = {}) {
   const needle = (filters.search ?? '').toLowerCase().trim();
 
   return products.filter((product) => {
     if (product.is_active === false) return false;
 
-    if (filters.categoryId && String(product.category_id) !== String(filters.categoryId)) {
+    // A category filter matches the category and everything beneath it. Clicking
+    // "Home & Living" and getting an empty grid because its products sit in
+    // "Lighting" is the most common way a faceted storefront feels broken.
+    if (filters.categoryId && !categoryMatches(product, filters.categoryId, categoryIds)) {
       return false;
     }
 
@@ -219,6 +225,19 @@ export function filterProducts(products, filters) {
 
     return matchesAttributes(product, filters.attributes);
   });
+}
+
+/**
+ * True when the product sits in the selected category or any descendant of it.
+ *
+ * `categoryIds` is passed in precomputed from the category tree, because walking
+ * the tree for every product on every render would be O(products x categories)
+ * each time a price input fires. Falls back to an exact id match when the set is
+ * absent, so a caller that only knows one category still gets correct results.
+ */
+function categoryMatches(product, categoryId, categoryIds) {
+  if (categoryIds && categoryIds.size > 0) return categoryIds.has(String(product.category_id));
+  return String(product.category_id) === String(categoryId);
 }
 
 /**
@@ -265,11 +284,12 @@ export function sortProducts(products, sort) {
  *
  * @param {FilterableProduct[]} products
  * @param {object} filters
+ * @param {{ categoryIds?: Set<string>|null }} [options]
  * @returns {{ items: FilterableProduct[], total: number, totalPages: number,
  *             page: number, from: number, to: number }}
  */
-export function queryProducts(products, filters) {
-  const filtered = filterProducts(products, filters);
+export function queryProducts(products, filters, options = {}) {
+  const filtered = filterProducts(products, filters, options);
   const sorted = sortProducts(filtered, filters.sort);
 
   const perPage = Math.max(1, Number(filters.perPage) || 12);

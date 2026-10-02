@@ -66,12 +66,27 @@ export function el(tag, props = {}, children = []) {
   return node;
 }
 
-/** Appends children; strings become text nodes, so there is no injection path. */
+/**
+ * Appends children; strings become text nodes, so there is no injection path.
+ *
+ * Trusted markup from `raw()` / `html` arrives as a DocumentFragment or a
+ * RAW-tagged wrapper and is inserted as nodes. Handling it here - rather than in
+ * every call site - is what stops `raw()` from silently rendering the string
+ * "[object Object]" when it is passed to `el` directly, which is exactly how a
+ * helper like the star rating would quietly render nothing.
+ */
 export function append(parent, children = []) {
   const list = Array.isArray(children) ? children : [children];
   for (const child of list) {
     if (child === null || child === undefined || child === false || child === '') continue;
-    parent.append(child instanceof Node ? child : document.createTextNode(String(child)));
+
+    if (child instanceof Node) {
+      parent.append(child);
+    } else if (typeof child === 'object' && RAW in child) {
+      parent.append(fragmentFromMarkup(child[RAW]));
+    } else {
+      parent.append(document.createTextNode(String(child)));
+    }
   }
   return parent;
 }
@@ -97,6 +112,9 @@ export function escapeHtml(value) {
 /**
  * Marks a string as pre-escaped, trusted markup.
  * Only ever use with build-time constants (icons, static fragments).
+ *
+ * The result is not a node: `append` recognises the RAW tag and parses it, so
+ * the same value can be used inside an `html` template and inside `el` children.
  * @param {string} value
  */
 export function raw(value) {

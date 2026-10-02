@@ -209,20 +209,7 @@ function newsletterColumn() {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Shared with pages                                                            */
+/* Internals                                                                    */
 /* -------------------------------------------------------------------------- */
 
-/**
- * The single h1 for a page. Exactly one per document, and it is the first
- * thing in the main region, so a screen reader user knows what page they are on
- * before any of the navigation is read out.
- */
-export function pageTitle(text, { eyebrow = null, lede = null, level = 'h1' } = {}) {
-  return el('div.page-header__text', {}, [
-    eyebrow ? el('p.page-header__eyebrow', { text: eyebrow }) : null,
-    el(`${level}.page-header__title`, { text }),
-    lede ? el('p.page-header__lede', { text: lede }) : null,
-  ]);
-}
-
-export default { createFooter, pageTitle };
+export default { createFooter };

@@ -17,7 +17,7 @@
  *
  * Panels are declarative: give `mount` a list of definitions and it wires them.
  */
-import { el, qs, on, nextFrame } from '../../core/dom.js';
+import { el, qs, qsa, on, nextFrame } from '../../core/dom.js';
 import { trapFocus, focusPanel } from '../../utils/focus-trap.js';
 import { lockScroll } from '../../utils/scroll-lock.js';
 import { button } from '../ui/button.js';
@@ -71,7 +71,10 @@ export function createPanel({
     {
       id: `${id}-panel`,
       className: buildPanelClass(variant, position),
-      role: variant === 'modal' ? 'dialog' : 'dialog',
+      // Every variant is a dialog. A drawer and a sheet are dialogs that happen
+      // to be anchored to an edge; giving them `role="region"` would drop the
+      // modal semantics the rest of this component depends on.
+      role: 'dialog',
       // `aria-modal` is a promise, not a decoration: it tells assistive tech the
       // rest of the page is unavailable. It is only valid while open, so it is
       // added on open and removed on close.
@@ -128,7 +131,12 @@ export function createPanel({
     body,
     footer: qs('[data-overlay-footer]', panel),
     close: () => api.close(),
-    onCleanup: (fn) => state.cleanups.push(fn),
+    /**
+     * Registers teardown work. Accepts a function or an array of them, because
+     * a component registering four listeners should not need four calls - and
+     * passing an array is the natural way to write that.
+     */
+    onCleanup: (fn) => state.cleanups.push(...[fn].flat()),
   };
 
   const content = render(context);
@@ -186,8 +194,7 @@ export function createPanel({
 
       // Inert everything outside before moving focus, so no focus event lands
       // on a page element that is about to become inert.
-      document.body.dataset.overlayOpen = 'true';
-      setBackgroundInert(root, true);
+      syncInertness();
 
       state.releaseScroll = lockScroll();
       pushHistoryState(id);
@@ -217,15 +224,9 @@ export function createPanel({
       const finish = () => {
         root.hidden = true;
         root.setAttribute('aria-hidden', 'true');
-
-        // Only un-inert the page when this was the last overlay. With the cart
-        // drawer still open behind the quick view, clearing inert here would
-        // hand focus back to the page while a panel is on screen.
-        const anotherOpen = Boolean(qs('.overlay:not([hidden])', document));
-        if (!anotherOpen) {
-          setBackgroundInert(root, false);
-          delete document.body.dataset.overlayOpen;
-        }
+        // Recomputed rather than toggled: another panel may still be open, and
+        // this one may have been the reason an underlying panel was inert.
+        syncInertness();
 
         state.releaseScroll?.();
         state.releaseScroll = null;
@@ -289,24 +290,35 @@ function buildPanelClass(variant, position) {
 }
 
 /**
- * Makes the rest of the document inert while a panel is open.
+ * Recomputes which parts of the page are inert, from the set of currently open
+ * panels rather than from a counter.
+ *
+ * A counter or a paired enable/disable cannot express the stacked case: with the
+ * cart drawer open and the quick view on top of it, the drawer's own root is
+ * inert, so un-inerting "the background" on close either skips the drawer (leaving
+ * it unusable) or clears the page while a panel is still on screen. Deriving the
+ * answer from the DOM each time makes both cases fall out for free.
  *
  * `inert` is the correct tool and is supported in every current browser. The
- * `aria-hidden` fallback covers older engines - and the is-<panel> guard
- * matters, because aria-hidden on a node containing the focus is an ARIA
- * violation that throws focus to the body and loses the shopper's place.
+ * `aria-hidden` fallback covers older engines - and the is-open guard matters,
+ * because aria-hidden on a node containing the focus is an ARIA violation that
+ * throws focus to the body and loses the shopper's place.
  */
-function setBackgroundInert(panelRoot, enabled) {
+function syncInertness() {
+  const open = qsa('.overlay:not([hidden])', document);
+
+  if (open.length === 0) delete document.body.dataset.overlayOpen;
+  else document.body.dataset.overlayOpen = 'true';
+
   for (const sibling of document.body.children) {
-    if (sibling === panelRoot) continue;
     if (sibling.tagName === 'SCRIPT' || sibling.tagName === 'STYLE') continue;
 
-    if (enabled) {
-      sibling.setAttribute('inert', '');
-      sibling.setAttribute('aria-hidden', 'true');
-    } else {
+    if (open.includes(sibling)) {
       sibling.removeAttribute('inert');
       sibling.removeAttribute('aria-hidden');
+    } else {
+      sibling.setAttribute('inert', '');
+      sibling.setAttribute('aria-hidden', 'true');
     }
   }
 }
