@@ -1,14 +1,39 @@
 /**
- * Tiny DOM helpers.
- * Deliberately minimal: enough to build components without a framework,
- * without hiding how the DOM works.
+ * DOM helpers.
+ *
+ * Two ways to build nodes in this codebase, and the difference matters:
+ *
+ *   `el()`  - creates a node. Used by components.
+ *   `html`  - a tagged template that returns a DocumentFragment. Used for
+ *             larger static subtrees where element-by-element construction
+ *             would be unreadable.
+ *
+ * `html` is NOT a general-purpose HTML injector. It escapes every interpolated
+ * value by default (including arrays), so it is safe for product names, review
+ * text and anything else that eventually comes from a user. To opt into raw
+ * markup you must say so explicitly with the `raw()` helper, which exists
+ * solely for trusted, build-time constants such as the icon sprite.
  */
+
+/* -------------------------------------------------------------------------- */
+/* Creation                                                                    */
+/* -------------------------------------------------------------------------- */
 
 /**
  * Creates an element.
- * @param {string} tag - e.g. `'div'` or `'button.btn.btn--primary'`
- * @param {object} [props] - `className`, `text`, `html`, `dataset`, attributes...
- * @param {Array<Node|string>} [children]
+ *
+ * The tag may carry classes using the `tag.class.class` shorthand. Props:
+ *   className   extra classes
+ *   text        textContent (safe)
+ *   dataset     data-* attributes
+ *   html        raw innerHTML (trusted content only - prefer children)
+ *   on<Event>   addEventListener handler, e.g. onClick
+ *   ref         callback invoked with the node once it exists
+ *   anything else becomes an attribute (false/null/undefined are skipped)
+ *
+ * @param {string} tag
+ * @param {object} [props]
+ * @param {Array<Node|string|null|undefined|false>} [children]
  * @returns {HTMLElement}
  */
 export function el(tag, props = {}, children = []) {
@@ -18,7 +43,7 @@ export function el(tag, props = {}, children = []) {
   if (classes.length > 0) node.className = classes.join(' ');
 
   for (const [key, value] of Object.entries(props)) {
-    if (value === undefined || value === null) continue;
+    if (value === undefined || value === null || value === false) continue;
 
     if (key === 'className') {
       node.className = [node.className, value].filter(Boolean).join(' ');
@@ -28,10 +53,12 @@ export function el(tag, props = {}, children = []) {
       node.innerHTML = value;
     } else if (key === 'dataset') {
       Object.assign(node.dataset, value);
+    } else if (key === 'ref' && typeof value === 'function') {
+      value(node);
     } else if (key.startsWith('on') && typeof value === 'function') {
       node.addEventListener(key.slice(2).toLowerCase(), value);
     } else {
-      node.setAttribute(key, String(value));
+      node.setAttribute(key, value === true ? '' : String(value));
     }
   }
 
@@ -39,54 +66,231 @@ export function el(tag, props = {}, children = []) {
   return node;
 }
 
-/** Appends children (strings become text nodes, so no HTML injection risk). */
+/** Appends children; strings become text nodes, so there is no injection path. */
 export function append(parent, children = []) {
   const list = Array.isArray(children) ? children : [children];
   for (const child of list) {
-    if (child === null || child === undefined || child === false) continue;
+    if (child === null || child === undefined || child === false || child === '') continue;
     parent.append(child instanceof Node ? child : document.createTextNode(String(child)));
   }
   return parent;
 }
 
-/** Removes every child of a node. */
+/** Removes every child. */
 export function clear(node) {
   node.replaceChildren();
   return node;
 }
 
-/** `document.querySelector` scoped to a root. */
+/* -------------------------------------------------------------------------- */
+/* Safe templating                                                             */
+/* -------------------------------------------------------------------------- */
+
+const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
+/** Escapes a value for safe interpolation into markup. */
+export function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value).replace(/[&<>"']/g, (character) => ESCAPES[character]);
+}
+
+/**
+ * Marks a string as pre-escaped, trusted markup.
+ * Only ever use with build-time constants (icons, static fragments).
+ * @param {string} value
+ */
+export function raw(value) {
+  return { [RAW]: String(value ?? '') };
+}
+
+const RAW = Symbol('raw');
+
+/**
+ * Tagged template that escapes interpolations by default.
+ *
+ *   html`<p>${product.name}</p>`                 // escaped
+ *   html`<ul>${items.map((i) => html`<li>${i}</li>`)}</ul>`
+ *   html`<div>${raw(icon('cart'))}</div>`        // trusted
+ *
+ * @param {TemplateStringsArray} strings
+ * @param {...unknown} values
+ * @returns {DocumentFragment}
+ */
+export function html(strings, ...values) {
+  let markup = '';
+  for (let index = 0; index < strings.length; index += 1) {
+    markup += strings[index];
+    if (index < values.length) markup += interpolate(values[index]);
+  }
+  return fragmentFromMarkup(markup);
+}
+
+function interpolate(value) {
+  if (value === null || value === undefined || value === false) return '';
+  if (Array.isArray(value)) return value.map(interpolate).join('');
+  if (typeof value === 'object' && RAW in value) return value[RAW];
+  return escapeHtml(value);
+}
+
+/** Parses a markup string into a fragment. */
+export function fragmentFromMarkup(markup) {
+  const template = document.createElement('template');
+  template.innerHTML = markup.trim();
+  return template.content;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Queries                                                                     */
+/* -------------------------------------------------------------------------- */
+
+/** `querySelector`, null-safe. */
 export function qs(selector, root = document) {
   return root.querySelector(selector);
 }
 
-/** `document.querySelectorAll` as a real array. */
+/** `querySelectorAll` as a real array. */
 export function qsa(selector, root = document) {
   return Array.from(root.querySelectorAll(selector));
 }
 
-/**
- * Loads an HTML partial into a container (used for Navbar / Footer so markup
- * lives in one place instead of being duplicated in every page).
- * @param {string} url - path inside `/partials`
- * @param {HTMLElement} target
- */
-export async function loadPartial(url, target) {
-  const response = await fetch(url, { headers: { Accept: 'text/html' } });
-  if (!response.ok) {
-    throw new Error(`Could not load partial "${url}" (${response.status})`);
-  }
-  target.innerHTML = await response.text();
-  return target;
-}
+/* -------------------------------------------------------------------------- */
+/* Events                                                                      */
+/* -------------------------------------------------------------------------- */
 
 /**
- * Adds a listener and returns a function that removes it.
+ * Adds a listener and returns its remover.
  * @returns {() => void}
  */
 export function on(target, type, handler, options) {
-  target.addEventListener(type, handler, options);
-  return () => target.removeEventListener(type, handler, options);
+  const listener = handler;
+  target.addEventListener(type, listener, options);
+  return () => target.removeEventListener(type, listener, options);
 }
 
-export default { el, append, clear, qs, qsa, loadPartial, on };
+/**
+ * Event delegation: one listener on a container instead of N on children.
+ * This is what keeps the product grid and filter panel cheap - adding 24 cards
+ * costs one listener, not 24.
+ *
+ * @param {HTMLElement} root
+ * @param {string} type
+ * @param {string} selector
+ * @param {(event: Event, matched: HTMLElement) => void} handler
+ * @returns {() => void}
+ */
+export function delegate(root, type, selector, handler) {
+  const listener = (event) => {
+    const matched = event.target instanceof Element ? event.target.closest(selector) : null;
+    if (matched && root.contains(matched)) handler(event, matched);
+  };
+  root.addEventListener(type, listener);
+  return () => root.removeEventListener(type, listener);
+}
+
+/** Resolves after the next paint. Used to measure after layout. */
+export function nextFrame() {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Environment                                                                 */
+/* -------------------------------------------------------------------------- */
+
+/** True when the user asked the OS to reduce motion. Read live, not cached. */
+export function prefersReducedMotion() {
+  return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
+/** True on a device whose primary input is touch. */
+export function isTouchDevice() {
+  return globalThis.matchMedia?.('(hover: none), (pointer: coarse)').matches ?? false;
+}
+
+/** Current viewport width. */
+export function viewportWidth() {
+  return globalThis.innerWidth ?? 1024;
+}
+
+/**
+ * Above this width the desktop navigation is used and drawers become panels.
+ * Mirrors the `--breakpoint-lg` token (64em) and the `64em` media queries.
+ */
+export const DESKTOP_BREAKPOINT_EM = 64;
+
+/** @param {number} [em] */
+export function isDesktop(em = DESKTOP_BREAKPOINT_EM) {
+  if (!globalThis.matchMedia) return viewportWidth() >= em * 16;
+  return globalThis.matchMedia(`(min-width: ${em}em)`).matches;
+}
+
+/** Reacts to a media query change. Returns a cleanup function. */
+export function watchMedia(query, handler) {
+  if (!globalThis.matchMedia) return () => {};
+  const list = globalThis.matchMedia(query);
+  const listener = (event) => handler(event.matches);
+  list.addEventListener('change', listener);
+  return () => list.removeEventListener('change', listener);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Focus                                                                       */
+/* -------------------------------------------------------------------------- */
+
+/** Elements that can receive focus, in DOM order. */
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+/** @returns {HTMLElement[]} */
+export function getFocusable(root) {
+  return qsa(FOCUSABLE_SELECTOR, root).filter(
+    (node) => !node.hasAttribute('disabled') && node.getAttribute('aria-hidden') !== 'true'
+  );
+}
+
+/** Moves focus without scrolling the page under the user. */
+export function focusSilently(node) {
+  if (!node) return;
+  node.focus({ preventScroll: true });
+}
+
+/** Moves focus and scrolls it into view (used when restoring after a close). */
+export function focus(node) {
+  if (!node) return;
+  node.focus({ preventScroll: false });
+}
+
+/** Moves focus to the first focusable node, or the container itself. */
+export function focusFirst(root) {
+  const [first] = getFocusable(root);
+  (first ?? root).focus({ preventScroll: true });
+}
+
+export default {
+  el,
+  append,
+  clear,
+  html,
+  raw,
+  escapeHtml,
+  fragmentFromMarkup,
+  qs,
+  qsa,
+  on,
+  delegate,
+  nextFrame,
+  prefersReducedMotion,
+  isTouchDevice,
+  viewportWidth,
+  isDesktop,
+  watchMedia,
+  getFocusable,
+  focus,
+  focusSilently,
+  focusFirst,
+};
