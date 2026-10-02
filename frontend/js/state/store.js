@@ -61,12 +61,25 @@ export function createStore(initialState, options = {}) {
   /** @type {Set<{ listener: Function, selector: Function|null, last: unknown }>} */
   const subscribers = new Set();
 
+  /**
+   * What actually goes into storage.
+   *
+   * `persist.select` is the single place that decides what survives a reload, and
+   * it has to be applied on the way *out* as well as on the way in. Applying it
+   * only on restore is the easy mistake to make: the projection still looks
+   * right when reading, so the bug only shows up as the drawer reopening
+   * itself on the next page load. Anything the selector drops is gone from
+   * storage and comes back as its initial value.
+   */
+  function project(source) {
+    return typeof persist?.select === 'function' ? persist.select(source) : source;
+  }
+
   /** Restored state, merged over the initial state so new keys always exist. */
   if (persist) {
     const restored = readPersisted(persist.key, persist.version ?? 1);
     if (restored) {
-      state = typeof persist.select === 'function' ? persist.select(restored) : restored;
-      state = { ...initialState, ...state };
+      state = { ...initialState, ...project(restored) };
     }
   }
 
@@ -80,7 +93,7 @@ export function createStore(initialState, options = {}) {
     if (shallowEqual(merged, state)) return state;
 
     state = merged;
-    if (persist) writePersisted(persist.key, persist.version ?? 1, state);
+    if (persist) writePersisted(persist.key, persist.version ?? 1, project(state));
     scheduleNotify({ notify });
     return state;
   }
@@ -91,6 +104,12 @@ export function createStore(initialState, options = {}) {
 
   /**
    * Subscribes to the whole store, or to a slice when a selector is given.
+   *
+   * The listener signature depends on which: `listener(state, previousState)`
+   * without a selector, `listener(selection, previousSelection)` with one. A
+   * selector subscriber receiving the whole state would invite
+   * `({ count }) => ...` on a store whose state has no `count` key - the value
+   * would silently be `undefined`.
    *
    * @param {(state: T, previous: T) => void} listener
    * @param {{ selector?: (state: T) => unknown, immediate?: boolean }} [options]
@@ -104,7 +123,7 @@ export function createStore(initialState, options = {}) {
     };
     subscribers.add(entry);
 
-    if (immediate) listener(state, state);
+    if (immediate) listener(entry.last ?? state, entry.last ?? state);
 
     return () => subscribers.delete(entry);
   }
@@ -129,7 +148,7 @@ export function createStore(initialState, options = {}) {
           if (Object.is(next, entry.last)) continue;
           const previous = entry.last;
           entry.last = next;
-          entry.listener(state, previous);
+          entry.listener(next, previous);
         } else {
           entry.listener(state, state);
         }

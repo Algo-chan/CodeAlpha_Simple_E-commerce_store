@@ -12,7 +12,7 @@
  *     nested "View all X" link goes to the category. Both routes are provided,
  *     because both are what shoppers expect.
  */
-import { el, on, delegate } from '../../core/dom.js';
+import { el, delegate } from '../../core/dom.js';
 import { icon } from '../../utils/icons.js';
 import { formatCount } from '../../utils/format.js';
 import { createPanel } from '../feedback/overlay.js';
@@ -27,11 +27,11 @@ const PROMO = {
 
 /**
  * @param {Array<object>} categories
- * @param {{ activeSlug?: string }} [options]
+ * @param {{ activeSlug?: string, onToggle?: (isOpen: boolean) => void }} [options]
  * @returns {{ panel: object, open(trigger?: HTMLElement): void, close(): void,
  *             isOpen: boolean }}
  */
-export function createMobileNav(categories = [], { activeSlug } = {}) {
+export function createMobileNav(categories = [], { activeSlug, onToggle } = {}) {
   const panel = createPanel({
     id: 'mobile-nav',
     variant: 'drawer',
@@ -39,10 +39,12 @@ export function createMobileNav(categories = [], { activeSlug } = {}) {
     title: 'Menu',
     // A drawer is navigation, so the heading level is h2 under the page h1.
     headingLevel: 'h2',
+    // The trigger in the header reflects this, so it can also be closed by
+    // Escape or the scrim rather than only by its own click.
+    onToggle,
     render: (context) => {
       const body = buildDrawerBody(categories, activeSlug, context.close);
-      // Scoped to this panel's own node, and unregistered when it closes and
-      // is torn down.
+      // Scoped to this panel's own node, and unregistered on teardown.
       context.onCleanup(bindAccordions(body));
       return body;
     },

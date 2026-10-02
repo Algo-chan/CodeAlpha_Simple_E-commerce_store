@@ -324,6 +324,22 @@
   color: var(--color-text-subtle);
 }
 
+/* Unrated: the label replaces the stars entirely. */
+.rating--empty .rating__value {
+  font-style: italic;
+}
+
+/* When the rating links to its review section the whole control is the target,
+   so it needs a hit area and a focus ring rather than a bare underline. */
+.rating__link {
+  display: inline-flex;
+  border-radius: var(--radius-xs);
+}
+
+.rating__link:hover .rating__value {
+  text-decoration: underline;
+}
+
 /* --- Variant indicator ----------------------------------------------------
    "3 options" or swatch dots, so the shopper knows a choice exists before
    opening the card. */

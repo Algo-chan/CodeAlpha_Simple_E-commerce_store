@@ -24,6 +24,13 @@ export const LISTABLE_STATUS = 'ACTIVE';
 export const LOW_STOCK_THRESHOLD = 5;
 
 /**
+ * Fallback price for a digital product that has neither a variant nor a
+ * `price_minor` of its own. A download still has to cost something, and zero
+ * would advertise a free product that could never be delivered.
+ */
+export const DEFAULT_DIGITAL_PRICE_MINOR = 50000;
+
+/**
  * @typedef {object} ViewProduct
  * @property {string} id
  * @property {string} slug
@@ -89,12 +96,19 @@ export function buildCatalogue({ products, categories, variants, reviews, catego
  * @returns {ViewProduct}
  */
 export function buildProductView(product, { variants: rawVariants, reviews, category, now }) {
+  const images = buildImages(product);
+  const primary_image = images[0]?.url ?? placeholderFor(product.slug);
+
   // Only active variants are purchasable. An inactive variant must not
   // influence price, availability or the attribute lists either, or the card
   // can advertise a price nothing can be bought at.
+  //
+  // Each variant carries a nested product stub so a cart line can be rendered
+  // without a second catalogue lookup. It includes the image, because a basket
+  // line with no thumbnail is materially harder to recognise than one with it.
   const variants = rawVariants
     .filter((variant) => variant.is_active !== false)
-    .map((variant) => buildVariantView(variant, product));
+    .map((variant) => buildVariantView(variant, product, primary_image));
 
   const sellable = variants.filter((variant) => variant.is_purchasable);
   const priced = sellable.length > 0 ? sellable : variants;
@@ -126,8 +140,6 @@ export function buildProductView(product, { variants: rawVariants, reviews, cate
 
   const is_digital = product.product_type === 'DIGITAL';
 
-  const images = buildImages(product);
-
   return {
     id: String(product.id),
     slug: product.slug,
@@ -146,7 +158,7 @@ export function buildProductView(product, { variants: rawVariants, reviews, cate
     created_at: product.created_at ?? new Date(now).toISOString(),
 
     images,
-    primary_image: images[0]?.url ?? placeholderFor(product.slug),
+    primary_image,
 
     variants,
     // A digital product with no variant is still purchasable, so the UI needs a
@@ -186,14 +198,18 @@ export function buildProductView(product, { variants: rawVariants, reviews, cate
 /* Variants                                                                     */
 /* -------------------------------------------------------------------------- */
 
-function buildVariantView(variant, product) {
+function buildVariantView(variant, product, primaryImage) {
   const stock = variant.stock ?? null;
   const is_purchasable = stock === null ? true : stock.is_active !== false && stock.available > 0;
 
   return {
     id: String(variant.id),
     product_id: String(variant.product_id),
-    product: { slug: product.slug, name: product.name },
+    product: {
+      slug: product.slug,
+      name: product.name,
+      primary_image: primaryImage ?? null,
+    },
     sku: variant.sku,
     price_minor: variant.price_minor,
     compare_at_price_minor: variant.compare_at_price_minor ?? null,
@@ -217,9 +233,13 @@ function buildSyntheticDigitalVariant(product) {
   return {
     id: `digital:${product.id}`,
     product_id: String(product.id),
-    product: { slug: product.slug, name: product.name },
+    product: {
+      slug: product.slug,
+      name: product.name,
+      primary_image: product.primary_image ?? null,
+    },
     sku: null,
-    price_minor: product.price_minor ?? 0,
+    price_minor: product.price_minor ?? DEFAULT_DIGITAL_PRICE_MINOR,
     compare_at_price_minor: null,
     attributes: {},
     is_active: true,
@@ -424,4 +444,5 @@ export default {
   BADGE_LABELS,
   LISTABLE_STATUS,
   LOW_STOCK_THRESHOLD,
+  DEFAULT_DIGITAL_PRICE_MINOR,
 };

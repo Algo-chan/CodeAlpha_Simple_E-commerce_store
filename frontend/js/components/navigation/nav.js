@@ -61,7 +61,6 @@ export function createNav(categories = [], { activeSlug, onNavigate } = {}) {
       if (other !== item) setExpanded(other, false);
     }
     setExpanded(item, true);
-    openIndex = Number(item.dataset.index);
   }
 
   const cleanups = [
@@ -280,6 +279,14 @@ function buildMega(category, children) {
 /* Helpers                                                                      */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Opens or closes one item's panel.
+ *
+ * A closed panel is marked `inert` rather than `display: none`. `inert` takes it
+ * out of the tab order and blocks pointer events while leaving it laid out, so
+ * the open and close transitions can actually run. `display: none` would kill
+ * the animation and, worse, lose the shopper's scroll position inside it.
+ */
 function setExpanded(item, expanded) {
   const trigger = item.querySelector('.nav__link');
   const panel = item.querySelector('.nav__panel');
@@ -292,14 +299,9 @@ function setExpanded(item, expanded) {
     panel.removeAttribute('inert');
     panel.dataset.open = 'true';
   } else {
-    // `inert` rather than `display: none` so the close transition can run.
     panel.setAttribute('inert', '');
     delete panel.dataset.open;
   }
-}
-
-function panelOf(item) {
-  return item.querySelector('.nav__panel');
 }
 
 /** A deep category is addressable by slug on the one collection page. */

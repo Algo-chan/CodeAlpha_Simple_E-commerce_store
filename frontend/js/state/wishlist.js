@@ -8,7 +8,12 @@
  */
 import { createStore } from './store.js';
 
-export const WISHLIST_STORAGE_VERSION = 1;
+/**
+ * Bumped to 2 when product ids became UUIDs, so version 1 entries - which hold
+ * numeric ids that can never match again - are discarded instead of sitting in
+ * the list doing nothing.
+ */
+export const WISHLIST_STORAGE_VERSION = 2;
 
 const initialState = {
   /** @type {string[]} product UUIDs, most recently added first */
@@ -106,6 +111,18 @@ export function createWishlistStore() {
   const selectCount = store.select(({ productIds }) => productIds.length);
   const selectIsEmpty = store.select(({ productIds }) => productIds.length === 0);
 
+  /**
+   * A per-product boolean selector. Every wishlist button on a page subscribes
+   * with one of these, so saving one product repaints one button rather than
+   * re-rendering the whole grid.
+   * @param {string} productId
+   * @returns {() => boolean}
+   */
+  function selectIsSaved(productId) {
+    const id = normaliseId(productId);
+    return store.select(({ productIds }) => (id === null ? false : productIds.includes(id)));
+  }
+
   return {
     ...store,
     toggle,
@@ -118,6 +135,7 @@ export function createWishlistStore() {
     selectIds,
     selectCount,
     selectIsEmpty,
+    selectIsSaved,
   };
 }
 

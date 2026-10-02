@@ -15,7 +15,12 @@
 import { createStore } from './store.js';
 import { majorToMinor } from '../utils/format.js';
 
-export const CART_STORAGE_VERSION = 1;
+/**
+ * Bumped to 2 when variant and product ids became UUIDs and the persisted
+ * projection was tightened to the basket only. Version 1 entries reference
+ * numeric ids that can never match again.
+ */
+export const CART_STORAGE_VERSION = 2;
 
 /** Mirrors the Phase 2 constraint, so the UI cannot offer an order the DB rejects. */
 export const MAX_QUANTITY = 10;
@@ -24,7 +29,7 @@ export const MAX_QUANTITY = 10;
 export const FREE_SHIPPING_THRESHOLD_MINOR = majorToMinor(5000);
 
 const initialState = {
-  /** @type {Array<{variantId:number, productId:number, slug:string, name:string,
+  /** @type {Array<{variantId:string, productId:string, slug:string, name:string,
    *                variantName:string|null, image:string|null,
    *                unitPrice:number, quantity:number, maxQuantity:number}>} */
   lines: [],

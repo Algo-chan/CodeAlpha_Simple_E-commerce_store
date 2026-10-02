@@ -13,15 +13,20 @@
 import { createStore } from './store.js';
 import { majorToMinor } from '../utils/format.js';
 
-export const FILTERS_STORAGE_VERSION = 1;
+/**
+ * Bumped to 2 when ids became UUIDs. Anything saved under version 1 referenced
+ * numeric ids that can never match again, and a version bump discards it cleanly
+ * rather than leaving entries that silently do nothing.
+ */
+export const FILTERS_STORAGE_VERSION = 2;
 
 /**
  * The shape a product must have to be filterable. `view.js` builds exactly
  * this, but any object with these fields works.
  *
  * @typedef {object} FilterableProduct
- * @property {number} id
- * @property {number} category_id
+ * @property {string} id
+ * @property {string} category_id
  * @property {boolean} is_active
  * @property {boolean} is_featured
  * @property {string} created_at
