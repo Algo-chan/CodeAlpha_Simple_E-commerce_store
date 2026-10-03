@@ -189,10 +189,16 @@ function summary({ cart, unfulfillable }) {
 function recommendations({ catalogue, wishlist, quickView, lines, cleanups }) {
   const inCart = new Set(lines.map((line) => line.productId));
 
-  const related = catalogue
-    .selectRelated(lines[0].productId)()
-    .filter((product) => !inCart.has(product.id))
-    .slice(0, 6);
+  // A line carries ids and display fields, not the catalogue record, and
+  // `selectRelated` is curried - so the anchor is resolved before it is applied.
+  const anchor = catalogue.getProduct(lines[0].productId);
+
+  const related = anchor
+    ? catalogue
+        .selectRelated()(anchor)
+        .filter((product) => !inCart.has(product.id))
+        .slice(0, 6)
+    : [];
 
   if (related.length === 0) return null;
 

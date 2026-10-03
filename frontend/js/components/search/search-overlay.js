@@ -43,6 +43,18 @@ export function createSearchOverlay({ api, onNavigate = null }) {
   let timer = null;
   let activeIndex = -1;
   let currentQuery = '';
+  /**
+   * The nodes this component renders into, captured as `render` creates them.
+   *
+   * They cannot be found by querying `panel.body`, because `render` runs *inside*
+   * `createPanel`: `panel` is still uninitialised at that point (reading it throws
+   * a temporal dead zone ReferenceError) and the body is not populated until
+   * `render` returns. Holding the three nodes the rest of the file needs keeps
+   * every later call site clear of both problems.
+   */
+  let inputEl = null;
+  let resultsEl = null;
+  let statusEl = null;
 
   const panel = createPanel({
     id: 'search',
@@ -50,7 +62,7 @@ export function createSearchOverlay({ api, onNavigate = null }) {
     title: 'Search products',
     headingLevel: 'h2',
     render: (context) => {
-      const input = el('input.search-overlay__input', {
+      inputEl = el('input.search-overlay__input', {
         type: 'search',
         name: 'q',
         placeholder: 'Search linen, coffee, leather…',
@@ -72,14 +84,14 @@ export function createSearchOverlay({ api, onNavigate = null }) {
         hidden: true,
       }, [icon('close')]);
 
-      const results = el('div.search-overlay__results', {
+      resultsEl = el('div.search-overlay__results', {
         id: 'search-results',
         role: 'listbox',
         'aria-label': 'Search results',
         tabindex: '-1',
       });
 
-      const live = el('p.search-overlay__status', { role: 'status', 'aria-live': 'polite' });
+      statusEl = el('p.search-overlay__status', { role: 'status', 'aria-live': 'polite' });
 
       const seeAll = button({
         label: 'See all results',
@@ -99,17 +111,17 @@ export function createSearchOverlay({ api, onNavigate = null }) {
       ]);
 
       const body = el('div.search-overlay__body', {}, [
-        el('div.search-overlay__field', {}, [icon('search', { className: 'search-overlay__icon' }), input, clearButton]),
-        results,
-        live,
+        el('div.search-overlay__field', {}, [icon('search', { className: 'search-overlay__icon' }), inputEl, clearButton]),
+        resultsEl,
+        statusEl,
         footer,
       ]);
 
       /* --- Behaviour --------------------------------------------------------- */
 
       const cleanups = [
-        on(input, 'input', () => {
-          currentQuery = input.value.trim();
+        on(inputEl, 'input', () => {
+          currentQuery = inputEl.value.trim();
           clearButton.hidden = currentQuery.length === 0;
           seeAll.hidden = currentQuery.length === 0;
           // Any highlight belongs to the previous query; dropping it stops a
@@ -118,16 +130,16 @@ export function createSearchOverlay({ api, onNavigate = null }) {
           schedule(currentQuery);
         }),
 
-        on(input, 'keydown', (event) => onKeyDown(event)),
+        on(inputEl, 'keydown', (event) => onKeyDown(event)),
 
         on(clearButton, 'click', () => {
-          input.value = '';
+          inputEl.value = '';
           currentQuery = '';
           clearButton.hidden = true;
           seeAll.hidden = true;
           setActive(-1);
           renderIdle();
-          input.focus();
+          inputEl.focus();
         }),
 
         on(seeAll, 'click', () => {
@@ -137,14 +149,14 @@ export function createSearchOverlay({ api, onNavigate = null }) {
           }
         }),
 
-        on(results, 'click', (event) => {
+        on(resultsEl, 'click', (event) => {
           const row = event.target.closest('[data-href]');
           if (!row) return;
           context.close();
           navigate(row.dataset.href);
         }),
 
-        on(results, 'pointermove', (event) => {
+        on(resultsEl, 'pointermove', (event) => {
           // Hovering moves the highlight so mouse and keyboard cannot disagree
           // about what Enter would open.
           const row = event.target.closest('.search-result');
@@ -369,18 +381,19 @@ export function createSearchOverlay({ api, onNavigate = null }) {
 
   /* --- Node accessors -------------------------------------------------------- */
 
-  // The panel body is rebuilt once at mount, so these look the nodes up lazily
-  // rather than closing over them before `render` has run.
+  // Reading the nodes captured during `render` rather than querying the panel: a
+  // query needs a panel that exists, and this component renders before its own
+  // panel does.
   function input() {
-    return panel.body.querySelector('.search-overlay__input');
+    return inputEl;
   }
 
   function resultsNode() {
-    return panel.body.querySelector('.search-overlay__results');
+    return resultsEl;
   }
 
   function qsStatus() {
-    return panel.body.querySelector('.search-overlay__status');
+    return statusEl;
   }
 
   /* --- Keyboard -------------------------------------------------------------- */

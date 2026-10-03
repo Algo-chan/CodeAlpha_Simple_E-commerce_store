@@ -90,6 +90,14 @@ export default function homePage({ host, catalogue, wishlist, quickView = null }
   });
   cleanups.push(() => featured.destroy());
 
+  // The grid is built showing skeletons so the layout appears straight away, and
+  // it is handed the products here for the same reason the sections below are
+  // painted before they subscribe: the catalogue was already fetched by the
+  // shell, so no notification is coming to replace the placeholders.
+  const paintFeatured = () => featured.setProducts(catalogue.selectFeatured().slice(0, 8));
+  paintFeatured();
+  cleanups.push(catalogue.subscribe(paintFeatured, { selector: catalogue.selectFeatured }));
+
   const arrivals = newArrivals(catalogue, wishlist, onQuickView);
   cleanups.push(arrivals.destroy);
 
@@ -214,15 +222,23 @@ function heroCollage(catalogue) {
 
   const element = el('div.hero__collage', {}, [figureTall, figurePrimary]);
 
-  const stop = catalogue.selectFeatured((products) => {
+  const paint = (products) => {
     const withImages = products.filter((product) => product.primary_image);
     const [first, second] = withImages;
 
     if (first) renderFigure(figurePrimary, first, { tag: true });
     if (second) renderFigure(figureTall, second, { tag: false });
-  });
+  };
 
-  return { element, destroy: stop };
+  // Painted before subscribing because the shell already awaited the catalogue:
+  // there is no later change coming, so waiting for a notification would leave
+  // the figures as skeletons for good.
+  paint(catalogue.selectFeatured());
+
+  return {
+    element,
+    destroy: catalogue.subscribe(paint, { selector: catalogue.selectFeatured }),
+  };
 }
 
 function renderFigure(figure, product, { tag }) {
@@ -261,7 +277,7 @@ function renderFigure(figure, product, { tag }) {
 function categoryGrid(catalogue) {
   const element = el('div.category-grid');
 
-  const stop = catalogue.selectCategories((categories) => {
+  const paint = (categories) => {
     const roots = categories.filter((category) => !category.parent_id);
 
     element.replaceChildren(
@@ -292,9 +308,16 @@ function categoryGrid(catalogue) {
         ]);
       })
     );
-  });
+  };
 
-  return { element, destroy: stop };
+  // See `heroCollage`: the catalogue is already loaded, so the first paint cannot
+  // wait for a notification.
+  paint(catalogue.selectCategories());
+
+  return {
+    element,
+    destroy: catalogue.subscribe(paint, { selector: catalogue.selectCategories }),
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -311,7 +334,7 @@ function newArrivals(catalogue, wishlist, onQuickView) {
   const host = el('div');
   let rail = null;
 
-  const stop = catalogue.selectNewArrivals((products) => {
+  const paint = (products) => {
     if (rail) rail.destroy();
 
     if (products.length === 0) {
@@ -327,7 +350,11 @@ function newArrivals(catalogue, wishlist, onQuickView) {
       ariaLabel: 'New arrivals',
     });
     host.replaceChildren(rail.element);
-  });
+  };
+
+  paint(catalogue.selectNewArrivals());
+
+  const stop = catalogue.subscribe(paint, { selector: catalogue.selectNewArrivals });
 
   return {
     element: el('section.section', { 'aria-labelledby': 'home-new' }, [
@@ -361,7 +388,7 @@ function newArrivals(catalogue, wishlist, onQuickView) {
 function featureBand(catalogue) {
   const media = el('div.feature__media', {}, [el('div.skeleton', { style: 'block-size:100%' })]);
 
-  const stop = catalogue.selectFeatured((products) => {
+  const paint = (products) => {
     const lead = products.find((product) => product.primary_image);
     if (!lead) return;
 
@@ -375,7 +402,9 @@ function featureBand(catalogue) {
         decoding: 'async',
       })
     );
-  });
+  };
+
+  paint(catalogue.selectFeatured());
 
   return {
     element: el('section.section.section--subtle', { 'aria-labelledby': 'home-feature' }, [
@@ -409,7 +438,7 @@ function featureBand(catalogue) {
         ]),
       ]),
     ]),
-    destroy: stop,
+    destroy: catalogue.subscribe(paint, { selector: catalogue.selectFeatured }),
   };
 }
 

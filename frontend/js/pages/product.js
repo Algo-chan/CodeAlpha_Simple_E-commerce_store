@@ -637,8 +637,10 @@ function reviews(product) {
 /* -------------------------------------------------------------------------- */
 
 function related({ catalogue, wishlist, quickView, product, cleanups }) {
+  // `selectRelated` is curried: the selector yields a `(product) => products`
+  // function, so the product is passed to the second call, not the first.
   const suggestions = catalogue
-    .selectRelated(product.id)()
+    .selectRelated()(product)
     .filter((item) => item.id !== product.id)
     .slice(0, 6);
 
