@@ -18,7 +18,6 @@
  */
 import { el } from '../../core/dom.js';
 import { formatMoney } from '../../utils/format.js';
-import { LOW_STOCK_THRESHOLD } from '../../utils/product-view.js';
 
 /**
  * @typedef {object} PriceOptions
@@ -109,6 +108,16 @@ export function shippingHint(remainingMinor) {
  * @param {number|null} available `null` for digital goods, which are not tracked
  * @returns {HTMLElement}
  */
+/**
+ * A stock line for the selected variant.
+ *
+ * `available` is passed separately because the callers already hold it; the
+ * variant object is still the source of the low-stock decision.
+ *
+ * @param {object} variant
+ * @param {number|null} available null when stock is untracked
+ * @returns {HTMLElement}
+ */
 export function stockLine(variant, available) {
   if (!variant.is_purchasable) {
     return el('p.stock-line.stock-line--out', {}, [el('span.stock-line__dot'), 'Sold out']);
@@ -123,7 +132,10 @@ export function stockLine(variant, available) {
     ]);
   }
 
-  if (available <= LOW_STOCK_THRESHOLD) {
+  // `is_low_stock` comes from the API, which owns the threshold. Comparing
+  // `available` against a local copy of that number is how the stock line ends up
+  // disagreeing with the product card's badge on the same product.
+  if (variant.is_low_stock === true) {
     return el('p.stock-line.stock-line--low', {}, [
       el('span.stock-line__dot'),
       `Only ${available} left`,

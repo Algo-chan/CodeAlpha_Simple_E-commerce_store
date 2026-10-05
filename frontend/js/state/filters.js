@@ -60,7 +60,14 @@ export const SORT_OPTIONS = Object.freeze({
   },
   'price-desc': {
     label: 'Price: high to low',
-    compare: (a, b) => (b.price_min_minor ?? -Infinity) - (a.price_min_minor ?? Infinity),
+    // `price_max_minor`, NOT `price_min_minor`. The server sorts descending by the
+    // dearest variant, and a product whose variants run 400-900 belongs at the
+    // 900 position. Sorting by its cheapest price put every multi-variant product
+    // below the single-variant ones it should have been above.
+    //
+    // `price_min_minor` ascending is the correct key for `price-asc`, which is why
+    // the two directions are not mirror images of each other.
+    compare: (a, b) => (b.price_max_minor ?? -Infinity) - (a.price_max_minor ?? Infinity),
   },
   'name-asc': {
     label: 'Name: A to Z',

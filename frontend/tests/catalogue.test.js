@@ -245,6 +245,14 @@ test('flattenCategories is depth-first with parents before children', () => {
 
 test('humaniseAttribute turns a key into a label', () => {
   assert.equal(humaniseAttribute('available_colors'), 'Available colors');
-  assert.equal(humaniseAttribute('ram'), 'Ram');
+  // "RAM", not "Ram". This is the exact answer `backend/services/catalogue.view.js`
+  // gives, and it used to be "Ram" here and there at the same time — the filter
+  // panel relabelled itself when the data source changed.
+  assert.equal(humaniseAttribute('ram'), 'RAM');
   assert.equal(humaniseAttribute('storage-capacity'), 'Storage capacity');
+  assert.equal(humaniseAttribute('storage__capacity'), 'Storage capacity', 'runs collapse');
+  assert.equal(humaniseAttribute('new'), 'New', 'a word is not an acronym');
+  assert.equal(humaniseAttribute('a'), 'A');
+  assert.equal(humaniseAttribute(''), '');
+  assert.equal(humaniseAttribute(null), '');
 });

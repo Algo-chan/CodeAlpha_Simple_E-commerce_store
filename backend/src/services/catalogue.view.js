@@ -145,6 +145,21 @@ export function toListingProduct(row) {
     short_description: '',
     created_at: createdAt,
 
+    // The union of every active variant's attributes, keyed the way `filters.js`
+    // reads it: `product.attributes?.[key]` is expected to be an ARRAY of the
+    // values offered, because the filter panel checks membership with
+    // `.includes()`. Emitting the raw variant map instead would make every
+    // attribute facet silently match nothing.
+    //
+    // Computed by the SAME `productAttributes` the detail page uses, from the
+    // per-variant maps the query aggregates. Omitting this field does not merely
+    // drop a column: the filter panel is built from it, so a colour facet
+    // disappears and any selected attribute filter matches no products at all,
+    // emptying the grid with no error anywhere.
+    attributes: productAttributes(
+      parseJsonArray(row.attributes).map((attributes) => ({ attributes }))
+    ),
+
     images,
     primary_image: images[0]?.url ?? null,
     secondary_image: images[1]?.url ?? null,
@@ -523,6 +538,14 @@ export function toVariant(row, product, primaryImage) {
     stock,
     is_digital: stock === null,
     is_purchasable: isActive && (stock === null || stock.available > 0),
+    // Computed here, at the tier that owns the threshold, rather than by the
+    // storefront comparing `stock.available` to its own copy of the number. Two
+    // copies of a threshold produce a page that contradicts itself: change it to 3
+    // and the card says "Low stock" (from these badges) while the same variant's
+    // stock line says "In stock" (from the client's copy). The client renders this
+    // flag; it never re-derives it.
+    is_low_stock:
+      isActive && stock !== null && stock.available > 0 && stock.available <= LOW_STOCK_THRESHOLD,
     label: buildVariantLabel(attributes),
   };
 }
@@ -658,13 +681,46 @@ export function buildAttributeOptions(variants) {
   }));
 }
 
-/** `ram` -> `Ram`, `storage_gb` -> `Storage Gb`. */
+/**
+ * Attribute keys that are initialisms, so `ram` reads as RAM rather than Ram.
+ *
+ * An EXPLICIT list, not a length heuristic. "Any bare lowercase token of two to
+ * four letters is an acronym" cannot distinguish `ram` from `new`, `size` or `os`.
+ * `new` is the damaging case: it is a product flag as well as a plausible attribute
+ * key, and "NEW" as a facet label reads as a marketing claim rather than a field
+ * name.
+ *
+ * Keep this in step with the identical list in
+ * `frontend/js/utils/product-view.js`, which is what labels the filter panel once
+ * the storefront is server-driven.
+ */
+const ATTRIBUTE_ACRONYMS = new Set([
+  'ram',
+  'rom',
+  'ssd',
+  'hdd',
+  'cpu',
+  'gpu',
+  'usb',
+  'hdmi',
+  'nfc',
+  'sim',
+  'led',
+  'lcd',
+  'oled',
+  'dpi',
+  'sd',
+]);
+
+/** `ram` -> `RAM`, `storage_gb` -> `Storage Gb`. */
 export function humaniseAttribute(key) {
-  const spaced = String(key).replace(/[_-]+/g, ' ').trim();
+  const spaced = String(key ?? '')
+    .replace(/[_-]+/g, ' ')
+    .trim();
   if (!spaced) return '';
-  // Leave an initialism readable: RAM, not Ram.
-  const acronym = /^[a-z0-9]{2,4}$/.test(spaced) ? spaced.toUpperCase() : null;
-  if (acronym) return acronym;
+
+  if (ATTRIBUTE_ACRONYMS.has(spaced.toLowerCase())) return spaced.toUpperCase();
+
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
@@ -720,14 +776,26 @@ export const BADGE_LABELS = Object.freeze({
 });
 
 /**
+ * Human label for a badge key.
+ *
+ * Returns NULL for a key it does not recognise, rather than echoing the key back.
+ *
+ * Echoing is the worst available answer here: an unknown badge renders its own
+ * internal name as shopper-facing text, so a future `flash-sale` badge silently
+ * becomes the word "flash-sale" on a product card instead of failing visibly.
+ * A null renders nothing, which is the honest result for a label nobody wrote.
+ *
+ * The frontend twin is `badgeLabel` in `frontend/js/utils/product-view.js`; it has
+ * the same unknown-key behaviour, so the two cannot disagree about an edge case.
+ *
  * @param {string} badge
- * @returns {string}
+ * @returns {string|null} the label, or null when the key is unknown
  */
 export function badgeLabel(badge) {
   if (BADGE_LABELS[badge]) return BADGE_LABELS[badge];
   const match = /^sale-(\d+)$/.exec(badge);
   if (match) return `${match[1]}% off`;
-  return badge;
+  return null;
 }
 
 /* -------------------------------------------------------------------------- */

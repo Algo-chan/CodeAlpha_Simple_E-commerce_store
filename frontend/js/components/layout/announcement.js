@@ -14,9 +14,10 @@
  * message only. Motion in a peripheral strip is not information.
  */
 import { el, on, prefersReducedMotion } from '../../core/dom.js';
+import { freeDeliveryNotice } from '../../utils/format.js';
 
 const DEFAULT_MESSAGES = [
-  { text: 'Free delivery on orders over ETB 5,000', href: '/collection.html' },
+  { text: freeDeliveryNotice(), href: '/collection.html' },
   { text: '30-day returns on everything', href: '/collection.html' },
   {
     text: 'Digital downloads delivered instantly',

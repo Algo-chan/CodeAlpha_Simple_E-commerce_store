@@ -421,6 +421,7 @@ export async function listProducts(filters, options = {}, db = {}) {
           COALESCE(agg.total_stock, 0) AS total_stock,
           COALESCE(rat.rating_average, 0) AS rating_average,
           COALESCE(rat.rating_count, 0) AS rating_count,
+          agg.attributes,
           im.images,
           -- Unpaginated total, computed before LIMIT/OFFSET by the same window
           -- pass that produces the rows. Without it the view would have to guess
@@ -448,7 +449,18 @@ export async function listProducts(filters, options = {}, db = {}) {
               sum(GREATEST(COALESCE(i.quantity, 0) - COALESCE(i.reserved_quantity, 0), 0))
                 FILTER (WHERE v.is_active),
               0
-            ) AS total_stock
+            ) AS total_stock,
+            -- The raw attribute MAP of every active variant, not the finished
+            -- union. The view model turns it into one key -> sorted values map
+            -- using productAttributes, the same function the detail page uses,
+            -- so a listing and a detail page cannot disagree about which options
+            -- a product offers. Doing the grouping in SQL would need a second
+            -- nested aggregate here and would then have to be kept in step with
+            -- the JavaScript copy by hand.
+            COALESCE(
+              json_agg(v.attributes) FILTER (WHERE v.is_active),
+              '[]'::json
+            ) AS attributes
           FROM product_variants v
           LEFT JOIN inventory i ON i.variant_id = v.id
           WHERE v.product_id = p.id
@@ -619,35 +631,41 @@ export async function listRelatedProducts(
        COALESCE(agg.buyable_max, agg.active_max) AS price_max_minor,
        COALESCE(agg.buyable_compare_at, agg.active_compare_at) AS compare_at_minor,
        agg.variant_count, agg.purchasable_count,
-       COALESCE(agg.total_stock, 0) AS total_stock,
-       COALESCE(rat.rating_average, 0) AS rating_average,
-       COALESCE(rat.rating_count, 0) AS rating_count,
-       im.images
-     FROM products p
-     JOIN categories c ON c.id = p.category_id
-     LEFT JOIN LATERAL (
-       SELECT
-         count(*) FILTER (WHERE v.is_active) AS variant_count,
-         min(v.price) FILTER (WHERE v.is_active) AS active_min,
-         max(v.price) FILTER (WHERE v.is_active) AS active_max,
-         max(v.compare_at_price) FILTER (
-           WHERE v.is_active AND v.compare_at_price IS NOT NULL
-         ) AS active_compare_at,
-         min(v.price) FILTER (WHERE ${PURCHASABLE}) AS buyable_min,
-         max(v.price) FILTER (WHERE ${PURCHASABLE}) AS buyable_max,
-         max(v.compare_at_price) FILTER (
-           WHERE ${PURCHASABLE} AND v.compare_at_price IS NOT NULL
-         ) AS buyable_compare_at,
-         count(*) FILTER (WHERE ${PURCHASABLE}) AS purchasable_count,
-         COALESCE(
-           sum(GREATEST(COALESCE(i.quantity, 0) - COALESCE(i.reserved_quantity, 0), 0))
-             FILTER (WHERE v.is_active),
-           0
-         ) AS total_stock
-       FROM product_variants v
-       LEFT JOIN inventory i ON i.variant_id = v.id
-       WHERE v.product_id = p.id
-     ) agg ON TRUE
+COALESCE(agg.total_stock, 0) AS total_stock,
+        COALESCE(rat.rating_average, 0) AS rating_average,
+        COALESCE(rat.rating_count, 0) AS rating_count,
+        -- See the note on the same column in listProducts.
+        agg.attributes,
+        im.images
+      FROM products p
+      JOIN categories c ON c.id = p.category_id
+      LEFT JOIN LATERAL (
+        SELECT
+          count(*) FILTER (WHERE v.is_active) AS variant_count,
+          min(v.price) FILTER (WHERE v.is_active) AS active_min,
+          max(v.price) FILTER (WHERE v.is_active) AS active_max,
+          max(v.compare_at_price) FILTER (
+            WHERE v.is_active AND v.compare_at_price IS NOT NULL
+          ) AS active_compare_at,
+          min(v.price) FILTER (WHERE ${PURCHASABLE}) AS buyable_min,
+          max(v.price) FILTER (WHERE ${PURCHASABLE}) AS buyable_max,
+          max(v.compare_at_price) FILTER (
+            WHERE ${PURCHASABLE} AND v.compare_at_price IS NOT NULL
+          ) AS buyable_compare_at,
+          count(*) FILTER (WHERE ${PURCHASABLE}) AS purchasable_count,
+          COALESCE(
+            sum(GREATEST(COALESCE(i.quantity, 0) - COALESCE(i.reserved_quantity, 0), 0))
+              FILTER (WHERE v.is_active),
+            0
+          ) AS total_stock,
+          COALESCE(
+            json_agg(v.attributes) FILTER (WHERE v.is_active),
+            '[]'::json
+          ) AS attributes
+        FROM product_variants v
+        LEFT JOIN inventory i ON i.variant_id = v.id
+        WHERE v.product_id = p.id
+      ) agg ON TRUE
      LEFT JOIN LATERAL (
        SELECT round(avg(r.rating)::numeric, 1) AS rating_average,
               count(*)::int AS rating_count

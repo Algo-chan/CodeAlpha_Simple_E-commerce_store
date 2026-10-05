@@ -12,12 +12,130 @@
  */
 
 /**
- * Below this, a product is badged "Low stock" rather than merely "In stock".
+ * Below this, the API marks a product "Low stock".
  *
- * A threshold rather than a boolean because "Low stock" only means something
- * relative to a number, and the number belongs to the shop, not to the component.
+ * Only the fixture builder still needs a number, because it has to stand in for
+ * the server while the storefront runs on fixtures. Every component now reads
+ * `variant.is_low_stock` and `product.is_low_stock`, which the server computes from
+ * its own copy of this threshold — so the number is stated once, on the tier that
+ * owns the policy, instead of twice with a chance of the two disagreeing.
+ *
+ * It stays exported because the fixture builder genuinely has to reproduce the
+ * server's decision; deleting it would only push the same constant somewhere
+ * less honest.
  */
 export const LOW_STOCK_THRESHOLD = 5;
+
+/* -------------------------------------------------------------------------- */
+/* Attributes                                                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Attribute keys that are initialisms, so `ram` reads as RAM rather than Ram.
+ *
+ * An EXPLICIT list, not a length heuristic. "Any bare lowercase token of two to
+ * four letters is an acronym" cannot tell `ram` from `new`, `size` or `os` — all
+ * of which are ordinary words that would come out shouting. `new` as a filter
+ * label is the worst of those, since "NEW" reads as a marketing claim rather than
+ * as the name of a facet.
+ *
+ * Keep this in step with the identical list in
+ * `backend/src/services/catalogue.view.js`.
+ */
+const ATTRIBUTE_ACRONYMS = new Set([
+  'ram',
+  'rom',
+  'ssd',
+  'hdd',
+  'cpu',
+  'gpu',
+  'usb',
+  'hdmi',
+  'nfc',
+  'sim',
+  'led',
+  'lcd',
+  'oled',
+  'dpi',
+  'sd',
+]);
+
+/**
+ * An attribute key as the shopper reads it.
+ *
+ * ONE implementation, previously four. `backend/src/services/catalogue.view.js`
+ * keeps the server-side twin because the two cannot import each other; what this
+ * function is for is that nothing inside the frontend disagrees with itself.
+ *
+ * The rules, and why each exists:
+ *
+ *   - Collapse runs of separators. `storage__capacity` and `storage-capacity`
+ *     describe the same facet and must produce one label and one filter key, not
+ *     two of each.
+ *   - Uppercase a listed initialism, and nothing else.
+ *
+ * @param {string} key
+ * @returns {string}
+ */
+export function humaniseAttribute(key) {
+  const spaced = String(key ?? '')
+    .replace(/[_-]+/g, ' ')
+    .trim();
+  if (!spaced) return '';
+
+  if (ATTRIBUTE_ACRONYMS.has(spaced.toLowerCase())) return spaced.toUpperCase();
+
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/**
+ * The union of every attribute key across variants, as sorted unique values.
+ *
+ * ONE implementation of the empty-value rule, previously three that disagreed.
+ * A `null`, `undefined` or empty-string attribute is not an option a shopper can
+ * choose, so it is skipped: an empty facet value would render as a blank checkbox
+ * that matches every product with that key, which is a filter that appears to work
+ * and does nothing.
+ *
+ * The backend's twin drops the skip, because the column is NOT NULL there and the
+ * case cannot arise. The frontend applies it defensively so a fixture or a future
+ * loose column cannot produce a dead checkbox.
+ *
+ * @param {object[]} variants
+ * @returns {Record<string, string[]>}
+ */
+export function mergeAttributes(variants) {
+  const merged = {};
+
+  for (const variant of variants ?? []) {
+    for (const [key, value] of Object.entries(variant?.attributes ?? {})) {
+      if (value === null || value === undefined || value === '') continue;
+      (merged[key] ??= new Set()).add(String(value));
+    }
+  }
+
+  return Object.fromEntries(
+    Object.entries(merged).map(([key, values]) => [key, Array.from(values).sort()])
+  );
+}
+
+/**
+ * Option groups for a variant picker: key, human label, values.
+ *
+ * The picker chooses a control per group, so the label must be readable and the
+ * value order stable. Sorting puts sizes in "10, 11, 40, 42" order rather than
+ * whatever order the data happened to arrive in.
+ *
+ * @param {object[]} variants
+ * @returns {Array<{key:string, label:string, values:string[]}>}
+ */
+export function buildAttributeOptions(variants) {
+  return Object.entries(mergeAttributes(variants)).map(([key, values]) => ({
+    key,
+    label: humaniseAttribute(key),
+    values,
+  }));
+}
 
 /* -------------------------------------------------------------------------- */
 /* Badges                                                                        */
@@ -29,9 +147,20 @@ export const LOW_STOCK_THRESHOLD = 5;
  * Keys come from the server; this maps them to wording, and adds the `new` and
  * `featured` keys the fixture catalogue derives from product flags.
  *
+ * `new` and `featured` are FIXTURE-ONLY. The API deliberately reports
+ * `is_featured: false` because there is no merchandising flag in the schema and
+ * "Featured" would be a fabricated editorial claim, so no server response will
+ * ever contain either key. They stay here so the fixtures still render; they must
+ * not be read as vocabulary the server shares.
+ *
  * `sale-<percent>` is deliberately not listed: the percentage comes from the
  * discount calculation, so a static map cannot enumerate it. `badgeLabel` handles
  * the family by pattern.
+ *
+ * `backend/src/services/catalogue.view.js` holds the server twin. The two cannot
+ * be one module, so parity is checked by a test on each side rather than assumed:
+ * a new server key with no wording here renders as an empty pill, which reads as
+ * a CSS bug rather than a missing string.
  */
 export const BADGE_LABELS = Object.freeze({
   digital: 'Instant download',

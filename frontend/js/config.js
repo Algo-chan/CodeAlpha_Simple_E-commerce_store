@@ -51,8 +51,14 @@ const defaults = {
   },
 
   /**
-   * Free-shipping threshold in ETB minor units (ETB 5,000). Also read by
-   * state/cart.js, which re-exports the resolved value for components.
+   * Order value, in ETB minor units, at or above which delivery is free.
+   *
+   * This is the only place the amount is written down. It was previously stated
+   * here AND recomputed from a literal in `state/cart.js` AND spelled out in prose
+   * in four templates ("Free delivery over ETB 5,000"), so lowering it to 4,000
+   * would have left the announcement bar, the mobile menu, the home page feature
+   * row and the product page all promising the old figure. Copy that mentions the
+   * number is now generated from this value by `freeDeliveryNotice`.
    */
   freeShippingThreshold: 500000,
 };

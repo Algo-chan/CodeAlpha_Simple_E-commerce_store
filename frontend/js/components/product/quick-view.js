@@ -25,7 +25,6 @@ import { productGallery } from './product-gallery.js';
 import { variantPicker } from './variant-picker.js';
 import { stepper } from '../forms/stepper.js';
 import { wishlistButton } from './wishlist-button.js';
-import { LOW_STOCK_THRESHOLD } from '../../utils/product-view.js';
 
 /**
  * The canonical product URL.
@@ -198,7 +197,9 @@ export function createQuickView({ cart, wishlist, ui }) {
     quantity.element.hidden = available !== null && available <= 1;
 
     const soldOut = !variant.is_purchasable;
-    const low = !soldOut && available !== null && available <= LOW_STOCK_THRESHOLD;
+    // Read from the variant, not recomputed here: the threshold is the server's
+    // policy and it has already applied it to this exact variant.
+    const low = variant.is_low_stock === true;
 
     for (const control of buyControls) {
       control.setLabel(

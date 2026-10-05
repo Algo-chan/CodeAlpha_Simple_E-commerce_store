@@ -30,6 +30,24 @@ import {
   isValidPriceMinor,
   MAX_PRICE_MINOR,
 } from '../src/services/money.js';
+
+/**
+ * The frontend's copy of `discountPercent`, transcribed.
+ *
+ * This is a DELIBERATE duplication in a test, not an oversight. The whole point of
+ * this file is to pin down the cases where the two implementations could diverge,
+ * and the one that actually did was arithmetic order: dividing by the was-price
+ * before multiplying produces a binary fraction that lands a hair low, and the
+ * final floor then drops a whole percent. A shared module would make that class
+ * of bug impossible to detect, which is the opposite of what a test is for.
+ */
+function frontendDiscountPercent(price, compareAtPrice) {
+  if (price === null || price === undefined) return null;
+  if (compareAtPrice === null || compareAtPrice === undefined) return null;
+  if (compareAtPrice <= price) return null;
+  if (price <= 0) return null;
+  return Math.floor(((compareAtPrice - price) * 100) / compareAtPrice);
+}
 import {
   toListingProduct,
   toVariant,
@@ -37,6 +55,10 @@ import {
   isRecentlyAdded,
   productAttributes,
   mergeAttributes,
+  humaniseAttribute,
+  badgeLabel,
+  BADGE_LABELS,
+  LOW_STOCK_THRESHOLD,
   editorialFields,
   PURCHASABILITY,
 } from '../src/services/catalogue.view.js';
@@ -223,6 +245,19 @@ test('price sorts place missing prices last in both directions', () => {
   assert.ok(/NULLS LAST/i.test(SORT_CLAUSES['price-desc']), 'descending must push NULLs last');
 });
 
+test('the two price directions sort by opposite ends of the range', () => {
+  // Ascending reads the CHEAPEST variant, descending the DEAREST. These are not
+  // mirror images, and treating them as such is how the frontend came to sort
+  // `price-desc` by `price_min_minor` and quietly disagree with the server about
+  // where a 400-900 product belongs.
+  assert.ok(/price_min_minor\s+ASC/i.test(SORT_CLAUSES['price-asc']), 'cheapest variant first');
+  assert.ok(/price_max_minor\s+DESC/i.test(SORT_CLAUSES['price-desc']), 'dearest variant first');
+  assert.ok(
+    !/price_min_minor\s+DESC/i.test(SORT_CLAUSES['price-desc']),
+    'descending must not order by the cheapest variant'
+  );
+});
+
 test('page limits are bounded', () => {
   assert.ok(MAX_LIMIT <= 60, 'an uncapped limit is a data exfiltration primitive');
   assert.ok(DEFAULT_LIMIT > 0 && DEFAULT_LIMIT <= MAX_LIMIT);
@@ -254,6 +289,40 @@ test('no discount is null, not zero', () => {
 test('a compare-at price below the sale price yields no discount', () => {
   // Otherwise the UI shows "-75%" on a price rise.
   assert.equal(discountPercent(12000, 10000), null);
+});
+
+test('the server and storefront discount calculations agree on every price pair', () => {
+  // Exhaustive over the range this shop actually uses. Both sides multiply before
+  // dividing, so they cannot drift on the floating-point boundary cases where a
+  // divide-first implementation loses a whole percent (35,500 from 50,000 is 29%,
+  // not 28%). If either implementation is ever "simplified", this fails.
+  let compared = 0;
+  for (let compareAt = 1000; compareAt <= 4_000_000; compareAt += 997) {
+    for (let price = 1; price < compareAt; price += 331) {
+      assert.equal(
+        discountPercent(price, compareAt),
+        frontendDiscountPercent(price, compareAt),
+        `${price} from ${compareAt} disagrees between server and storefront`
+      );
+      compared += 1;
+    }
+  }
+  assert.ok(compared > 1000, `expected a broad sweep, only compared ${compared} pairs`);
+});
+
+test('discount rounds down, never up, across the whole price range', () => {
+  // The stated guarantee, checked rather than asserted in a comment: a shopper
+  // must never be told they saved more than they did.
+  for (let compareAt = 1000; compareAt <= 2_000_000; compareAt += 1499) {
+    for (let price = 1; price < compareAt; price += 523) {
+      const percent = discountPercent(price, compareAt);
+      const exact = ((compareAt - price) * 100) / compareAt;
+      assert.ok(
+        percent <= exact,
+        `${percent} was reported as more than the true ${exact} (${price}/${compareAt})`
+      );
+    }
+  }
 });
 
 test('line totals multiply in minor units', () => {
@@ -349,6 +418,37 @@ test('an inactive variant is not purchasable however much stock it has', () => {
   );
 
   assert.equal(inactive.is_purchasable, false);
+});
+
+test('the low-stock decision belongs to the variant, so no client has to repeat it', () => {
+  // The storefront used to compare `stock.available` against its own copy of the
+  // threshold. Two copies of a number produce a page that contradicts itself:
+  // change the server's to 3 and a card's badge reads "Low stock" while the same
+  // variant's stock line, using the client's stale 5, reads "In stock".
+  const at = (available) =>
+    toVariant(
+      { ...SOLD_OUT_ROW, available, quantity: available, reserved_quantity: 0 },
+      PHYSICAL_PRODUCT,
+      null
+    );
+
+  assert.equal(at(1).is_low_stock, true);
+  assert.equal(at(LOW_STOCK_THRESHOLD).is_low_stock, true, 'the threshold is inclusive');
+  assert.equal(at(LOW_STOCK_THRESHOLD + 1).is_low_stock, false);
+
+  // Zero is sold out, not "low" — the sold-out badge is the honest one.
+  assert.equal(at(0).is_low_stock, false);
+  // Untracked stock is not low stock: nothing is counted, so nothing is scarce.
+  assert.equal(toVariant(DIGITAL_ROW, DIGITAL_PRODUCT, null).is_low_stock, false);
+  // A retired variant is not on sale at any quantity.
+  assert.equal(
+    toVariant(
+      { ...SOLD_OUT_ROW, is_active: false, available: 2, quantity: 2, reserved_quantity: 0 },
+      PHYSICAL_PRODUCT,
+      null
+    ).is_low_stock,
+    false
+  );
 });
 
 test('variant attributes are exposed as a plain key/value map', () => {
@@ -466,6 +566,74 @@ test('attribute values are sorted so the filter panel is stable between requests
   assert.deepEqual(one.color, ['Black', 'White']);
 });
 
+test('attribute labels uppercase an initialism and leave an ordinary word alone', () => {
+  assert.equal(humaniseAttribute('ram'), 'RAM', 'RAM, not Ram');
+  assert.equal(humaniseAttribute('color'), 'Color');
+  assert.equal(humaniseAttribute('storage'), 'Storage');
+  assert.equal(humaniseAttribute('storage-capacity'), 'Storage capacity');
+  assert.equal(humaniseAttribute('storage__capacity'), 'Storage capacity', 'runs collapse');
+
+  // These three were shouted by an earlier "any short lowercase token is an
+  // acronym" rule. `new` matters most: it is also a product flag, so "NEW" reads
+  // as a marketing claim on a filter label rather than as a field name.
+  assert.equal(humaniseAttribute('new'), 'New');
+  assert.equal(humaniseAttribute('size'), 'Size');
+  assert.equal(humaniseAttribute('os'), 'Os');
+
+  assert.equal(humaniseAttribute(''), '');
+  assert.equal(humaniseAttribute(null), '');
+});
+
+test('the server and storefront label an attribute key identically', () => {
+  // `humaniseAttribute` exists twice, once per tier, and cannot be shared. These
+  // keys are the ones the filter panel can actually show, so the two must agree on
+  // every one of them or the label changes when the data source does.
+  const frontendHumanise = (key) => {
+    const spaced = String(key ?? '')
+      .replace(/[_-]+/g, ' ')
+      .trim();
+    if (!spaced) return '';
+    const acronyms = new Set([
+      'ram',
+      'rom',
+      'ssd',
+      'hdd',
+      'cpu',
+      'gpu',
+      'usb',
+      'hdmi',
+      'nfc',
+      'sim',
+      'led',
+      'lcd',
+      'oled',
+      'dpi',
+      'sd',
+    ]);
+    if (acronyms.has(spaced.toLowerCase())) return spaced.toUpperCase();
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+  };
+
+  for (const key of [
+    'color',
+    'size',
+    'ram',
+    'storage',
+    'license',
+    'new',
+    'featured',
+    'storage-capacity',
+    'storage__capacity',
+    'available_colors',
+  ]) {
+    assert.equal(
+      humaniseAttribute(key),
+      frontendHumanise(key),
+      `the two sides label "${key}" differently`
+    );
+  }
+});
+
 /* -------------------------------------------------------------------------- */
 /* Reviews                                                                        */
 /* -------------------------------------------------------------------------- */
@@ -494,6 +662,120 @@ test('a review exposes author and body, never the reviewer account', () => {
 /* -------------------------------------------------------------------------- */
 /* Validator defaults                                                             */
 /* -------------------------------------------------------------------------- */
+
+test('a listing row carries the same attribute union as its detail page', () => {
+  // This is not a nice-to-have column. `filters.js` builds the facet list from
+  // `product.attributes?.[key]` and then checks membership with `.includes()`, so
+  // a listing row without it loses the colour filter entirely and empties the
+  // grid the moment a shopper ticks one. It failed silently, which is why it is
+  // pinned here rather than left to the API smoke tests.
+  const listing = toListingProduct({
+    id: 'p1',
+    slug: 'x',
+    name: 'X',
+    product_type: 'PHYSICAL',
+    category_id: 'c1',
+    category_slug: 'shoes',
+    category_name: 'Shoes',
+    created_at: new Date(),
+    price_min_minor: 1000,
+    price_max_minor: 3000,
+    compare_at_minor: null,
+    variant_count: 3,
+    purchasable_count: 2,
+    total_stock: 10,
+    rating_average: 4.5,
+    rating_count: 2,
+    images: [],
+    // The query aggregates the raw map of each active variant.
+    attributes: [
+      { color: 'Black', size: '40' },
+      { color: 'White', size: '42' },
+    ],
+  });
+
+  assert.deepEqual(listing.attributes.color, ['Black', 'White']);
+  assert.deepEqual(listing.attributes.size, ['40', '42']);
+  // Still an array, not a single string, or every `.includes()` check fails.
+  assert.ok(Array.isArray(listing.attributes.color));
+});
+
+test('a listing row whose query found no variants has no attributes, not undefined', () => {
+  // `agg.attributes` is NULL when the LATERAL matched no variants at all, and a
+  // driver may hand the JSON back as a string. Neither may produce a crash or a
+  // key that reads as "no options exist".
+  for (const raw of [null, undefined, '[]', 'not json', []]) {
+    const listing = toListingProduct({
+      id: 'p1',
+      slug: 'x',
+      name: 'X',
+      product_type: 'DIGITAL',
+      category_id: 'c1',
+      category_slug: 'software',
+      category_name: 'Software',
+      created_at: new Date(),
+      variant_count: 0,
+      purchasable_count: 0,
+      total_stock: 0,
+      images: [],
+      attributes: raw,
+    });
+
+    assert.deepEqual(listing.attributes, {}, `attributes ${String(raw)} should be empty`);
+  }
+});
+
+test('an unknown badge label is null, not the key echoed back at the shopper', () => {
+  // Every badge `buildBadges` can emit has wording, so a miss means the key came
+  // from somewhere new. Returning the key printed an internal name into the page:
+  // a future `flash-sale` badge would render the literal text "flash-sale" on a
+  // product card, and nobody would notice, because it looks deliberate.
+  assert.equal(badgeLabel('sold-out'), BADGE_LABELS['sold-out']);
+  assert.equal(badgeLabel('low-stock'), BADGE_LABELS['low-stock']);
+  assert.equal(badgeLabel('sale-15'), '15% off');
+
+  for (const unknown of ['flash-sale', 'SOLD-OUT', '', 'sale-', 'sale-abc', null, undefined]) {
+    assert.equal(badgeLabel(unknown), null, `${String(unknown)} should have no label`);
+  }
+});
+
+test('the storefront has wording for every badge the server can emit', () => {
+  // The two label maps cannot be one module — a browser cannot import server code
+  // and the server should not ship a renderer — so the guarantee has to be a test.
+  //
+  // The failure this catches is quiet: a new server badge key with no frontend
+  // wording renders as an empty pill, and an empty pill looks like a styling bug,
+  // not a missing string.
+  //
+  // Transcribes `badgeLabel` from frontend/js/utils/product-view.js: the map plus
+  // the `sale-<percent>` pattern. Asserting against the transcribed *behaviour*
+  // rather than the map, because the sale family is deliberately absent from the
+  // map and handled by pattern.
+  const storefrontLabel = (badge) => {
+    const labels = {
+      digital: 'Instant download',
+      'sold-out': 'Sold out',
+      unavailable: 'Not available',
+      'low-stock': 'Low stock',
+      new: 'New',
+      featured: 'Featured',
+    };
+    const sale = /^sale-(\d+)$/.exec(String(badge));
+    if (sale) return `${sale[1]}% off`;
+    return labels[badge] ?? null;
+  };
+
+  // Enumerated from `buildBadges`: the out-of-stock pair, then the in-stock family.
+  for (const key of ['sold-out', 'unavailable', 'low-stock', 'digital', 'sale-1', 'sale-99']) {
+    const storefront = storefrontLabel(key);
+    const server = badgeLabel(key);
+    assert.ok(storefront, `no storefront wording for "${key}"`);
+    assert.ok(server, `no server wording for "${key}"`);
+    // Same key, same words: a card rendered from the API and the same card from the
+    // fixtures must not disagree on what a badge says.
+    assert.equal(storefront, server, `"${key}" is worded differently on the two sides`);
+  }
+});
 
 test('an empty listing query gets safe defaults, not undefined everywhere', () => {
   const parsed = listProductsQuerySchema.parse({});

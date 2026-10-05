@@ -13,7 +13,7 @@
  * app injects once the mock catalogue is available.
  */
 import { createStore } from './store.js';
-import { majorToMinor } from '../utils/format.js';
+import { config } from '../config.js';
 
 /**
  * Bumped to 2 when variant and product ids became UUIDs and the persisted
@@ -25,8 +25,14 @@ export const CART_STORAGE_VERSION = 2;
 /** Mirrors the Phase 2 constraint, so the UI cannot offer an order the DB rejects. */
 export const MAX_QUANTITY = 10;
 
-/** ETB 5,000 in minor units. Drives the free-shipping progress hint. */
-export const FREE_SHIPPING_THRESHOLD_MINOR = majorToMinor(5000);
+/**
+ * The free-delivery threshold, re-exported because components read it from here.
+ *
+ * Sourced from config rather than recomputed, so the cart's progress hint and the
+ * `freeDeliveryNotice` copy in the templates are the same number. Two literals
+ * meant two answers the moment one of them was edited.
+ */
+export const FREE_SHIPPING_THRESHOLD_MINOR = config.freeShippingThreshold;
 
 const initialState = {
   /** @type {Array<{variantId:string, productId:string, slug:string, name:string,

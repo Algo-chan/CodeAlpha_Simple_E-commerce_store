@@ -16,7 +16,12 @@
  */
 import { el, clear, on, append } from '../core/dom.js';
 import { icon } from '../utils/icons.js';
-import { formatMoney, formatRelative, discountPercent } from '../utils/format.js';
+import {
+  formatMoney,
+  formatRelative,
+  discountPercent,
+  freeDeliveryNotice,
+} from '../utils/format.js';
 import { button } from '../components/ui/button.js';
 import { stepper } from '../components/forms/stepper.js';
 import { breadcrumb } from '../components/layout/breadcrumb.js';
@@ -27,7 +32,6 @@ import { productGallery } from '../components/product/product-gallery.js';
 import { variantPicker } from '../components/product/variant-picker.js';
 import { wishlistButton } from '../components/product/wishlist-button.js';
 import { productRail } from '../components/product/product-card.js';
-import { LOW_STOCK_THRESHOLD } from '../utils/product-view.js';
 
 /**
  * @param {object} options
@@ -254,7 +258,9 @@ export default function productPage({
     quantity.element.hidden = available !== null && available <= 1;
 
     const soldOut = !variant.is_purchasable;
-    const low = !soldOut && available !== null && available <= LOW_STOCK_THRESHOLD;
+    // The server decided this; see quick-view.js for why the client does not repeat
+    // the arithmetic.
+    const low = variant.is_low_stock === true;
 
     addButton.setLabel(
       soldOut ? 'Sold out' : low ? `Add to cart — only ${available} left` : 'Add to cart'
@@ -489,7 +495,7 @@ function deliveryPanel(product) {
     : [
         'Dispatched within one working day from Addis Ababa.',
         'Delivery in 2–4 days inside Addis Ababa, 4–7 days elsewhere in Ethiopia.',
-        'Free delivery on orders over ETB 5,000.',
+        freeDeliveryNotice({ long: true }),
         'Returns accepted within 30 days, unworn and in the original packaging.',
       ];
 

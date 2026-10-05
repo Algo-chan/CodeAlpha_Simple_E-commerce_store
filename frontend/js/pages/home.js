@@ -13,7 +13,7 @@
  */
 import { el, on } from '../core/dom.js';
 import { icon } from '../utils/icons.js';
-import { formatCount, formatMoney } from '../utils/format.js';
+import { formatCount, formatMoney, freeDeliveryNotice } from '../utils/format.js';
 import { button } from '../components/ui/button.js';
 import { sectionHeading } from '../components/layout/page-header.js';
 import { productGrid, productRail } from '../components/product/product-card.js';
@@ -26,7 +26,7 @@ const collectionHref = (query = {}) => {
 };
 
 const ASSURANCES = [
-  { icon: 'truck', text: 'Free delivery over ETB 5,000' },
+  { icon: 'truck', text: freeDeliveryNotice() },
   { icon: 'refresh', text: '30-day returns, no questions' },
   { icon: 'shield', text: 'Two-year warranty on every order' },
 ];

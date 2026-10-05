@@ -14,13 +14,13 @@
  */
 import { el, delegate } from '../../core/dom.js';
 import { icon } from '../../utils/icons.js';
-import { formatCount } from '../../utils/format.js';
+import { formatCount, freeDeliveryNotice } from '../../utils/format.js';
 import { createPanel } from '../feedback/overlay.js';
 import { categoryUrl } from './nav.js';
 
 /** Promoted into the drawer above the category list. */
 const PROMO = {
-  title: 'Free delivery over ETB 5,000',
+  title: freeDeliveryNotice(),
   text: 'On every order inside Addis Ababa.',
   href: '/collection.html',
 };

@@ -13,6 +13,7 @@
  * the places where a unit price genuinely has minor units worth showing
  * (a cart line's per-unit figure).
  */
+import { config } from '../config.js';
 
 /** ISO 4217 code. Matches the Phase 2 convention: the store trades in ETB. */
 export const CURRENCY = 'ETB';
@@ -72,13 +73,32 @@ export function minorToMajor(minor) {
 /**
  * Percentage saved, rounded down. Null when there is nothing to compare, so the
  * caller can omit the badge rather than render "-0%".
- * @param {number|null} price
- * @param {number|null} compareAtPrice
- * @returns {number|null}
+ *
+ * The arithmetic order is load-bearing and must stay identical to
+ * `discountPercent` in `backend/src/services/money.js`.
+ *
+ *   ((was - now) * 100) / was     <- this, exact in integer minor units
+ *   ((was - now) / was) * 100     <- the obvious spelling, and WRONG
+ *
+ * The second form divides first, so the result is a binary fraction that often
+ * lands a hair below the true value. Rounding down then drops a whole percent:
+ * 35,500 against 50,000 is 29% off, but the dividing-first spelling reports 28%.
+ * The server and the client must never disagree about the saving on the same
+ * product, so this multiplies first and the "was" price is the denominator —
+ * "was 10,000, now 7,500" is 25% off, not 33%.
+ *
+ * @param {number|null} price        current price, minor units
+ * @param {number|null} compareAtPrice "was" price, minor units
+ * @returns {number|null} whole percent, or null when there is no real discount
  */
 export function discountPercent(price, compareAtPrice) {
-  if (!compareAtPrice || !price || compareAtPrice <= price) return null;
-  return Math.floor(((compareAtPrice - price) / compareAtPrice) * 100);
+  if (price === null || price === undefined) return null;
+  if (compareAtPrice === null || compareAtPrice === undefined) return null;
+  // A "was" price at or below the sale price is bad data, not a 100% discount.
+  if (compareAtPrice <= price) return null;
+  if (price <= 0) return null;
+
+  return Math.floor(((compareAtPrice - price) * 100) / compareAtPrice);
 }
 
 /** @param {number|null|undefined} value */
@@ -162,6 +182,23 @@ export function formatCompact(value) {
   );
 }
 
+/**
+ * The free-delivery promise, with the threshold filled in.
+ *
+ * Four templates used to spell out "ETB 5,000" by hand, which is four places to
+ * forget when the threshold changes — and the failure is silent, because the page
+ * still renders and simply lies about the offer. The amount now comes from
+ * `config.freeShippingThreshold`, the same value the cart's progress hint measures
+ * against, so the promise and the arithmetic cannot disagree.
+ *
+ * @param {{ long?: boolean }} [options] `long` for the sentence form used in prose
+ * @returns {string}
+ */
+export function freeDeliveryNotice({ long = false } = {}) {
+  const amount = formatMoney(config.freeShippingThreshold);
+  return long ? `Free delivery on orders over ${amount}.` : `Free delivery over ${amount}`;
+}
+
 export default {
   CURRENCY,
   formatMoney,
@@ -174,6 +211,7 @@ export default {
   formatRelative,
   formatDate,
   formatCompact,
+  freeDeliveryNotice,
   truncate,
   titleFromSlug,
 };

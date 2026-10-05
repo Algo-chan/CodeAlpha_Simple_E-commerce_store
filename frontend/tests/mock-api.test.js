@@ -19,6 +19,7 @@ import assert from 'node:assert/strict';
 import { createMockClient, fixtureCatalogue, computeFacets } from '../js/mock/api.js';
 import { listCategories, buildTree } from '../js/mock/categories.js';
 import { listProducts, listVariants, listReviews } from '../js/mock/products.js';
+import { LOW_STOCK_THRESHOLD } from '../js/utils/product-view.js';
 import {
   findVariantFor,
   canSelectAttribute,
@@ -515,6 +516,37 @@ test('a sold-out variant is never purchasable, whatever the stock row says', () 
       }
     }
   }
+});
+
+test('fixtures mark low stock the same way the API does', () => {
+  // Components read `variant.is_low_stock` rather than comparing stock to their
+  // own threshold, so the fixtures have to send it. Without this, every "Only N
+  // left" line disappears the day the catalogue switches from fixtures to the
+  // server, and the failure has nothing to do with the change that caused it.
+  let sawLow = false;
+  let sawNotLow = false;
+
+  for (const product of catalogue.products) {
+    for (const variant of product.variants ?? []) {
+      const available = variant.stock?.available ?? null;
+      const expected =
+        variant.is_active !== false &&
+        available !== null &&
+        available > 0 &&
+        available <= LOW_STOCK_THRESHOLD;
+
+      assert.equal(
+        variant.is_low_stock,
+        expected,
+        `${product.slug} / ${variant.sku}: available=${String(available)}`
+      );
+      if (variant.is_low_stock) sawLow = true;
+      else sawNotLow = true;
+    }
+  }
+
+  assert.ok(sawLow, 'the fixtures should include a low-stock variant');
+  assert.ok(sawNotLow, 'and a variant that is not low stock');
 });
 
 test('a value with no matching variant is disabled', () => {

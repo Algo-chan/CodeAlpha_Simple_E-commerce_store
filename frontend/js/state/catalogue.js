@@ -11,6 +11,7 @@
  * the per-keystroke search path into a Map lookup instead of a linear scan.
  */
 import { createStore } from './store.js';
+import { humaniseAttribute } from '../utils/product-view.js';
 
 /** @type {Readonly<Record<string, string>>} */
 export const LOAD_STATUS = Object.freeze({
@@ -338,15 +339,16 @@ export function flattenCategories(categories, depth = 0) {
   return flat;
 }
 
-/** "available_colors" -> "Available colors" */
-export function humaniseAttribute(key) {
-  const spaced = String(key).replace(/_/g, ' ').replace(/-/g, ' ').trim();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
+/* `humaniseAttribute` used to be defined here and duplicated in `mock/view.js` and
+ * `mock/api.js`, each spelling the rule differently. It lives in
+ * `utils/product-view.js` now, re-exported below so existing importers and tests
+ * keep working. */
 
 function dateValue(value) {
   const time = new Date(value ?? 0).getTime();
   return Number.isNaN(time) ? 0 : time;
 }
+
+export { humaniseAttribute };
 
 export default { createCatalogueStore, flattenCategories, humaniseAttribute, LOAD_STATUS };

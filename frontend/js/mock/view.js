@@ -26,14 +26,26 @@ import {
   BADGE_LABELS,
   LOW_STOCK_THRESHOLD,
   badgeLabel,
+  buildAttributeOptions,
   canSelectAttribute,
   findVariantFor,
+  humaniseAttribute,
+  mergeAttributes,
 } from '../utils/product-view.js';
 
 /** Only these may appear in a listing. DRAFT and ARCHIVED never do. */
 export const LISTABLE_STATUS = 'ACTIVE';
 
-export { BADGE_LABELS, LOW_STOCK_THRESHOLD, badgeLabel, canSelectAttribute, findVariantFor };
+export {
+  BADGE_LABELS,
+  LOW_STOCK_THRESHOLD,
+  badgeLabel,
+  buildAttributeOptions,
+  canSelectAttribute,
+  findVariantFor,
+  humaniseAttribute,
+  mergeAttributes,
+};
 
 /**
  * Fallback price for a digital product that has neither a variant nor a
@@ -232,7 +244,8 @@ function buildVariantView(variant, product, primaryImage) {
   // Same rule as the backend's `toVariant`: a variant is purchasable when it is
   // active and either untracked (`stock === null`) or has stock on hand. Sold out
   // means `available === 0`, never "the row went inactive".
-  const is_purchasable = variant.is_active !== false && (stock === null || stock.available > 0);
+  const is_active = variant.is_active !== false;
+  const is_purchasable = is_active && (stock === null || stock.available > 0);
 
   return {
     id: String(variant.id),
@@ -246,12 +259,18 @@ function buildVariantView(variant, product, primaryImage) {
     price_minor: variant.price_minor,
     compare_at_price_minor: variant.compare_at_price_minor ?? null,
     attributes: variant.attributes ?? {},
-    is_active: variant.is_active !== false,
+    is_active,
     // `null` stock means digital / untracked - an important distinction from
     // "zero stock", which means sold out.
     stock,
     is_purchasable,
     is_digital: stock === null,
+    // Present because the real API sends it: the components read this flag instead
+    // of comparing `stock.available` to their own copy of the threshold. The mock
+    // has to send it too, or every "Only N left" line quietly disappears the
+    // moment the fixtures are swapped for the server.
+    is_low_stock:
+      is_active && stock !== null && stock.available > 0 && stock.available <= LOW_STOCK_THRESHOLD,
     label: buildVariantLabel(variant),
   };
 }
@@ -313,33 +332,13 @@ function buildImages(product) {
 /* Attributes                                                                   */
 /* -------------------------------------------------------------------------- */
 
-/** Union of every attribute key across variants -> sorted unique values. */
-function mergeAttributes(variants) {
-  const merged = {};
-  for (const variant of variants) {
-    for (const [key, value] of Object.entries(variant.attributes ?? {})) {
-      if (value === null || value === undefined || value === '') continue;
-      (merged[key] ??= new Set()).add(String(value));
-    }
-  }
-
-  return Object.fromEntries(
-    Object.entries(merged).map(([key, values]) => [key, Array.from(values).sort()])
-  );
-}
-
-function buildAttributeOptions(variants) {
-  return Object.entries(mergeAttributes(variants)).map(([key, values]) => ({
-    key,
-    label: humaniseAttribute(key),
-    values,
-  }));
-}
-
-function humaniseAttribute(key) {
-  const spaced = String(key).replace(/[_-]/g, ' ').trim();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
+/*
+ * `mergeAttributes`, `buildAttributeOptions` and `humaniseAttribute` used to be
+ * private copies here and duplicated again in `state/catalogue.js` and
+ * `mock/api.js`, each with its own idea of whether `ram` is "Ram" or "RAM" and
+ * whether an empty attribute value becomes a facet. All of that now lives in
+ * `utils/product-view.js`, imported at the top of this file.
+ */
 
 /* -------------------------------------------------------------------------- */
 /* Variant selection                                                            */

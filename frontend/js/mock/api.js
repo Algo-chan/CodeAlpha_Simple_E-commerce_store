@@ -20,6 +20,7 @@ import { config } from '../config.js';
 import { listCategories, buildTree } from './categories.js';
 import { listProducts, listVariants, listReviews } from './products.js';
 import { buildCatalogue, LISTABLE_STATUS } from './view.js';
+import { humaniseAttribute } from '../utils/product-view.js';
 
 const FAILURE_FLAG_KEY = 'aie:mock:fail';
 
@@ -346,8 +347,7 @@ function wait(ms, signal) {
 }
 
 function humanise(key) {
-  const spaced = String(key).replace(/[_-]/g, ' ').trim();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+  return humaniseAttribute(key);
 }
 
 /** The instance the app uses. */
