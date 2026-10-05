@@ -1,25 +1,28 @@
 # Documentation
 
-| Document                               | Contents                                                             |
-| -------------------------------------- | -------------------------------------------------------------------- |
-| [architecture.md](./architecture.md)   | Layers, request lifecycle, folder responsibilities, design decisions |
-| [api.md](./api.md)                     | Versioning, response envelope, error codes, current endpoints        |
-| [database-plan.md](./database-plan.md) | Design decisions, what is built, what is deferred                    |
-| [database-erd.md](./database-erd.md)   | ER diagrams, column reference, enforced rules                        |
-| [setup.md](./setup.md)                 | Prerequisites, install, PostgreSQL, run commands, troubleshooting    |
-| [roadmap.md](./roadmap.md)             | Build phases and what is deliberately deferred                       |
+| Document                                                 | Contents                                                              |
+| -------------------------------------------------------- | --------------------------------------------------------------------- |
+| [architecture.md](./architecture.md)                     | Layers, request lifecycle, folder responsibilities, design decisions  |
+| [api.md](./api.md)                                       | Versioning, response envelope, error codes, current endpoints         |
+| [database-plan.md](./database-plan.md)                   | Design decisions, what is built, what is deferred                     |
+| [database-erd.md](./database-erd.md)                     | ER diagrams, column reference, enforced rules                         |
+| [frontend-design-system.md](./frontend-design-system.md) | Design tokens, typography, spacing, components, motion, accessibility |
+| [frontend-storefront.md](./frontend-storefront.md)       | Homepage architecture, state, cart, search, API integration points    |
+| [setup.md](./setup.md)                                   | Prerequisites, install, PostgreSQL, run commands, troubleshooting     |
+| [roadmap.md](./roadmap.md)                               | Build phases and what is deliberately deferred                        |
 
 Other useful references:
 
-- `frontend/README.md` — frontend folder map and component contract
-- `frontend/components/README.md` — component conventions and planned components
+- `frontend/README.md` — frontend folder map and how the storefront boots
+- `frontend/js/components/README.md` — component conventions
 - `frontend/pages/README.md` — route → file mapping
+- `frontend/tests/README.md` — what the frontend tests cover, and what they do not
 - `backend/migrations/README.md` — migration conventions and current file list
 - `backend/seeds/README.md` — seed file format and re-runnability rules
 
 ## Current phase
 
-**Phase 2 — database and domain foundation (complete).**
+**Phase 4 — storefront experience (complete).**
 
 Phase 1 remains in place, plus:
 
@@ -27,8 +30,24 @@ Phase 1 remains in place, plus:
 - 7 seed files loading reproducible demo data (re-runnable)
 - Mermaid ERD and design documentation in `docs/database-erd.md`
 
-Still to come: services and APIs, authentication, the storefront UI, checkout
-and the admin area.
+Phase 3 added the frontend foundation:
+
+- Centralised design tokens and a mobile-first CSS architecture
+- Storefront shell, navigation, search, product card, gallery, variant picker
+- Cart drawer, wishlist, toasts, and reusable modal/drawer/sheet primitives
+- Skeleton, empty and error states; motion system honouring reduced-motion
+- Mock data shaped like the Phase 2 schema and the future API response
+
+Phase 4 built the storefront on top of it:
+
+- Homepage, collection, product, cart and wishlist pages
+- Functional search, quick view, variant selection, cart and wishlist state
+- 153 frontend tests over the pure logic
+
+Still to come: services and APIs, authentication, checkout, orders, payments and
+the admin area. The frontend currently makes **no** API calls — it runs entirely
+on fixtures in `frontend/js/mock/`, shaped so the real client can replace them
+without any component changing.
 
 The Phase 1 infrastructure still in place:
 
@@ -37,8 +56,7 @@ The Phase 1 infrastructure still in place:
 - Centralized success/error envelope, 404 handling and safe error responses
 - PostgreSQL connection pool, health probe, migration runner and seed runner
 - Validated environment configuration (`.env` is git-ignored)
-- Frontend shell: design tokens, static dev server, API client, page/component conventions
-- ESLint, Prettier, automated tests (`npm run verify`)
+- ESLint, Prettier, automated tests for both workspaces (`npm run verify`)
 
 The database layer is done, but no product logic runs on it yet: there are no
 repositories, services or endpoints for the catalogue, cart, checkout, orders or

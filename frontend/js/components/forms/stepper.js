@@ -63,17 +63,25 @@ export function stepper({
     disabled: disabled || undefined,
   });
 
-  const decrement = el('button.stepper__button', {
-    type: 'button',
-    'aria-label': `Decrease ${label.toLowerCase()}`,
-    disabled: disabled || current <= min || undefined,
-  }, [icon('minus')]);
+  const decrement = el(
+    'button.stepper__button',
+    {
+      type: 'button',
+      'aria-label': `Decrease ${label.toLowerCase()}`,
+      disabled: disabled || current <= min || undefined,
+    },
+    [icon('minus')]
+  );
 
-  const increment = el('button.stepper__button', {
-    type: 'button',
-    'aria-label': `Increase ${label.toLowerCase()}`,
-    disabled: disabled || current >= ceiling || undefined,
-  }, [icon('plus')]);
+  const increment = el(
+    'button.stepper__button',
+    {
+      type: 'button',
+      'aria-label': `Increase ${label.toLowerCase()}`,
+      disabled: disabled || current >= ceiling || undefined,
+    },
+    [icon('plus')]
+  );
 
   const element = el(
     `div.stepper${small ? '.stepper--sm' : ''}`,

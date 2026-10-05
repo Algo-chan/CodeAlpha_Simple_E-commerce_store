@@ -11,6 +11,14 @@
 import { getFocusable, focusSilently } from '../core/dom.js';
 
 /**
+ * Installed traps, oldest first. Panels mount as siblings on `body`, so the only
+ * one allowed to act is the last one installed: without this a trap underneath
+ * an open overlay pulls focus straight back out of it.
+ * @type {HTMLElement[]}
+ */
+const installed = [];
+
+/**
  * Traps Tab focus inside a container.
  *
  * @param {HTMLElement} container
@@ -19,10 +27,11 @@ import { getFocusable, focusSilently } from '../core/dom.js';
  */
 export function trapFocus(container, { initialFocus, returnFocusTo } = {}) {
   const previouslyFocused =
-    returnFocusTo ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    returnFocusTo ??
+    (document.activeElement instanceof HTMLElement ? document.activeElement : null);
 
   const onKeydown = (event) => {
-    if (event.key !== 'Tab') return;
+    if (event.key !== 'Tab' || installed[installed.length - 1] !== container) return;
 
     const focusable = getFocusable(container);
     if (focusable.length === 0) {
@@ -48,16 +57,19 @@ export function trapFocus(container, { initialFocus, returnFocusTo } = {}) {
   // A focus that lands outside the container (browser chrome, an extension, a
   // programmatic focus) is pulled back in.
   const onFocusIn = (event) => {
+    if (installed[installed.length - 1] !== container) return;
     if (container.contains(event.target)) return;
     const focusable = getFocusable(container);
     focusSilently(focusable[0] ?? container);
   };
 
+  installed.push(container);
   document.addEventListener('keydown', onKeydown, true);
   document.addEventListener('focusin', onFocusIn, true);
 
   // Defer so the panel is laid out and its own transition has started.
   requestAnimationFrame(() => {
+    if (installed[installed.length - 1] !== container) return;
     if (initialFocus && container.contains(initialFocus)) {
       focusSilently(initialFocus);
     } else {
@@ -65,7 +77,12 @@ export function trapFocus(container, { initialFocus, returnFocusTo } = {}) {
     }
   });
 
+  let released = false;
   return () => {
+    if (released) return;
+    released = true;
+    const index = installed.indexOf(container);
+    if (index !== -1) installed.splice(index, 1);
     document.removeEventListener('keydown', onKeydown, true);
     document.removeEventListener('focusin', onFocusIn, true);
     if (previouslyFocused && document.contains(previouslyFocused)) {

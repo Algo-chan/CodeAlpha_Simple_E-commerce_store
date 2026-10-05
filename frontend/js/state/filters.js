@@ -24,10 +24,15 @@ export const FILTERS_STORAGE_VERSION = 2;
  * The shape a product must have to be filterable. `view.js` builds exactly
  * this, but any object with these fields works.
  *
+ * Note the field name: view-model products carry `is_listable`, NOT `is_active`.
+ * `is_active` belongs to categories and to individual variants - a product's
+ * own publication state is `status`. Keeping the two apart matters, because a
+ * guard written against the wrong one silently never fires.
+ *
  * @typedef {object} FilterableProduct
  * @property {string} id
  * @property {string} category_id
- * @property {boolean} is_active
+ * @property {boolean} is_listable
  * @property {boolean} is_featured
  * @property {string} created_at
  * @property {number|null} price_min_minor  cheapest active variant
@@ -46,10 +51,9 @@ export const SORT_OPTIONS = Object.freeze({
     // Featured first, then a stable tiebreak. Product ids are UUIDs, so
     // subtraction is meaningless here; string order is stable and deterministic.
     compare: (a, b) =>
-      Number(b.is_featured) - Number(a.is_featured) ||
-      String(a.id).localeCompare(String(b.id)),
+      Number(b.is_featured) - Number(a.is_featured) || String(a.id).localeCompare(String(b.id)),
   },
-  'newest': { label: 'Newest', compare: (a, b) => dateValue(b.created_at) - dateValue(a.created_at) },
+  newest: { label: 'Newest', compare: (a, b) => dateValue(b.created_at) - dateValue(a.created_at) },
   'price-asc': {
     label: 'Price: low to high',
     compare: (a, b) => (a.price_min_minor ?? Infinity) - (b.price_min_minor ?? Infinity),
@@ -58,9 +62,15 @@ export const SORT_OPTIONS = Object.freeze({
     label: 'Price: high to low',
     compare: (a, b) => (b.price_min_minor ?? -Infinity) - (a.price_min_minor ?? Infinity),
   },
-  'name-asc': { label: 'Name: A to Z', compare: (a, b) => String(a.name).localeCompare(String(b.name)) },
-  'name-desc': { label: 'Name: Z to A', compare: (a, b) => String(b.name).localeCompare(String(a.name)) },
-  'rating': {
+  'name-asc': {
+    label: 'Name: A to Z',
+    compare: (a, b) => String(a.name).localeCompare(String(b.name)),
+  },
+  'name-desc': {
+    label: 'Name: Z to A',
+    compare: (a, b) => String(b.name).localeCompare(String(a.name)),
+  },
+  rating: {
     label: 'Top rated',
     compare: (a, b) =>
       (b.rating_average ?? 0) - (a.rating_average ?? 0) ||
@@ -169,8 +179,8 @@ export function createFilterStore() {
     resetFacets() {
       store.setState({
         search: '',
-/** @type {string|null} UUID, never a number */
-  categoryId: null,
+        /** @type {string|null} UUID, never a number */
+        categoryId: null,
         attributes: {},
         price: { min: null, max: null },
         inStockOnly: false,
@@ -198,7 +208,12 @@ export function filterProducts(products, filters, { categoryIds = null } = {}) {
   const needle = (filters.search ?? '').toLowerCase().trim();
 
   return products.filter((product) => {
-    if (product.is_active === false) return false;
+    // `is_listable`, tested strictly. A raw database row has no such field, so
+    // `!== true` rejects that too: filtering expects the view model, and quietly
+    // accepting unnormalised rows is how a DRAFT ends up in a grid. The
+    // collection page also pre-selects `selectListable()`, but this function is
+    // exported, so it cannot depend on its caller having done that.
+    if (product.is_listable !== true) return false;
 
     // A category filter matches the category and everything beneath it. Clicking
     // "Home & Living" and getting an empty grid because its products sit in

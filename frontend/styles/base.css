@@ -53,7 +53,9 @@ h6 {
   line-height: var(--line-height-snug);
   letter-spacing: var(--letter-spacing-tight);
   text-wrap: balance;
-  font-variation-settings: 'SOFT' 0, 'WONK' 0;
+  font-variation-settings:
+    'SOFT' 0,
+    'WONK' 0;
 }
 
 h1 {
@@ -130,7 +132,8 @@ mark {
    quiet while still signalling interactivity. */
 
 a {
-  transition: color var(--duration-fast) var(--ease-standard),
+  transition:
+    color var(--duration-fast) var(--ease-standard),
     opacity var(--duration-fast) var(--ease-standard);
 }
 

@@ -74,9 +74,10 @@ export function createCartDrawer({ cart, toasts = null, onCheckout = null }) {
       draw();
 
       context.onCleanup(
-        cart.subscribe(() => {
-          if (panel.isOpen) draw();
-        })
+        // Redrawn whether or not the drawer is open. Guarding on `panel.isOpen`
+        // would leave the drawer showing the basket as it was when it was last
+        // opened, and the comment above promises that is never visible.
+        cart.subscribe(draw)
       );
 
       return inner;

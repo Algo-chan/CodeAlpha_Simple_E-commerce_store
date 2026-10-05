@@ -64,4 +64,16 @@ export default [
       },
     },
   },
+
+  // Frontend tests: Node.js runtime (`node:test`), not the browser. They cover
+  // the pure modules only, so they see no `window` or `document` — which is
+  // exactly the constraint tests/README.md documents.
+  {
+    files: ['frontend/tests/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
 ];

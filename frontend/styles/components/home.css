@@ -271,6 +271,18 @@
   color: var(--color-primary-hover);
 }
 
+/* Child categories sit in the same grid as their parents, so they are pulled
+   down a step in scale and weight rather than hidden - a shopper scanning for
+   "Shoes" should still recognise it as part of Fashion. */
+.category-tile--nested .category-tile__media {
+  border-radius: var(--radius-md);
+}
+
+.category-tile--nested .category-tile__name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
 /* --- Split feature band ------------------------------------------------------ */
 
 .feature {

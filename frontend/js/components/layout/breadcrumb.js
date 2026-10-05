@@ -21,16 +21,20 @@ export function breadcrumb(items = [], options = {}) {
   // One item is just a page title, not a trail. Rendering it would be noise.
   if (trail.length < 2) return null;
 
-  const list = el('ol.breadcrumb__list', {}, trail.map((item, position) => {
-    const isLast = position === trail.length - 1;
+  const list = el(
+    'ol.breadcrumb__list',
+    {},
+    trail.map((item, position) => {
+      const isLast = position === trail.length - 1;
 
-    return el('li.breadcrumb__item', {}, [
-      isLast
-        ? el('span.breadcrumb__current', { 'aria-current': 'page', text: item.label })
-        : el('a.breadcrumb__link', { href: item.href ?? '#', text: item.label }),
-      isLast ? null : el('span.breadcrumb__separator', { 'aria-hidden': 'true', text: '/' }),
-    ]);
-  }));
+      return el('li.breadcrumb__item', {}, [
+        isLast
+          ? el('span.breadcrumb__current', { 'aria-current': 'page', text: item.label })
+          : el('a.breadcrumb__link', { href: item.href ?? '#', text: item.label }),
+        isLast ? null : el('span.breadcrumb__separator', { 'aria-hidden': 'true', text: '/' }),
+      ]);
+    })
+  );
 
   return el('nav.breadcrumb', { 'aria-label': 'Breadcrumb' }, [list]);
 }

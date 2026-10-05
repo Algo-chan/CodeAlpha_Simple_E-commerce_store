@@ -55,10 +55,7 @@ export function wishlistButton({ productId, name, wishlist, onToggle, className 
   const cleanups = [
     // Selector subscriber: handed the selected value, so a change anywhere else
     // in the wishlist does not repaint every button on the page.
-    wishlist.subscribe(
-      (saved) => render(saved),
-      { selector: wishlist.selectIsSaved(id) }
-    ),
+    wishlist.subscribe((saved) => render(saved), { selector: wishlist.selectIsSaved(id) }),
 
     on(element, 'click', () => {
       const saved = wishlist.toggle(id);

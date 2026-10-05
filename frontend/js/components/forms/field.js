@@ -194,17 +194,21 @@ export function select(options = {}) {
   const selectId = id ?? nextId('select');
   const hintId = hint ? `${selectId}-hint` : null;
 
-  const control = el('select.select', {
-    id: selectId,
-    ...(options.name ? { name: options.name } : {}),
-    ...(required ? { required: true } : {}),
-    ...(disabled ? { disabled: true } : {}),
-    ...(hintId ? { 'aria-describedby': hintId } : {}),
-  }, choices.map((choice) =>
-    el('option', { value: choice.value, ...(choice.disabled ? { disabled: true } : {}) }, [
-      choice.label,
-    ])
-  ));
+  const control = el(
+    'select.select',
+    {
+      id: selectId,
+      ...(options.name ? { name: options.name } : {}),
+      ...(required ? { required: true } : {}),
+      ...(disabled ? { disabled: true } : {}),
+      ...(hintId ? { 'aria-describedby': hintId } : {}),
+    },
+    choices.map((choice) =>
+      el('option', { value: choice.value, ...(choice.disabled ? { disabled: true } : {}) }, [
+        choice.label,
+      ])
+    )
+  );
 
   if (value !== undefined) control.value = value;
 

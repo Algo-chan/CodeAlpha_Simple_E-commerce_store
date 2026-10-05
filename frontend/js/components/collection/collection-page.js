@@ -148,7 +148,7 @@ export function createCollectionPage({
     const scope = categoryScope(catalogue, state.categoryId);
 
     const { items, total, totalPages, page, from, to } = queryProducts(
-      catalogue.selectProducts(),
+      catalogue.selectListable(),
       state,
       { categoryIds: scope }
     );
@@ -164,6 +164,10 @@ export function createCollectionPage({
     resultsHost.setAttribute('aria-busy', 'false');
 
     if (items.length === 0) {
+      // Emptied rather than just detached: the cards from the last non-empty
+      // page each hold a wishlist subscription, and a grid that keeps them while
+      // detached goes on repainting dead nodes for the rest of the visit.
+      grid.setProducts([]);
       resultsHost.append(
         noResultsState({
           total,
@@ -282,7 +286,7 @@ export function createCollectionPage({
   render();
 
   cleanups.push([
-    catalogue.subscribe(render, { selector: catalogue.selectProducts }),
+    catalogue.subscribe(render, { selector: catalogue.selectListable }),
     filters.subscribe(() => {
       render();
       syncToUrl();
@@ -303,10 +307,23 @@ export function createCollectionPage({
 
   function hydrateFromUrl() {
     const params = new URLSearchParams(globalThis.location?.search ?? '');
-    const patch = {};
 
-    const query = params.get('q');
-    if (query) patch.search = query;
+    // The URL is authoritative for every facet it can express, including the
+    // ones it does not carry.
+    //
+    // The filter store persists facets on purpose, so a reload of
+    // `/collection.html?q=wool` keeps them. But patching only the parameters
+    // that are present meant the *inverse* case was wrong: after searching, a
+    // click on "All products" landed on a bare `/collection.html`, the old term
+    // was restored from storage, and a page titled "All products" showed one
+    // product. Reading the URL as a complete description of the query makes the
+    // two cases behave the same way.
+    const patch = {
+      search: params.get('q') ?? '',
+      categoryId: null,
+      onSaleOnly: params.get('sale') === '1',
+      inStockOnly: params.get('stock') === '1',
+    };
 
     // The URL addresses categories by slug because that is what a shopper shares;
     // the store addresses them by UUID because that is what the API returns.
@@ -320,10 +337,11 @@ export function createCollectionPage({
 
     const sort = params.get('sort');
     if (sort && sort in SORT_OPTIONS) patch.sort = sort;
-    if (params.get('sale') === '1') patch.onSaleOnly = true;
-    if (params.get('stock') === '1') patch.inStockOnly = true;
 
-    if (Object.keys(patch).length > 0) filters.patch(patch);
+    // Attribute and price facets are not URL-expressible yet, so they stay
+    // session state. `page` always restarts: a restored page 3 of a smaller
+    // result set renders an empty grid.
+    filters.patch(patch);
   }
 
   function syncToUrl() {
@@ -489,7 +507,9 @@ function attributeGroups(filters, facets) {
               [el('span.filter-swatch__chip')]
             )
           : null,
-        el('span.filter-radio-row__label', { text: entry.label }),
+        // The facet rows carry `{ value, count }`, and the value doubles as the label -
+        // the same string `buildChips` puts on the chip for this filter.
+        el('span.filter-radio-row__label', { text: entry.value }),
         el('span.filter-radio-row__count', { text: String(entry.count) }),
       ]);
 
@@ -543,12 +563,15 @@ function filterChip(chip, filters) {
       type: 'button',
       'aria-label': `Remove filter: ${chip.label}`,
       onClick: () => {
-        if (chip.kind === 'search') filters.patch({ search: '' });
-        else if (chip.kind === 'category') filters.setCategory(null);
-        else if (chip.kind === 'price') filters.setPriceRange({ min: '', max: '' });
-        else if (chip.kind === 'in-stock') filters.toggleInStockOnly();
-        else if (chip.kind === 'on-sale') filters.toggleOnSaleOnly();
-        else if (chip.kind === 'attribute') filters.toggleAttribute(chip.key, chip.value);
+        // `buildChips` emits `{ type, key, value, label }`, and the types are
+        // camel-cased, so this dispatches on `type`. A one-sided price chip can
+        // only exist when the other bound is already null, so clearing both is
+        // the same thing as clearing the one that is set.
+        if (chip.type === 'search') filters.patch({ search: '' });
+        else if (chip.type === 'price') filters.setPriceRange({ min: '', max: '' });
+        else if (chip.type === 'inStock') filters.toggleInStockOnly();
+        else if (chip.type === 'onSale') filters.toggleOnSaleOnly();
+        else if (chip.type === 'attribute') filters.toggleAttribute(chip.key, chip.value);
       },
     },
     [el('span.filter-chip__group', { text: chip.label }), icon('close')]

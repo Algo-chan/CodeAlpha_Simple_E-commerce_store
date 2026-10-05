@@ -24,6 +24,12 @@
  * during one event handler should cause one render pass, not three. The set
  * holds `{ notify }` handles rather than store objects, because the flush
  * function closes over the subscribers it needs to walk.
+ *
+ * The handle MUST be a stable object per store, not a fresh literal per call.
+ * `pending` is a Set, and its whole job is to collapse repeat updates into one
+ * entry; a new `{ notify }` object on every `setState` compares unequal to the
+ * last, so three updates in a tick queued three flushes and ran three render
+ * passes. One handle, allocated once per store, restores the batching.
  */
 const pending = new Set();
 let flushQueued = false;
@@ -62,6 +68,12 @@ export function createStore(initialState, options = {}) {
   const subscribers = new Set();
 
   /**
+   * This store's stable entry in the module-level pending set. Allocated once,
+   * so repeat updates within a tick collapse into a single flush.
+   */
+  const notificationHandle = { notify };
+
+  /**
    * What actually goes into storage.
    *
    * `persist.select` is the single place that decides what survives a reload, and
@@ -94,7 +106,7 @@ export function createStore(initialState, options = {}) {
 
     state = merged;
     if (persist) writePersisted(persist.key, persist.version ?? 1, project(state));
-    scheduleNotify({ notify });
+    scheduleNotify(notificationHandle);
     return state;
   }
 

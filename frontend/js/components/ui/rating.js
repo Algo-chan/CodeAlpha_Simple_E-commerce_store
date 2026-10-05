@@ -14,8 +14,7 @@
  */
 import { el, raw } from '../../core/dom.js';
 
-const STAR_PATH =
-  'm12 3.5 2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z';
+const STAR_PATH = 'm12 3.5 2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z';
 
 function star({ filled }) {
   return (
@@ -55,16 +54,25 @@ function starsMarkup(average, size) {
  * @param {string} [options.className]
  * @returns {HTMLElement}
  */
-export function rating({ rating: value, count = 0, size = '0.75rem', showCount = true, href, className }) {
+export function rating({
+  rating: value,
+  count = 0,
+  size = '0.75rem',
+  showCount = true,
+  href,
+  className,
+}) {
   const average = value === null || value === undefined ? null : Number(value);
   const extra = className ? { className } : {};
 
   // No reviews yet. Five empty stars would assert a score of zero, which is a
   // different claim from "nobody has reviewed this".
   if (average === null || count === 0) {
-    const node = el('span.rating.rating--empty', { role: 'img', 'aria-label': 'No reviews yet', ...extra }, [
-      el('span.rating__value', { text: 'No reviews yet' }),
-    ]);
+    const node = el(
+      'span.rating.rating--empty',
+      { role: 'img', 'aria-label': 'No reviews yet', ...extra },
+      [el('span.rating__value', { text: 'No reviews yet' })]
+    );
     return href ? el('a.rating__link', { href }, [node]) : node;
   }
 

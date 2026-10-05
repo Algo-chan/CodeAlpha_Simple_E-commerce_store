@@ -78,6 +78,7 @@ export function createPanel({
       // `aria-modal` is a promise, not a decoration: it tells assistive tech the
       // rest of the page is unavailable. It is only valid while open, so it is
       // added on open and removed on close.
+      'aria-labelledby': `${id}-title`,
       tabindex: '-1',
     },
     [
@@ -151,7 +152,11 @@ export function createPanel({
     on(document, 'keydown', (event) => {
       if (event.key !== 'Escape' || !state.isOpen) return;
       // Only the topmost panel reacts, otherwise one Escape closes everything.
-      if (qs('.overlay:not([hidden])', document) !== root) return;
+      // "Topmost" is the last one in DOM order: panels are appended as they are
+      // created, so document order is not the order they were opened in, and the
+      // first match is whichever panel happened to be created first.
+      const openPanels = qsa('.overlay:not([hidden])', document);
+      if (openPanels[openPanels.length - 1] !== root) return;
       if (dismissible) {
         event.preventDefault();
         api.close();

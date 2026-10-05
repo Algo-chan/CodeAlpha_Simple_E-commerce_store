@@ -149,7 +149,9 @@
 }
 
 .variant-swatch[aria-pressed='true'] {
-  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3.5px var(--color-primary);
+  box-shadow:
+    0 0 0 2px var(--color-surface),
+    0 0 0 3.5px var(--color-primary);
 }
 
 .variant-swatch[aria-disabled='true'] .variant-swatch__chip {

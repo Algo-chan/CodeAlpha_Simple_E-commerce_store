@@ -54,6 +54,10 @@ export function createMobileNav(categories = [], { activeSlug, onToggle } = {}) 
     panel,
     open: (trigger) => panel.open({ trigger }),
     close: () => panel.close(),
+    // The drawer owns a registry entry and per-accordion listeners, so the
+    // header has to be able to release it. Without this the panel outlives the
+    // header and keeps answering to `Escape` and the scrim.
+    destroy: () => panel.destroy(),
     get isOpen() {
       return panel.isOpen;
     },
@@ -76,55 +80,75 @@ function buildDrawerBody(categories, activeSlug, close) {
     if (children.length === 0) {
       list.append(
         el('li.mobile-nav__item', {}, [
-          el('a.mobile-nav__link', {
-            href: categoryUrl(category),
-            ...(isActive ? { 'aria-current': 'page' } : {}),
-            onClick: () => close(),
-          }, [category.name]),
+          el(
+            'a.mobile-nav__link',
+            {
+              href: categoryUrl(category),
+              ...(isActive ? { 'aria-current': 'page' } : {}),
+              onClick: () => close(),
+            },
+            [category.name]
+          ),
         ])
       );
       return;
     }
 
-    const sublist = el('ul.mobile-nav__sublist', {
-      id: panelId,
-      role: 'list',
-      // Collapse uses height and opacity so the drawer animates; `inert` is
-      // what actually removes the links from the tab order.
-      hidden: true,
-    }, children.map((child) =>
-      el('li', {}, [
-        el('a.mobile-nav__link.mobile-nav__link--child', {
-          href: categoryUrl(child),
-          onClick: () => close(),
-        }, [
-          child.name,
-          child.product_count
-            ? el('span.nav__mega-count', { text: formatCount(child.product_count, 'item') })
-            : null,
-        ]),
-      ])
-    ));
+    const sublist = el(
+      'ul.mobile-nav__sublist',
+      {
+        id: panelId,
+        role: 'list',
+        // Collapse uses height and opacity so the drawer animates; `inert` is
+        // what actually removes the links from the tab order.
+        hidden: true,
+      },
+      children.map((child) =>
+        el('li', {}, [
+          el(
+            'a.mobile-nav__link.mobile-nav__link--child',
+            {
+              href: categoryUrl(child),
+              onClick: () => close(),
+            },
+            [
+              child.name,
+              child.product_count
+                ? el('span.nav__mega-count', { text: formatCount(child.product_count, 'item') })
+                : null,
+            ]
+          ),
+        ])
+      )
+    );
 
-    const toggle = el('button.mobile-nav__toggle', {
-      type: 'button',
-      'aria-expanded': 'false',
-      'aria-controls': panelId,
-      dataset: { index: String(index) },
-    }, [
-      el('span', { text: category.name }),
-      icon('chevron-down', { className: 'mobile-nav__chevron' }),
-    ]);
+    const toggle = el(
+      'button.mobile-nav__toggle',
+      {
+        type: 'button',
+        'aria-expanded': 'false',
+        'aria-controls': panelId,
+        dataset: { index: String(index) },
+      },
+      [
+        el('span', { text: category.name }),
+        icon('chevron-down', { className: 'mobile-nav__chevron' }),
+      ]
+    );
 
     list.append(
       el('li.mobile-nav__item', { dataset: { slug: category.slug } }, [
         el('div.mobile-nav__row', {}, [
           toggle,
-          el('a.mobile-nav__link.mobile-nav__link--primary', {
-            href: categoryUrl(category),
-            ...(isActive ? { 'aria-current': 'page' } : {}),
-            onClick: () => close(),
-          }, [category.name]),
+          el(
+            'a.mobile-nav__link.mobile-nav__link--primary',
+            {
+              href: categoryUrl(category),
+              ...(isActive ? { 'aria-current': 'page' } : {}),
+              onClick: () => close(),
+            },
+            [category.name]
+          ),
         ]),
         el('div.mobile-nav__sublist-inner', {}, [sublist]),
       ])
@@ -132,10 +156,7 @@ function buildDrawerBody(categories, activeSlug, close) {
   });
 
   const utility = el('div.mobile-nav__utility', {}, [
-    el('a.mobile-nav__utility-link', { href: '/wishlist.html' }, [
-      icon('heart'),
-      'Saved items',
-    ]),
+    el('a.mobile-nav__utility-link', { href: '/wishlist.html' }, [icon('heart'), 'Saved items']),
     el('a.mobile-nav__utility-link', { href: '/collection.html?sort=newest' }, [
       icon('clock'),
       'New arrivals',

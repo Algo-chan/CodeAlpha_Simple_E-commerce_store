@@ -47,7 +47,8 @@ const PATHS = {
   layers: '<path d="M12 3 3 8l9 5 9-5z"/><path d="m3 13 9 5 9-5"/>',
   zoom: '<circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-4.6-4.6M8.5 11h5M11 8.5v5"/>',
   'zoom-out': '<circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-4.6-4.6M8.5 11h5"/>',
-  image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 5-5 3.5 3.5L16 12l4 4"/>',
+  image:
+    '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 5-5 3.5 3.5L16 12l4 4"/>',
   'image-off':
     '<path d="M20.5 12v6a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-2"/><path d="m3 3 18 18"/><path d="M3 4.5A2 2 0 0 1 5 3h13"/><path d="m8.5 8.5 1 1M4 17l4.5-4.5 3 3"/>',
   ruler: '<path d="m3 15 12-12 6 6-12 12z"/><path d="m7 11 2 2M10 8l2 2M13 5l2 2"/>',
@@ -58,10 +59,12 @@ const PATHS = {
   plus: '<path d="M12 5v14M5 12h14"/>',
   minus: '<path d="M5 12h14"/>',
   check: '<path d="m20 6-11 11-5-5"/>',
-  trash: '<path d="M4 6h16"/><path d="M9 6V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V6"/><path d="m18.5 6-.8 13.1a1.9 1.9 0 0 1-1.9 1.8H8.2a1.9 1.9 0 0 1-1.9-1.8L5.5 6"/><path d="M10 10.5v6M14 10.5v6"/>',
+  trash:
+    '<path d="M4 6h16"/><path d="M9 6V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V6"/><path d="m18.5 6-.8 13.1a1.9 1.9 0 0 1-1.9 1.8H8.2a1.9 1.9 0 0 1-1.9-1.8L5.5 6"/><path d="M10 10.5v6M14 10.5v6"/>',
   copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   download: '<path d="M12 3v12"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4 19h16"/>',
-  refresh: '<path d="M20 11a8 8 0 0 0-14-4.5L4 9"/><path d="M4 5v4h4"/><path d="M4 13a8 8 0 0 0 14 4.5L20 15"/><path d="M20 19v-4h-4"/>',
+  refresh:
+    '<path d="M20 11a8 8 0 0 0-14-4.5L4 9"/><path d="M4 5v4h4"/><path d="M4 13a8 8 0 0 0 14 4.5L20 15"/><path d="M20 19v-4h-4"/>',
 
   /* --- Status ------------------------------------------------------------- */
   star: '<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/>',
@@ -78,13 +81,15 @@ const PATHS = {
     '<path d="M2 6.5h10v10H2z"/><path d="M12 9.5h4.5l3 3.2v3.8h-7.5z"/><circle cx="6" cy="18" r="1.8"/><circle cx="16.5" cy="18" r="1.8"/>',
   shield: '<path d="M12 3 5 6v6c0 4.2 2.9 7.6 7 9 4.1-1.4 7-4.8 7-9V6z"/><path d="m9 12 2 2 4-4"/>',
   lock: '<rect x="4.5" y="10" width="15" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
-  banknote: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/>',
+  banknote:
+    '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/>',
 
   /* --- Contact ------------------------------------------------------------ */
   phone:
     '<path d="M6.5 3h3l1.5 4-2 1.5a11 11 0 0 0 5.5 5.5L16 12l4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 4 6.2 2 2 0 0 1 6 4z"/>',
   mail: '<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="m3 6.5 9 6.5 9-6.5"/>',
-  'map-pin': '<path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>',
+  'map-pin':
+    '<path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>',
   headset:
     '<path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="2.5" y="12" width="4" height="6" rx="1.5"/><rect x="17.5" y="12" width="4" height="6" rx="1.5"/><path d="M19.5 18v.5a2.5 2.5 0 0 1-2.5 2.5H13"/>',
 };
@@ -198,9 +203,11 @@ export function starRatingMarkup(rating, options = {}) {
   const width = `${(Math.max(0, Math.min(5, rating)) / 5) * 100}%`;
 
   return raw(
-    `<span class="rating__stars ${className}" style="font-size:${size}">★★★★★` +
+    (
+      `<span class="rating__stars ${className}" style="font-size:${size}">` +
       `<span class="rating__stars--fill" style="inline-size:${width}">★★★★★</span>` +
-      `</span>`.replace(/★/g, stars)
+      `</span>`
+    ).replace(/★/g, stars)
   );
 }
 

@@ -62,6 +62,13 @@ export function createCatalogueStore() {
       for (const variant of product.variants ?? []) {
         variantMap.set(String(variant.id), variant);
       }
+      // A digital product with no variant rows still has a synthetic purchasable
+      // one, and the cart stores its id. Left out of the map, `resolveVariant`
+      // cannot find it and `reconcile` flags a perfectly good download as
+      // "missing" the moment the page is reloaded.
+      if (product.default_variant?.synthetic) {
+        variantMap.set(String(product.default_variant.id), product.default_variant);
+      }
     }
 
     // Flattened once here. The filter panel and the collection page both need
@@ -144,7 +151,9 @@ export function createCatalogueStore() {
       }
     }
 
-    return store.getState().products.filter((product) => ids.has(String(product.category_id)));
+    return store
+      .getState()
+      .products.filter((product) => product.is_listable && ids.has(String(product.category_id)));
   }
 
   /**
@@ -168,10 +177,47 @@ export function createCatalogueStore() {
   /* --- Selectors ------------------------------------------------------------ */
 
   const selectProducts = store.select(({ products }) => products);
-  const selectFeatured = store.select(({ products }) => products.filter((p) => p.is_featured));
-  const selectOnSale = store.select(({ products }) => products.filter((p) => p.is_on_sale));
+
+  /**
+   * Everything the storefront is allowed to show a shopper.
+   *
+   * The store deliberately keeps unpublished products - that is what the DRAFT
+   * row in the mock is for - so every grid, facet count and category tile routes
+   * through here. A DRAFT must never be reachable from the storefront, however
+   * attractive it otherwise looks.
+   */
+  const selectListable = store.select(({ products }) => products.filter((p) => p.is_listable));
+
+  const selectFeatured = store.select(({ products }) =>
+    products.filter((product) => product.is_listable && product.is_featured)
+  );
+  const selectOnSale = store.select(({ products }) =>
+    products.filter((product) => product.is_listable && product.is_on_sale)
+  );
+
+  /**
+   * New arrivals is an editorial flag, not a date sort. `created_at` only
+   * decides the order *within* the flagged set: ranking purely by date promoted
+   * whichever row happened to be added last, which is not the same claim.
+   */
   const selectNewArrivals = store.select(({ products }) =>
-    [...products].sort((a, b) => dateValue(b.created_at) - dateValue(a.created_at))
+    products
+      .filter((product) => product.is_listable && product.is_new)
+      .sort((a, b) => dateValue(b.created_at) - dateValue(a.created_at))
+  );
+
+  /**
+   * Merchandised ranking for the homepage popular row, driven by the hand-set
+   * `display_order` on each mock product.
+   *
+   * This is an editorial selection, not a sales ranking - there is no order
+   * history behind it yet - so the section heading says as much. Products with
+   * no rank set (0) drop out rather than sort to the top.
+   */
+  const selectPopular = store.select(({ products }) =>
+    products
+      .filter((product) => product.is_listable && product.display_order > 0)
+      .sort((a, b) => a.display_order - b.display_order || String(a.id).localeCompare(String(b.id)))
   );
 
   /** Products sharing at least one category with the given product. */
@@ -179,26 +225,37 @@ export function createCatalogueStore() {
     if (!product) return [];
     const categoryIds = new Set([
       String(product.category_id),
-      ...(product.categories ?? []).map((category) =>
-        String(category.id ?? category)
-      ),
+      ...(product.categories ?? []).map((category) => String(category.id ?? category)),
     ]);
 
     return products
       .filter(
         (candidate) =>
+          candidate.is_listable &&
           String(candidate.id) !== String(product.id) &&
           categoryIds.has(String(candidate.category_id))
       )
-      .sort((a, b) => Number(b.is_featured) - Number(a.is_featured) || String(a.id).localeCompare(String(b.id)))
+      .sort(
+        (a, b) =>
+          Number(b.is_featured) - Number(a.is_featured) || String(a.id).localeCompare(String(b.id))
+      )
       .slice(0, 8);
   });
 
   /**
    * Facet counts for the filter panel: every attribute value in the current
-   * result set, with how many products carry it. Untracked attributes are
-   * skipped, and counts are computed over the *unfiltered* catalogue so the
-   * shopper can see what selecting another value would do.
+   * result set, with how many products carry it.
+   *
+   * Counted over LISTABLE products only, and deliberately not over the other
+   * active facets: a shopper needs to see what selecting another value would
+   * add, not what the current selection already removed.
+   *
+   * The listable filter is not cosmetic here. A DRAFT row also carries
+   * attributes, and counting it would make the panel advertise a value - say
+   * "Black (7)" - that only six reachable products actually have, so following
+   * the count would return fewer results than it promised, sourced from a
+   * product nobody is allowed to see. `computeFacets` in the mock client
+   * applies the same rule, so the two agree.
    */
   const selectFacets = store.select(({ products }) => {
     const attributes = new Map();
@@ -206,6 +263,8 @@ export function createCatalogueStore() {
     let maxPrice = -Infinity;
 
     for (const product of products) {
+      if (!product.is_listable) continue;
+
       if (product.price_min_minor != null) {
         minPrice = Math.min(minPrice, product.price_min_minor);
         maxPrice = Math.max(maxPrice, product.price_max_minor ?? product.price_min_minor);
@@ -247,9 +306,11 @@ export function createCatalogueStore() {
     getProductsInCategory,
     getCategoryTrail,
     selectProducts,
+    selectListable,
     selectFeatured,
     selectOnSale,
     selectNewArrivals,
+    selectPopular,
     selectRelated,
     selectFacets,
     /** Depth-first flat copy of `categories`, parents before children. */

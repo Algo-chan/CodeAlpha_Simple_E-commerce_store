@@ -33,6 +33,36 @@
     color var(--duration-fast) var(--ease-standard);
 }
 
+/* Below this width the header swaps in `.header-search-field`, so the text
+   trigger steps aside. Declared in this file, which owns the class and loads
+   after header.css, so it wins on source order rather than needing !important. */
+@media (max-width: 47.99em) {
+  .search-trigger {
+    display: none;
+  }
+}
+
+/* ...and below 24em the field does not fit either, so the icon trigger comes
+   back as a square touch target. This is the counterpart to the rule in
+   header.css that hides the field at the same width: between them exactly one
+   search affordance is ever rendered. */
+@media (max-width: 23.99em) {
+  .search-trigger {
+    display: inline-flex;
+    justify-content: center;
+    inline-size: var(--touch-target);
+    max-inline-size: none;
+    block-size: var(--touch-target);
+    padding-inline: 0;
+    background-color: transparent;
+  }
+
+  .search-trigger__label,
+  .search-trigger__hint {
+    display: none;
+  }
+}
+
 .search-trigger:hover {
   color: var(--color-text-secondary);
   background-color: var(--color-surface);
@@ -243,6 +273,38 @@
   letter-spacing: var(--letter-spacing-widest);
   text-transform: var(--text-transform-label);
   color: var(--color-text-subtle);
+}
+
+/* Title plus a control on the same line, used by the recent-searches heading.
+   Only needed when a group can be cleared, which is why it is separate from the
+   plain title rule above rather than folded into it. */
+.search-overlay__group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.search-overlay__group-clear {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-3xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-subtle);
+  padding: var(--space-3xs) var(--space-xs);
+  border-radius: var(--radius-sm);
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.search-overlay__group-clear:hover {
+  color: var(--color-text);
+}
+
+/* A recent term is a div rather than a link, so it needs its own text node. */
+.search-suggestion__term {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* --- Product result row ---------------------------------------------------- */

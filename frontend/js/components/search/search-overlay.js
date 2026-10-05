@@ -35,10 +35,11 @@ const SUGGESTIONS = ['linen', 'coffee', 'leather', 'ceramic', 'notebook'];
 /**
  * @param {object} options
  * @param {object} options.api          must expose `searchProducts(query, opts)`
+ * @param {object} [options.history]    recent-search store; omit to show suggestions only
  * @param {Function} [options.onNavigate] called with a URL to send the browser to
  * @returns {object} panel handle plus helpers
  */
-export function createSearchOverlay({ api, onNavigate = null }) {
+export function createSearchOverlay({ api, history = null, onNavigate = null }) {
   let controller = null;
   let timer = null;
   let activeIndex = -1;
@@ -78,11 +79,15 @@ export function createSearchOverlay({ api, onNavigate = null }) {
         'data-autofocus': '',
       });
 
-      const clearButton = el('button.search-overlay__clear', {
-        type: 'button',
-        'aria-label': 'Clear search',
-        hidden: true,
-      }, [icon('close')]);
+      const clearButton = el(
+        'button.search-overlay__clear',
+        {
+          type: 'button',
+          'aria-label': 'Clear search',
+          hidden: true,
+        },
+        [icon('close')]
+      );
 
       resultsEl = el('div.search-overlay__results', {
         id: 'search-results',
@@ -103,15 +108,23 @@ export function createSearchOverlay({ api, onNavigate = null }) {
 
       const footer = el('div.search-overlay__footer', {}, [
         el('div.search-overlay__hints', {}, [
-          kbd('↑'), kbd('↓'), el('span', { text: 'to navigate' }),
-          kbd('Enter'), el('span', { text: 'to open' }),
-          kbd('Esc'), el('span', { text: 'to close' }),
+          kbd('↑'),
+          kbd('↓'),
+          el('span', { text: 'to navigate' }),
+          kbd('Enter'),
+          el('span', { text: 'to open' }),
+          kbd('Esc'),
+          el('span', { text: 'to close' }),
         ]),
         el('div.search-overlay__footer-actions', {}, [seeAll]),
       ]);
 
       const body = el('div.search-overlay__body', {}, [
-        el('div.search-overlay__field', {}, [icon('search', { className: 'search-overlay__icon' }), inputEl, clearButton]),
+        el('div.search-overlay__field', {}, [
+          icon('search', { className: 'search-overlay__icon' }),
+          inputEl,
+          clearButton,
+        ]),
         resultsEl,
         statusEl,
         footer,
@@ -143,13 +156,27 @@ export function createSearchOverlay({ api, onNavigate = null }) {
         }),
 
         on(seeAll, 'click', () => {
-          if (currentQuery) {
-            context.close();
-            navigate(`/collection.html?q=${encodeURIComponent(currentQuery)}`);
-          }
+          submitSearch(currentQuery);
         }),
 
+        // Removing a recent term must not follow the row's own link, so the
+        // click is stopped before the delegated results handler sees it.
         on(resultsEl, 'click', (event) => {
+          const remove = event.target.closest('[data-remove-term]');
+          if (remove) {
+            event.preventDefault();
+            event.stopPropagation();
+            const removedIndex = activeIndex;
+            history?.forget(remove.dataset.removeTerm);
+            setActive(-1);
+            renderIdle();
+            // Deleting a row shifts every later row up, so the highlight is put
+            // back on whatever now occupies that position rather than dropped.
+            const options = optionCount();
+            if (options > 0) setActive(Math.min(removedIndex, options - 1));
+            return;
+          }
+
           const row = event.target.closest('[data-href]');
           if (!row) return;
           context.close();
@@ -159,7 +186,12 @@ export function createSearchOverlay({ api, onNavigate = null }) {
         on(resultsEl, 'pointermove', (event) => {
           // Hovering moves the highlight so mouse and keyboard cannot disagree
           // about what Enter would open.
-          const row = event.target.closest('.search-result');
+          //
+          // Matched on the listbox role rather than on `.search-result`: recent
+          // searches and suggestions are `role="option"` rows too, they sit in
+          // the same index space the arrow keys walk, and matching only product
+          // rows left them reachable by keyboard but dead to the mouse.
+          const row = event.target.closest('[role="option"]');
           if (!row) return;
           const index = Number(row.dataset.index);
           if (Number.isFinite(index)) setActive(index);
@@ -192,6 +224,15 @@ export function createSearchOverlay({ api, onNavigate = null }) {
         // Cancel in-flight work, or a late response can repaint a closed dialog.
         controller?.abort();
         clearTimeout(timer);
+        return;
+      }
+
+      // The panel is created once and reused, so the idle list rendered at
+      // creation time is stale after a search has been recorded. Repainting on
+      // open is what puts the new term at the top of recent searches.
+      if (inputEl?.value.trim() === '') {
+        setActive(-1);
+        renderIdle();
       }
     },
   });
@@ -209,6 +250,20 @@ export function createSearchOverlay({ api, onNavigate = null }) {
   function navigate(href) {
     if (onNavigate) onNavigate(href);
     else globalThis.location.assign(href);
+  }
+
+  /**
+   * Records a text query, then sends the shopper to the results page.
+   *
+   * Only the two paths that mean "search for this" record anything: see-all and
+   * Enter-with-no-highlight. Opening a product or a category is not a search, so
+   * it leaves the history alone.
+   */
+  function submitSearch(query) {
+    if (!query) return;
+    history?.record(query);
+    close();
+    navigate(`/collection.html?q=${encodeURIComponent(query)}`);
   }
 
   function schedule(query) {
@@ -246,21 +301,94 @@ export function createSearchOverlay({ api, onNavigate = null }) {
   /* --- Rendering ------------------------------------------------------------ */
 
   function renderIdle() {
-    clear(resultsNode());
+    const list = resultsNode();
+    clear(list);
     setExpanded(false);
 
-    resultsNode().append(
+    const recent = history?.selectTerms() ?? [];
+
+    // Recent first, then suggestions. A term this shopper actually typed out
+    // beats a term we guessed they might want.
+    if (recent.length > 0) {
+      list.append(
+        el('div.search-overlay__group', {}, [
+          el('div.search-overlay__group-head', {}, [
+            el('p.search-overlay__group-title', { text: 'Recent searches' }),
+            el('button.search-overlay__group-clear', {
+              type: 'button',
+              text: 'Clear',
+              onClick: () => {
+                history?.clear();
+                setActive(-1);
+                renderIdle();
+              },
+            }),
+          ]),
+          ...recent.map((term, index) => recentRow(term, index)),
+        ])
+      );
+    }
+
+    list.append(
       el('div.search-overlay__group', {}, [
-        el('p.search-overlay__group-title', { text: 'Popular searches' }),
-        ...SUGGESTIONS.map((term) =>
-          el('a.search-suggestion', {
-            href: `/collection.html?q=${encodeURIComponent(term)}`,
-            role: 'option',
-            'aria-selected': 'false',
-            'data-href': `/collection.html?q=${encodeURIComponent(term)}`,
-          }, [icon('search'), term])
-        ),
+        el('p.search-overlay__group-title', {
+          text: recent.length > 0 ? 'Try instead' : 'Popular searches',
+        }),
+        ...SUGGESTIONS.map((term, index) => {
+          const href = `/collection.html?q=${encodeURIComponent(term)}`;
+
+          return el(
+            'a.search-suggestion',
+            {
+              href,
+              role: 'option',
+              // `aria-activedescendant` must point at a real element id, and these
+              // rows are activatable by the arrow keys just like product rows are.
+              id: `search-suggestion-${index}`,
+              'aria-selected': 'false',
+              // Offset by the recent rows above so hovering a suggestion moves the
+              // highlight onto it, exactly as hovering a product result does.
+              dataset: { index: String(recent.length + index), href },
+            },
+            [icon('search'), term]
+          );
+        }),
       ])
+    );
+  }
+
+  /**
+   * One remembered term.
+   *
+   * A `div` rather than an `a`, because it carries a remove button and a button
+   * inside a link is not valid HTML - nor reachable by keyboard. It stays
+   * activatable through the same `role="option"` mechanism as every other row,
+   * since focus never leaves the input.
+   */
+  function recentRow(term, index) {
+    const href = `/collection.html?q=${encodeURIComponent(term)}`;
+
+    return el(
+      'div.search-suggestion',
+      {
+        role: 'option',
+        'aria-selected': 'false',
+        id: `search-recent-${index}`,
+        dataset: { index: String(index), href },
+      },
+      [
+        icon('clock'),
+        el('span.search-suggestion__term', { text: term }),
+        el(
+          'button.search-suggestion__remove',
+          {
+            type: 'button',
+            'aria-label': `Remove “${term}” from recent searches`,
+            dataset: { removeTerm: term },
+          },
+          [icon('close')]
+        ),
+      ]
     );
   }
 
@@ -280,20 +408,37 @@ export function createSearchOverlay({ api, onNavigate = null }) {
       return;
     }
 
+    // One running index across every group, because `setActive` and the
+    // hover handler both address rows by their position in the whole listbox.
+    // Indexing each group separately made hovering a product highlight whatever
+    // row happened to be that far down the list - the exact disagreement this
+    // panel's keyboard handling exists to prevent.
+    let optionIndex = 0;
+
     // Categories first: a shopper searching "coffee" usually wants the category
     // before they want an individual product.
     if (categories.length > 0) {
       list.append(
         el('div.search-overlay__group', {}, [
           el('p.search-overlay__group-title', { text: 'Categories' }),
-          ...categories.map((category) =>
-            el('a.search-suggestion', {
-              href: `/collection.html?category=${encodeURIComponent(category.slug)}`,
-              role: 'option',
-              'aria-selected': 'false',
-              'data-href': `/collection.html?category=${encodeURIComponent(category.slug)}`,
-            }, [icon('layers'), category.name])
-          ),
+          ...categories.map((category) => {
+            const index = optionIndex++;
+            const href = `/collection.html?category=${encodeURIComponent(category.slug)}`;
+
+            return el(
+              'a.search-suggestion',
+              {
+                href,
+                role: 'option',
+                // Unique across the listbox, which also holds recent, suggestion and
+                // product rows, so `aria-activedescendant` resolves to exactly one node.
+                id: `search-category-${index}`,
+                'aria-selected': 'false',
+                dataset: { index: String(index), href },
+              },
+              [icon('layers'), category.name]
+            );
+          }),
         ])
       );
     }
@@ -302,7 +447,7 @@ export function createSearchOverlay({ api, onNavigate = null }) {
       list.append(
         el('div.search-overlay__group', {}, [
           el('p.search-overlay__group-title', { text: 'Products' }),
-          ...products.map((product, index) => resultRow(product, index, query)),
+          ...products.map((product) => resultRow(product, optionIndex++, query)),
         ])
       );
     }
@@ -315,27 +460,37 @@ export function createSearchOverlay({ api, onNavigate = null }) {
   function resultRow(product, index, query) {
     const href = `/product.html?slug=${encodeURIComponent(product.slug)}`;
 
-    return el('a.search-result', {
-      href,
-      role: 'option',
-      'aria-selected': 'false',
-      id: `search-result-${index}`,
-      dataset: { index: String(index), href },
-    }, [
-      el('span.search-result__media', {}, [
-        el('img', { src: product.primary_image, alt: '', width: 48, height: 60, loading: 'lazy' }),
-      ]),
-      el('span.search-result__body', {}, [
-        el('span.search-result__name', { html: highlight(product.name, query) }),
-        el('span.search-result__meta', { text: product.category_name ?? config.store.name }),
-      ]),
-      el('span.search-result__price', {
-        text:
-          product.price_max_minor !== product.price_min_minor
-            ? `From ${formatMoney(product.price_min_minor)}`
-            : formatMoney(product.price_min_minor),
-      }),
-    ]);
+    return el(
+      'a.search-result',
+      {
+        href,
+        role: 'option',
+        'aria-selected': 'false',
+        id: `search-result-${index}`,
+        dataset: { index: String(index), href },
+      },
+      [
+        el('span.search-result__media', {}, [
+          el('img', {
+            src: product.primary_image,
+            alt: '',
+            width: 48,
+            height: 60,
+            loading: 'lazy',
+          }),
+        ]),
+        el('span.search-result__body', {}, [
+          el('span.search-result__name', { html: highlight(product.name, query) }),
+          el('span.search-result__meta', { text: product.category_name ?? config.store.name }),
+        ]),
+        el('span.search-result__price', {
+          text:
+            product.price_max_minor !== product.price_min_minor
+              ? `From ${formatMoney(product.price_min_minor)}`
+              : formatMoney(product.price_min_minor),
+        }),
+      ]
+    );
   }
 
   function renderError(query, error) {
@@ -377,7 +532,12 @@ export function createSearchOverlay({ api, onNavigate = null }) {
     if (node) node.textContent = message;
   }
 
-  return { panel, open, close, toggle: (options) => (panel.isOpen ? panel.close() : panel.open(options)) };
+  return {
+    panel,
+    open,
+    close,
+    toggle: (options) => (panel.isOpen ? panel.close() : panel.open(options)),
+  };
 
   /* --- Node accessors -------------------------------------------------------- */
 
@@ -454,8 +614,7 @@ export function createSearchOverlay({ api, onNavigate = null }) {
           // No highlight means "search for this", which is the more common
           // intent than opening whichever row happens to be first.
           event.preventDefault();
-          close();
-          navigate(`/collection.html?q=${encodeURIComponent(currentQuery)}`);
+          submitSearch(currentQuery);
           break;
         }
         const active = resultsNode()?.querySelectorAll('[role="option"]')[activeIndex];

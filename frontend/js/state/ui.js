@@ -92,7 +92,14 @@ export function createUiStore() {
    *           actionLabel?:string, onAction?:Function, duration?:number }} options
    * @returns {number} toast id
    */
-  function pushToast({ title, message = null, tone = 'info', actionLabel = null, onAction = null, duration }) {
+  function pushToast({
+    title,
+    message = null,
+    tone = 'info',
+    actionLabel = null,
+    onAction = null,
+    duration,
+  }) {
     const config = TOAST_TONES[tone] ?? TOAST_TONES.info;
     const resolvedDuration = duration ?? config.duration;
 

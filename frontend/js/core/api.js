@@ -22,7 +22,14 @@ export class ApiError extends Error {
 async function parseBody(response) {
   const contentType = response.headers.get('content-type') ?? '';
   if (!contentType.includes('application/json')) return null;
-  return response.json();
+  // A JSON content-type over an empty or truncated body (a 204, a proxy's 502
+  // page) must not escape as a SyntaxError: everything leaving this module is
+  // either an envelope or an ApiError.
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -34,7 +41,10 @@ async function parseBody(response) {
 export async function request(path, options = {}) {
   const { query, headers, ...rest } = options;
 
-  const url = new URL(`${config.apiBaseUrl}${path}`);
+  // Joined, not concatenated: an injected base ending in "/" plus a path
+  // beginning with "/" would otherwise request ".../api/v1//products".
+  const base = config.apiBaseUrl.replace(/\/+$/, '');
+  const url = new URL(`${base}/${String(path).replace(/^\/+/, '')}`);
   for (const [key, value] of Object.entries(query ?? {})) {
     if (value !== undefined && value !== null && value !== '') {
       url.searchParams.set(key, String(value));
@@ -44,11 +54,18 @@ export async function request(path, options = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.requestTimeoutMs);
 
+  // A caller's signal has to feed the same controller. Handing it to fetch
+  // instead would disconnect the timeout from the request entirely, and would
+  // report the caller's own cancellation as a timeout.
+  const onCallerAbort = () => controller.abort();
+  if (rest.signal?.aborted) controller.abort();
+  else rest.signal?.addEventListener('abort', onCallerAbort, { once: true });
+
   let response;
   try {
     response = await fetch(url, {
       ...rest,
-      signal: rest.signal ?? controller.signal,
+      signal: controller.signal,
       headers: {
         Accept: 'application/json',
         ...(rest.body ? { 'Content-Type': 'application/json' } : {}),
@@ -56,15 +73,20 @@ export async function request(path, options = {}) {
       },
     });
   } catch (error) {
-    clearTimeout(timeout);
-    throw new ApiError(
-      error.name === 'AbortError'
-        ? `Request to ${url.pathname} timed out.`
-        : `Cannot reach the API at ${config.apiBaseUrl}. Is the backend running?`,
-      { code: 'NETWORK_ERROR' }
-    );
+    if (error.name === 'AbortError') {
+      // Cancelling a request the caller no longer needs (a stale search, a
+      // closed panel) is not an outage, and must not be dressed up as one.
+      if (rest.signal?.aborted) {
+        throw new ApiError(`Request to ${url.pathname} was cancelled.`, { code: 'ABORTED' });
+      }
+      throw new ApiError(`Request to ${url.pathname} timed out.`, { code: 'REQUEST_TIMEOUT' });
+    }
+    throw new ApiError(`Cannot reach the API at ${config.apiBaseUrl}. Is the backend running?`, {
+      code: 'NETWORK_ERROR',
+    });
   } finally {
     clearTimeout(timeout);
+    rest.signal?.removeEventListener('abort', onCallerAbort);
   }
 
   const body = await parseBody(response);

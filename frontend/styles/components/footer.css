@@ -242,6 +242,18 @@
   gap: var(--space-2xs);
 }
 
+/* The pending topics are text, not links, so they must not borrow the link
+   affordance: no colour change, no hover, no underline. Muted, and dimmer still
+   where a note explains them. */
+.footer__list--muted {
+  color: var(--ink-500);
+}
+
+.footer__list-item {
+  font-size: var(--font-size-sm);
+  color: var(--ink-500);
+}
+
 /* --- Legal ---------------------------------------------------------------- */
 
 .footer__legal {
@@ -256,21 +268,9 @@
   color: var(--color-text-inverse-muted);
 }
 
-.footer__legal-links {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-md);
-}
-
-.footer__legal-link {
+.footer__legal-note {
+  margin: 0;
   color: var(--color-text-inverse-muted);
-}
-
-.footer__legal-link:hover {
-  color: var(--white);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
 }
 
 /* The copyright line sits opposite the legal links. On a narrow footer they wrap

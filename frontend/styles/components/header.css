@@ -412,6 +412,13 @@
 
 /* --- Mobile search field replaces the icon trigger ------------------------ */
 
+/* Only one search affordance exists at a time: the text button on desktop, the
+   field on mobile. Without this the unstyled field renders as a second control
+   that is both redundant and taller than the bar's own row. */
+.header-search-field {
+  display: none;
+}
+
 @media (max-width: 47.99em) {
   .header-search-field {
     display: flex;
@@ -439,5 +446,22 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+}
+
+/* Below this width the field stops fitting at all.
+ *
+ * At 320px the row is brand + search field + three 44px touch targets, which came
+ * to 289px of actions in a 320px viewport: the bar overflowed horizontally by
+ * about 50px. `min-inline-size: 0` cannot rescue it, because the actions sit in
+ * an `auto` grid column that is sized to content - the field never gets offered
+ * less. So the affordance changes shape instead of shrinking: search collapses
+ * to the same icon button used on desktop, and only one search control exists at
+ * any width. The breakpoint is the point where the four touch targets plus a
+ * usable field stop fitting, not a device guess.
+ */
+@media (max-width: 23.99em) {
+  .header-search-field {
+    display: none;
   }
 }

@@ -141,7 +141,9 @@ export function createMockClient(options = {}) {
     async searchProducts(query, { limit = 6, signal } = {}) {
       await simulate('search', signal);
 
-      const needle = String(query ?? '').trim().toLowerCase();
+      const needle = String(query ?? '')
+        .trim()
+        .toLowerCase();
       if (needle.length === 0) return { products: [], categories: [] };
 
       const { products, categories } = load();
@@ -157,7 +159,10 @@ export function createMockClient(options = {}) {
         .sort((a, b) => b.score - a.score)
         .slice(0, limit);
 
-      return { products: scored.map((entry) => structuredClone(entry.product)), categories: categoryHits };
+      return {
+        products: scored.map((entry) => structuredClone(entry.product)),
+        categories: categoryHits,
+      };
     },
 
     /**
@@ -249,7 +254,9 @@ function scoreProduct(product, needle) {
     product.category_name ?? '',
     product.description ?? '',
     ...(product.tags ?? []),
-    ...(product.variants ?? []).map((variant) => variant.attributes ? Object.values(variant.attributes).join(' ') : ''),
+    ...(product.variants ?? []).map((variant) =>
+      variant.attributes ? Object.values(variant.attributes).join(' ') : ''
+    ),
   ]
     .join(' ')
     .toLowerCase();

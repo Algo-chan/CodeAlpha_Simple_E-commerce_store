@@ -135,13 +135,13 @@ export function button(options = {}) {
     if (next) {
       // The spinner replaces the icon rather than being appended, so the button
       // does not change width mid-click and appear to jump under the cursor.
-      element.querySelector('.btn__icon-slot')?.replaceWith(
-        el('span.btn__spinner', { 'aria-hidden': 'true' })
-      );
+      element
+        .querySelector('.btn__icon-slot')
+        ?.replaceWith(el('span.btn__spinner', { 'aria-hidden': 'true' }));
     } else {
-      element.querySelector('.btn__spinner')?.replaceWith(
-        iconName ? iconSlot(iconName) : document.createComment('icon-slot')
-      );
+      element
+        .querySelector('.btn__spinner')
+        ?.replaceWith(iconName ? iconSlot(iconName) : document.createComment('icon-slot'));
     }
   }
 
@@ -185,9 +185,13 @@ export function link(options = {}) {
  * @returns {HTMLElement}
  */
 export function buttonGroup(buttonOptions = [], { label } = {}) {
-  return el('div.btn-group', {
-    ...(label ? { role: 'group', 'aria-label': label } : {}),
-  }, buttonOptions.map((options) => button(options).element));
+  return el(
+    'div.btn-group',
+    {
+      ...(label ? { role: 'group', 'aria-label': label } : {}),
+    },
+    buttonOptions.map((options) => button(options).element)
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -228,7 +232,9 @@ function accessibility({ label, iconOnly, pressed, expanded, controls }) {
 }
 
 function iconSlot(name) {
-  return el('span.btn__icon-slot', { 'aria-hidden': 'true' }, [icon(name, { className: 'btn__icon' })]);
+  return el('span.btn__icon-slot', { 'aria-hidden': 'true' }, [
+    icon(name, { className: 'btn__icon' }),
+  ]);
 }
 
 function buildContent({ label, iconName, iconEnd }) {
@@ -238,7 +244,9 @@ function buildContent({ label, iconName, iconEnd }) {
   if (label) fragment.append(document.createTextNode(label));
   if (iconEnd) {
     fragment.append(
-      el('span.btn__icon-slot', { 'aria-hidden': 'true' }, [icon(iconEnd, { className: 'btn__icon' })])
+      el('span.btn__icon-slot', { 'aria-hidden': 'true' }, [
+        icon(iconEnd, { className: 'btn__icon' }),
+      ])
     );
   }
   return fragment;

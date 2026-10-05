@@ -377,7 +377,7 @@
    which the component overrides per instance. Sizing them here rather than in the
    markup keeps the five stars identical at every rating size. */
 .rating__star {
-  display: block;
+  display: inline-block;
   inline-size: 1em;
   block-size: 1em;
 }

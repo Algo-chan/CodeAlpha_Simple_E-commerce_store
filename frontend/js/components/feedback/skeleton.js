@@ -62,14 +62,18 @@ export function skeletonCard() {
  * @param {number} [count]
  */
 export function skeletonGrid(count = 8) {
-  return el('div.product-grid.product-grid--loading', { 'aria-hidden': 'true' },
+  return el(
+    'div.product-grid.product-grid--loading',
+    { 'aria-hidden': 'true' },
     Array.from({ length: count }, () => skeletonCard())
   );
 }
 
 /** A cart drawer with line-item placeholders. */
 export function skeletonCart(count = 2) {
-  return el('div.skeleton-stack', { 'aria-hidden': 'true' },
+  return el(
+    'div.skeleton-stack',
+    { 'aria-hidden': 'true' },
     Array.from({ length: count }, () =>
       el('div.skeleton-line-item', {}, [
         el('div.skeleton-line-item__media.skeleton', {}),
@@ -86,7 +90,9 @@ export function skeletonCart(count = 2) {
 export function skeletonGallery(thumbnails = 4) {
   return el('div.skeleton-gallery', { 'aria-hidden': 'true' }, [
     el('div.skeleton-gallery__main.skeleton', {}),
-    el('div.skeleton-gallery__thumbs', {},
+    el(
+      'div.skeleton-gallery__thumbs',
+      {},
       Array.from({ length: thumbnails }, () => el('div.skeleton-gallery__thumb.skeleton', {}))
     ),
   ]);
@@ -95,9 +101,19 @@ export function skeletonGallery(thumbnails = 4) {
 /** A full page: title block plus a card grid. */
 export function skeletonPage({ heading = true, cards = 8 } = {}) {
   return el('div.skeleton-page', { 'aria-hidden': 'true' }, [
-    heading ? el('div.skeleton-cluster', {}, [skeleton({ variant: 'title', width: '18rem' })]) : null,
+    heading
+      ? el('div.skeleton-cluster', {}, [skeleton({ variant: 'title', width: '18rem' })])
+      : null,
     skeletonGrid(cards),
   ]);
 }
 
-export default { skeleton, skeletonText, skeletonCard, skeletonGrid, skeletonCart, skeletonGallery, skeletonPage };
+export default {
+  skeleton,
+  skeletonText,
+  skeletonCard,
+  skeletonGrid,
+  skeletonCart,
+  skeletonGallery,
+  skeletonPage,
+};

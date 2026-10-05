@@ -26,6 +26,7 @@ import { createCartStore } from './state/cart.js';
 import { createWishlistStore } from './state/wishlist.js';
 import { createUiStore } from './state/ui.js';
 import { createFilterStore } from './state/filters.js';
+import { createSearchHistory } from './state/search-history.js';
 import { createHeader } from './components/layout/header.js';
 import { createFooter } from './components/layout/footer.js';
 import { createCartDrawer } from './components/cart/cart-drawer.js';
@@ -84,6 +85,7 @@ async function boot() {
   const catalogue = createCatalogueStore();
   const wishlist = createWishlistStore();
   const filters = createFilterStore();
+  const searchHistory = createSearchHistory();
 
   const cart = createCartStore({
     // Asked to re-read price and stock, so a basket restored from storage cannot
@@ -106,7 +108,7 @@ async function boot() {
   const categorySlug = new URLSearchParams(globalThis.location?.search ?? '').get('category');
 
   const cartDrawer = createCartDrawer({ cart, toasts: ui });
-  const search = createSearchOverlay({ api: mockApi });
+  const search = createSearchOverlay({ api: mockApi, history: searchHistory });
   // One quick view for the whole session, like the cart drawer: a panel per card
   // would mean dozens of registered panels and dozens of history entries.
   const quickView = createQuickView({ cart, wishlist, ui });

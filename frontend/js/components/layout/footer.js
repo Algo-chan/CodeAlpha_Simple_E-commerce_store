@@ -15,8 +15,19 @@ import { config } from '../../config.js';
 import { field } from '../forms/field.js';
 import { button } from '../ui/button.js';
 
-/** Footer link groups. Pages that do not exist yet are omitted rather than
- *  linked to a 404. */
+/**
+ * Footer link groups.
+ *
+ * EVERY entry here must resolve to something real. The footer appears on every
+ * page, so a link with no destination is the most visible kind of dead button
+ * in the storefront - the shopper clicks it, nothing happens, and the link
+ * reads as a mistake rather than as an omission.
+ *
+ * Help topics point at the guarantees the homepage actually states (the ids on
+ * the trust strip) and at the real contact details. Order tracking, the size
+ * guide and the policy pages ship with checkout and accounts, so they are named
+ * as pending below rather than linked to fragments that resolve to nothing.
+ */
 const LINK_GROUPS = [
   {
     title: 'Shop',
@@ -26,32 +37,40 @@ const LINK_GROUPS = [
       { label: 'On sale', href: '/collection.html?sale=1' },
       { label: 'Digital downloads', href: '/collection.html?category=digital-downloads' },
       { label: 'Saved items', href: '/wishlist.html' },
+      { label: 'Your cart', href: '/cart.html' },
     ],
   },
   {
     title: 'Help',
     links: [
-      { label: 'Delivery & returns', href: '/#delivery' },
-      { label: 'Track an order', href: '/#orders' },
-      { label: 'Size guide', href: '/#sizing' },
-      { label: 'Contact us', href: '/#contact' },
+      { label: 'Delivery', href: '/#delivery' },
+      { label: 'Returns', href: '/#returns' },
+      { label: 'Payments', href: '/#payments' },
+      { label: 'Contact us', href: 'mailto:hello@example.com' },
     ],
   },
-  {
-    title: 'About',
-    links: [
-      { label: 'Our story', href: '/#story' },
-      { label: 'Sourcing', href: '/#sourcing' },
-      { label: 'Careers', href: '/#careers' },
-      { label: 'Privacy', href: '/#privacy' },
-    ],
-  },
+];
+
+/**
+ * Named but not yet linked.
+ *
+ * Listing these is more honest than linking them and more useful than hiding
+ * them: the shopper learns the topic is coming, and nobody clicks into a void.
+ */
+const PENDING_LINKS = [
+  'Track an order',
+  'Size guide',
+  'Our story',
+  'Sourcing',
+  'Careers',
+  'Privacy',
+  'Terms',
 ];
 
 const CONTACT = [
   { icon: 'phone', label: '+251 11 000 0000', href: 'tel:+251110000000' },
   { icon: 'mail', label: 'hello@example.com', href: 'mailto:hello@example.com' },
-  { icon: 'map-pin', label: 'Bole Road, Addis Ababa', href: '/#contact' },
+  { icon: 'map-pin', label: 'Bole Road, Addis Ababa', href: '/#delivery' },
 ];
 
 /** Payment methods as text. Named, not drawn - an unbranded card icon beside a
@@ -72,14 +91,13 @@ export function createFooter() {
       el('div.footer__grid', {}, [
         brandColumn(),
         ...LINK_GROUPS.map(linkGroup),
+        comingSoonColumn(),
         newsletterColumn(),
       ]),
       el('div.footer__legal', {}, [
-        el('div.footer__legal-links', {}, [
-          el('a.footer__legal-link', { href: '/#privacy', text: 'Privacy' }),
-          el('a.footer__legal-link', { href: '/#terms', text: 'Terms' }),
-          el('a.footer__legal-link', { href: '/#cookies', text: 'Cookies' }),
-        ]),
+        el('p.footer__legal-note', {
+          text: 'Privacy, terms and cookie policies are published alongside checkout.',
+        }),
         el('p.footer__copyright', {
           text: `© ${new Date().getFullYear()} ${config.store.name}. Prices include VAT.`,
         }),
@@ -115,7 +133,9 @@ function brandColumn() {
       el('span.brand__name', { text: config.store.name }),
     ]),
     el('p.footer__brand-text', { text: config.store.description }),
-    el('ul.footer__contact', {},
+    el(
+      'ul.footer__contact',
+      {},
       CONTACT.map((entry) =>
         el('li', {}, [
           el('a.footer__list-link', { href: entry.href }, [
@@ -127,7 +147,9 @@ function brandColumn() {
     ),
     el('div.footer__methods', { 'aria-label': 'Accepted payment methods' }, [
       el('p.footer__method-label', { text: 'We accept' }),
-      el('ul.footer__method-list', { role: 'list' },
+      el(
+        'ul.footer__method-list',
+        { role: 'list' },
         PAYMENT_METHODS.map((method) => el('li.footer__method', { text: method }))
       ),
     ]),
@@ -137,7 +159,9 @@ function brandColumn() {
 function linkGroup(group) {
   return el('div.footer__column', {}, [
     el('h2.footer__column-title', { text: group.title }),
-    el('ul.footer__list', { role: 'list' },
+    el(
+      'ul.footer__list',
+      { role: 'list' },
       group.links.map((link) =>
         el('li', {}, [
           el('a.footer__list-link', {
@@ -148,6 +172,27 @@ function linkGroup(group) {
         ])
       )
     ),
+  ]);
+}
+
+/**
+ * Topics that are named but not yet linked.
+ *
+ * Rendered as plain text, not as disabled links: a control that looks clickable
+ * and does nothing is worse than an honest label, and `aria-disabled` on an
+ * anchor still leaves it focusable and still invites the click.
+ */
+function comingSoonColumn() {
+  return el('div.footer__column', {}, [
+    el('h2.footer__column-title', { text: 'Coming soon' }),
+    el(
+      'ul.footer__list.footer__list--muted',
+      { role: 'list' },
+      PENDING_LINKS.map((label) => el('li.footer__list-item', { text: label }))
+    ),
+    el('p.footer__note', {
+      text: 'Order tracking, sizing and policies arrive with accounts and checkout.',
+    }),
   ]);
 }
 

@@ -25,7 +25,13 @@ const BADGE_ICONS = {
  *           size?: 'sm'|'md', label?: string, icon?: string }} [options]
  * @returns {HTMLElement}
  */
-export function badge({ variant = 'status', tone = 'info', size = 'md', label = '', icon: iconName } = {}) {
+export function badge({
+  variant = 'status',
+  tone = 'info',
+  size = 'md',
+  label = '',
+  icon: iconName,
+} = {}) {
   return el(`span.badge.badge--${variant}.badge--${tone}.badge--${size}`, {}, [
     iconName ? icon(iconName, { className: 'badge__icon' }) : null,
     label,

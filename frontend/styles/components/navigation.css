@@ -109,6 +109,16 @@
   gap: var(--space-3xs);
 }
 
+/* The top-level list is the only one that runs horizontally. `.nav__list` is a
+   column because the dropdown panels reuse that class, so this modifier has to
+   follow the base rule - equal specificity means source order decides. Without
+   it the categories stack and stretch the bar to about 160px. */
+.nav__list--top {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
 .nav__list-link {
   display: flex;
   align-items: center;

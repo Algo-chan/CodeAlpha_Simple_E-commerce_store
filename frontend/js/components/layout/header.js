@@ -192,6 +192,7 @@ export function createHeader({ categories = [], cart, wishlist, activeSlug, hook
     destroy() {
       cleanups.forEach((fn) => fn());
       desktopNav.destroy();
+      mobileNav.destroy();
       qs('.announcement', element)?.destroy?.();
     },
   };
@@ -282,7 +283,12 @@ function bindScrollBehaviour(bar) {
       return;
     }
 
-    if (delta > HIDE_DELTA && y > HIDE_THRESHOLD) {
+    if (y <= 8) {
+      // Back at the top neither state applies: content is no longer underneath
+      // the bar. Clearing both stops a leftover `is-visible` from pinning the
+      // enter transition in place for the rest of the session.
+      bar.classList.remove('is-hidden', 'is-visible');
+    } else if (delta > HIDE_DELTA && y > HIDE_THRESHOLD) {
       bar.classList.add('is-hidden');
       bar.classList.remove('is-visible');
     } else if (delta < -HIDE_DELTA) {
@@ -307,7 +313,12 @@ function bindScrollBehaviour(bar) {
     // mid-scroll, which is exactly what a mobile URL bar does.
     on(globalThis, 'resize', () => {
       bar.classList.remove('is-hidden');
-      bar.classList.add('is-visible');
+      // Only claim "revealed" while something is actually underneath the bar,
+      // and re-baseline so the viewport change is not read as a scroll
+      // direction on the next real scroll.
+      const y = globalThis.scrollY ?? 0;
+      bar.classList.toggle('is-visible', y > 8);
+      lastY = y;
     }),
   ];
 

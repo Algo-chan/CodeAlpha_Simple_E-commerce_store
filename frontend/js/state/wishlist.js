@@ -50,9 +50,7 @@ export function createWishlistStore() {
     const isSaved = productIds.includes(id);
 
     store.setState({
-      productIds: isSaved
-        ? productIds.filter((item) => item !== id)
-        : [id, ...productIds],
+      productIds: isSaved ? productIds.filter((item) => item !== id) : [id, ...productIds],
     });
 
     return !isSaved;

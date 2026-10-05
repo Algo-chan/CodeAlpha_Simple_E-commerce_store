@@ -115,10 +115,15 @@ export function escapeHtml(value) {
  *
  * The result is not a node: `append` recognises the RAW tag and parses it, so
  * the same value can be used inside an `html` template and inside `el` children.
+ *
+ * `toString` returns the markup, because that is what a helper concatenating
+ * trusted markup expects; without it the value stringifies to "[object Object]"
+ * while looking perfectly usable.
  * @param {string} value
  */
 export function raw(value) {
-  return { [RAW]: String(value ?? '') };
+  const markup = String(value ?? '');
+  return { [RAW]: markup, toString: () => markup };
 }
 
 const RAW = Symbol('raw');
@@ -147,6 +152,11 @@ function interpolate(value) {
   if (value === null || value === undefined || value === false) return '';
   if (Array.isArray(value)) return value.map(interpolate).join('');
   if (typeof value === 'object' && RAW in value) return value[RAW];
+  // A nested `html` template arrives as a fragment, and a fragment stringifies to
+  // "[object DocumentFragment]" - so the nesting shown in the docs above rendered
+  // that text instead of the list. Serialising it back is safe: the fragment came
+  // out of `html`, so everything in it is already escaped.
+  if (value instanceof DocumentFragment) return value.innerHTML;
   return escapeHtml(value);
 }
 

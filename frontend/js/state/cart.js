@@ -58,14 +58,23 @@ export function createCartStore(deps = {}) {
 
   /**
    * Adds a variant, or increases the quantity if it is already in the basket.
-   * @param {{ id:number, product_id:number, price_minor:number,
-   *           sku:string|null, attributes:object|null,
-   *           product:{ slug:string, name:string, primary_image:string|null },
-   *           stock:{ quantity:number|null, is_active:boolean } }} variant
+   *
+   * Takes the variant id, because that is what a product card and the quick
+   * view hold on to; an already-resolved variant is accepted too, so a caller
+   * holding the whole object does not have to look it up again.
+   * @param {number|string|object} variantOrId a variant id, or the variant
    * @param {number} [quantity]
    * @returns {{ ok:boolean, reason?:string, quantity?:number }}
    */
-  function add(variant, quantity = 1) {
+  function add(variantOrId, quantity = 1) {
+    // An id has to go through `resolveVariant` for the line to get a name,
+    // price and image. Reading `id` and `price_minor` straight off a string
+    // instead filed the variant under `undefined` at zero cost, which rendered
+    // as an unnamed, free line in the drawer.
+    const variant =
+      typeof variantOrId === 'object' && variantOrId !== null
+        ? variantOrId
+        : resolveVariant(variantOrId);
     if (!variant) return { ok: false, reason: 'unavailable' };
     if (variant.stock && variant.stock.is_active === false) {
       return { ok: false, reason: 'unavailable' };
@@ -78,8 +87,12 @@ export function createCartStore(deps = {}) {
     // per-order limit. A tracked variant is capped at what is on hand.
     const ceiling = resolveCeiling(variant);
 
-    if (ceiling !== null && existing) {
-      const next = Math.min(existing.quantity + requested, ceiling);
+    // Guarded on `existing`, not on `ceiling`: an untracked (digital) line has no
+    // stock ceiling yet still has to grow when it is added again, otherwise the
+    // second tap reported success and left the quantity exactly where it was.
+    if (existing) {
+      const ceilingForLine = ceiling ?? MAX_QUANTITY;
+      const next = Math.min(existing.quantity + requested, ceilingForLine);
       if (next === existing.quantity) return { ok: false, reason: 'max-stock' };
       setQuantity(variant.id, next);
       return { ok: true, quantity: next };
@@ -142,8 +155,7 @@ export function createCartStore(deps = {}) {
   function remove(variantId) {
     store.setState((prev) => ({
       lines: prev.lines.filter((item) => item.variantId !== variantId),
-      lastAddedVariantId:
-        prev.lastAddedVariantId === variantId ? null : prev.lastAddedVariantId,
+      lastAddedVariantId: prev.lastAddedVariantId === variantId ? null : prev.lastAddedVariantId,
     }));
   }
 
@@ -259,17 +271,17 @@ export function createCartStore(deps = {}) {
     if (changed) store.setState({ lines: next });
   }
 
-/* --- Derived values -------------------------------------------------------- */
+  /* --- Derived values -------------------------------------------------------- */
 
-const selectLines = store.select(({ lines }) =>
+  const selectLines = store.select(({ lines }) =>
     lines.map((line) => ({ ...line, lineTotal: line.unitPrice * line.quantity }))
   );
 
-const selectCount = store.select(({ lines }) =>
+  const selectCount = store.select(({ lines }) =>
     lines.reduce((total, line) => total + (line.unavailableReason ? 0 : line.quantity), 0)
   );
 
-/**
+  /**
    * Totals ignore flagged lines.
    *
    * A line that can no longer be bought must not inflate the subtotal or count
@@ -277,21 +289,21 @@ const selectCount = store.select(({ lines }) =>
    * shipping on the strength of an item they cannot order, and would then find
    * out at checkout. It stays in `lines` so the drawer can explain itself.
    */
-const selectSubtotal = store.select(({ lines }) =>
+  const selectSubtotal = store.select(({ lines }) =>
     lines.reduce(
       (total, line) => total + (line.unavailableReason ? 0 : line.unitPrice * line.quantity),
       0
     )
   );
 
-const selectIsEmpty = store.select(({ lines }) => lines.length === 0);
+  const selectIsEmpty = store.select(({ lines }) => lines.length === 0);
 
-/** True when every line has been flagged, i.e. nothing in here is buyable. */
-const selectIsUnfulfillable = store.select(
-  ({ lines }) => lines.length > 0 && lines.every((line) => Boolean(line.unavailableReason))
-);
+  /** True when every line has been flagged, i.e. nothing in here is buyable. */
+  const selectIsUnfulfillable = store.select(
+    ({ lines }) => lines.length > 0 && lines.every((line) => Boolean(line.unavailableReason))
+  );
 
-const selectShippingProgress = store.select(({ lines }) => {
+  const selectShippingProgress = store.select(({ lines }) => {
     const subtotal = lines.reduce(
       (total, line) => total + (line.unavailableReason ? 0 : line.unitPrice * line.quantity),
       0
@@ -302,11 +314,14 @@ const selectShippingProgress = store.select(({ lines }) => {
       qualifies: subtotal >= FREE_SHIPPING_THRESHOLD_MINOR,
       // A zero subtotal would divide by the threshold and produce NaN, which
       // renders as a bar with no width rather than an empty one.
-      percent: subtotal <= 0 ? 0 : Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD_MINOR) * 100)),
+      percent:
+        subtotal <= 0
+          ? 0
+          : Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD_MINOR) * 100)),
     };
   });
 
-return {
+  return {
     ...store,
     add,
     setQuantity,
@@ -362,7 +377,7 @@ function resolveCeiling(variant) {
 export function describeVariant(attributes) {
   if (!attributes || typeof attributes !== 'object') return null;
   const parts = Object.values(attributes)
-    .map((value) => (typeof value === 'object' ? value?.label ?? value?.name ?? '' : value))
+    .map((value) => (typeof value === 'object' ? (value?.label ?? value?.name ?? '') : value))
     .filter((value) => value !== null && value !== undefined && value !== '')
     .map(String);
   return parts.length > 0 ? parts.join(' / ') : null;

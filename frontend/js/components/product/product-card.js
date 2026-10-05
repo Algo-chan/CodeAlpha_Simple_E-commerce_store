@@ -195,25 +195,27 @@ function ratingSlot(product) {
 }
 
 /**
- * Says how many options exist. Deliberately does not render the option values
- * as swatches on the card: those swatches would be dead pixels pretending to be
- * controls, and the real choice happens on the product page.
+ * Says how many options exist. Colour values are drawn as swatches, but they are
+ * `aria-hidden` and not clickable: decorative pixels that look like controls
+ * would be worse than a count, and the real choice happens on the product page.
  */
 function variantIndicator(product) {
   if (product.has_single_variant) return null;
 
-  const options = product.attribute_options ?? {};
-  const keys = Object.keys(options);
+  // `attribute_options` is a list of groups - `{ key, label, values }` - not a
+  // map keyed by attribute, so it is read through `key`/`values` rather than by
+  // iterating its own entries.
+  const groups = product.attribute_options ?? [];
 
-  if (keys.length === 0) return null;
+  if (groups.length === 0) return null;
 
-  const total = keys.reduce((count, key) => count + (options[key]?.length ?? 0), 0);
+  const total = groups.reduce((count, group) => count + (group?.values?.length ?? 0), 0);
   if (total <= 1) return null;
 
   // Colour-like attributes get swatches because they carry information at a
   // glance; size does not, so it gets the count instead.
-  const colourKey = keys.find((key) => /colou?r/i.test(key));
-  const swatches = colourKey ? options[colourKey].slice(0, MAX_SWATCHES) : [];
+  const colourGroup = groups.find((group) => /colou?r/i.test(group?.key ?? ''));
+  const swatches = colourGroup ? colourGroup.values.slice(0, MAX_SWATCHES) : [];
   const remaining = total - swatches.length;
 
   return el('div.product-card__variants', {}, [

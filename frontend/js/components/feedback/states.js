@@ -35,11 +35,14 @@ export function state({
   compact = false,
   dividerText = null,
 }) {
-  const node = el(`div.state.state--${variant}`, {
-    // Errors are assertive because the shopper may be waiting on a promise
-    // that has now failed; everything else is polite.
-    role: variant === 'error' ? 'alert' : 'status',
-  }, [
+  const node = el(
+    `div.state.state--${variant}`,
+    {
+      // Errors are assertive because the shopper may be waiting on a promise
+      // that has now failed; everything else is polite.
+      role: variant === 'error' ? 'alert' : 'status',
+    },
+    [
       dividerText ? el('p.state__divider-text', { text: dividerText }) : null,
       el('div.state__icon', { 'aria-hidden': 'true' }, [icon(iconName, { size: 28 })]),
       el('div.state__body', {}, [
@@ -50,13 +53,14 @@ export function state({
         ? el(
             'div.state__actions',
             {},
-            actions.map((action) =>
-              button({
-                label: action.label,
-                variant: action.variant ?? 'secondary',
-                ...(action.href ? { href: action.href } : {}),
-                ...(action.onClick ? { onClick: action.onClick } : {}),
-              }).element
+            actions.map(
+              (action) =>
+                button({
+                  label: action.label,
+                  variant: action.variant ?? 'secondary',
+                  ...(action.href ? { href: action.href } : {}),
+                  ...(action.onClick ? { onClick: action.onClick } : {}),
+                }).element
             )
           )
         : null,

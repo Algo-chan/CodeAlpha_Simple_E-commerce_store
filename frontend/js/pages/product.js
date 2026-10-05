@@ -14,7 +14,7 @@
  *      to the address bar, so a reload or a shared link lands on a purchasable
  *      option instead of a combination that sold out.
  */
-import { el, clear, on } from '../core/dom.js';
+import { el, clear, on, append } from '../core/dom.js';
 import { icon } from '../utils/icons.js';
 import { formatMoney, formatRelative, discountPercent } from '../utils/format.js';
 import { button } from '../components/ui/button.js';
@@ -227,7 +227,8 @@ export default function productPage({
     const available = variant.stock ? variant.stock.available : null;
 
     clear(priceHost);
-    priceHost.append(
+    append(
+      priceHost,
       price({
         price: variant.price_minor,
         compareAt: variant.compare_at_price_minor,
@@ -236,7 +237,11 @@ export default function productPage({
     );
 
     const saving = discountPercent(variant.price_minor, variant.compare_at_price_minor);
-    priceHost.append(
+    // The `append` helper, not Node.append: a native append stringifies a null
+    // argument into the literal text "null", which put "null" under the price of
+    // every product that was not on sale.
+    append(
+      priceHost,
       saving > 0
         ? el('p.product__saving', {}, [icon('tag'), `You save ${saving}% on this option.`])
         : null
@@ -347,9 +352,10 @@ function resolveProduct(catalogue, params) {
   const id = params.get('id');
   if (id) return catalogue.getProduct(id);
 
-  // No query at all: `/product.html` is a dead end, but the catalogue's first
-  // product is a better answer than a 404 page and costs nothing.
-  return catalogue.selectProducts()[0] ?? null;
+  // No query at all: `/product.html` is a dead end, but a listable product is a
+  // better answer than a 404 page and costs nothing. `selectListable` rather than
+  // `selectProducts` so this never lands a shopper on an unpublished product.
+  return catalogue.selectListable()[0] ?? null;
 }
 
 /* -------------------------------------------------------------------------- */

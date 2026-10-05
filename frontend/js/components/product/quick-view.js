@@ -14,7 +14,7 @@
  * would leave dead nodes and dead subscriptions behind, and would push a new
  * history entry every time.
  */
-import { el, qs } from '../../core/dom.js';
+import { el, qs, clear, append } from '../../core/dom.js';
 import { icon } from '../../utils/icons.js';
 import { formatMoney, discountPercent } from '../../utils/format.js';
 import { createPanel } from '../feedback/overlay.js';
@@ -168,7 +168,9 @@ export function createQuickView({ cart, wishlist, ui }) {
 
     const available = variant.stock ? variant.stock.available : null;
 
-    priceHost.replaceChildren(
+    clear(priceHost);
+    append(
+      priceHost,
       price({
         price: variant.price_minor,
         compareAt: variant.compare_at_price_minor,
@@ -179,7 +181,10 @@ export function createQuickView({ cart, wishlist, ui }) {
     // The saving line only means something when the *selected* option is
     // reduced, not merely because some other size is.
     const saving = discountPercent(variant.price_minor, variant.compare_at_price_minor);
-    priceHost.append(
+    // `append` from core/dom, not Node.append: the native one stringifies the
+    // `null` branch into the visible text "null".
+    append(
+      priceHost,
       saving > 0
         ? el('p.quickview__save', {}, [icon('tag'), `You save ${saving}% on this option.`])
         : null
@@ -220,7 +225,9 @@ export function createQuickView({ cart, wishlist, ui }) {
     for (const control of buyControls) control.element.disabled = true;
 
     await primary.run(() => {
-      const result = cart.add(variant.id, wanted);
+      // `cart.add` reads the variant's own price, stock and product, so it takes
+      // the variant object - not its id.
+      const result = cart.add(variant, wanted);
 
       if (!result.ok) {
         ui?.pushToast({

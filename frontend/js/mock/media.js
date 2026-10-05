@@ -80,14 +80,7 @@ const cache = new Map();
  * @returns {string} `data:image/svg+xml,...`
  */
 export function mediaFor(spec) {
-  const {
-    width = 800,
-    height = 800,
-    seed,
-    label = '',
-    angle = '',
-    variant = 0,
-  } = spec;
+  const { width = 800, height = 800, seed, label = '', angle = '', variant = 0 } = spec;
 
   const cacheKey = `${seed}|${angle}|${variant}|${width}x${height}|${label}`;
   const cached = cache.get(cacheKey);
@@ -106,15 +99,18 @@ export function mediaFor(spec) {
  * @param {string} slug
  * @param {string[]} angles
  * @param {{ width?: number, height?: number }} [size]
- * @returns {Array<{ url:string, alt:string, angle:string, sortOrder:number }>}
+ * @returns {Array<{ url:string, alt:string, angle:string, sort_order:number, is_primary:boolean }>}
  */
 export function mediaSet(slug, angles, { width = 800, height = 800 } = {}) {
   return angles.map((angle, index) => ({
     url: mediaFor({ seed: slug, angle, variant: index, width, height, label: slug }),
     alt: `${humaniseSlug(slug)} — ${angle.toLowerCase()} view`,
     angle,
-    sortOrder: index,
-    isPrimary: index === 0,
+    // snake_case to match the rest of the view model. These were camelCase,
+    // which meant consumers had to know which of the two conventions an image
+    // object followed - and the API's JSONB image rows are snake_case.
+    sort_order: index,
+    is_primary: index === 0,
   }));
 }
 

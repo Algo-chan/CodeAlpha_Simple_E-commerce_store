@@ -6,10 +6,10 @@
  * driven, so the page renders from the catalogue store alone - no static markup
  * that can drift out of sync with the mock data.
  *
- * Section order is deliberate: promise, browse, featured, new arrivals, why we
- * exist, how it works, guarantees, newsletter. A shopper who bounces at the fold
- * still gets the brand; a shopper who wants to shop gets categories above the
- * fold and products one scroll later.
+ * Section order is deliberate: promise, browse, featured, new arrivals, popular,
+ * why we exist, how it works, guarantees, newsletter. A shopper who bounces at
+ * the fold still gets the brand; a shopper who wants to shop gets categories
+ * above the fold and products one scroll later.
  */
 import { el, on } from '../core/dom.js';
 import { icon } from '../utils/icons.js';
@@ -31,24 +31,33 @@ const ASSURANCES = [
   { icon: 'shield', text: 'Two-year warranty on every order' },
 ];
 
+/**
+ * `anchor` is the id the footer links to for this guarantee. Every entry must
+ * have one, so a footer link always lands on real content rather than on a
+ * fragment that resolves to nothing.
+ */
 const TRUST = [
   {
     icon: 'truck',
+    anchor: 'delivery',
     title: 'Delivery in 2-4 days',
     text: 'Dispatched from Addis Ababa and tracked end to end.',
   },
   {
     icon: 'refresh',
+    anchor: 'returns',
     title: 'Returns without friction',
     text: 'Thirty days from delivery. We cover the return label.',
   },
   {
     icon: 'lock',
+    anchor: 'payments',
     title: 'Safe payments',
     text: 'Card, mobile money or bank transfer. Your details stay private.',
   },
   {
     icon: 'headset',
+    anchor: 'support',
     title: 'Real human support',
     text: 'Send a message and hear back within one working day.',
   },
@@ -101,6 +110,9 @@ export default function homePage({ host, catalogue, wishlist, quickView = null }
   const arrivals = newArrivals(catalogue, wishlist, onQuickView);
   cleanups.push(arrivals.destroy);
 
+  const picks = popular(catalogue, wishlist, onQuickView);
+  cleanups.push(picks.destroy);
+
   const tiles = categoryGrid(catalogue);
   cleanups.push(tiles.destroy);
 
@@ -147,6 +159,7 @@ export default function homePage({ host, catalogue, wishlist, quickView = null }
         ]),
       ]),
       arrivals.element,
+      picks.element,
       band.element,
       steps(),
       trustStrip(),
@@ -270,42 +283,56 @@ function renderFigure(figure, product, { tag }) {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Top-level categories only, each illustrated with real photography borrowed
- * from a product inside it. A category has no image of its own, and a grey
- * placeholder tile is worse than a photo of something you can buy.
+ * Root categories plus any child that has products to show, each illustrated
+ * with real photography borrowed from a product inside it. A category has no
+ * image of its own, and a grey placeholder tile is worse than a photo of
+ * something you can buy.
+ *
+ * Roots alone were not enough: four tiles hid Phones, Shoes and Bedroom, which is
+ * most of what a shopper opens a storefront to find. Children with nothing in
+ * them are dropped instead of shown empty, because an empty tile is a dead end.
  */
 function categoryGrid(catalogue) {
   const element = el('div.category-grid');
 
   const paint = (categories) => {
-    const roots = categories.filter((category) => !category.parent_id);
+    const browsable = categories.filter(
+      (category) => !category.parent_id || catalogue.getProductsInCategory(category.id).length > 0
+    );
 
     element.replaceChildren(
-      ...roots.map((category) => {
+      ...browsable.map((category) => {
         const products = catalogue.getProductsInCategory(category.id);
         const lead = products.find((product) => product.primary_image) ?? null;
 
-        return el('a.category-tile', { href: collectionHref({ category: category.slug }) }, [
-          el('span.category-tile__media', {}, [
-            lead
-              ? el('img', {
-                  src: lead.primary_image,
-                  alt: '',
-                  width: 400,
-                  height: 400,
-                  loading: 'lazy',
-                  decoding: 'async',
-                })
-              : el('div.skeleton', { style: 'block-size:100%' }),
-            products.length > 0
-              ? el('span.category-tile__count', { text: formatCount(products.length, 'piece') })
+        return el(
+          'a.category-tile',
+          {
+            href: collectionHref({ category: category.slug }),
+            className: category.parent_id ? 'category-tile--nested' : '',
+          },
+          [
+            el('span.category-tile__media', {}, [
+              lead
+                ? el('img', {
+                    src: lead.primary_image,
+                    alt: '',
+                    width: 400,
+                    height: 400,
+                    loading: 'lazy',
+                    decoding: 'async',
+                  })
+                : el('div.skeleton', { style: 'block-size:100%' }),
+              products.length > 0
+                ? el('span.category-tile__count', { text: formatCount(products.length, 'piece') })
+                : null,
+            ]),
+            el('span.category-tile__name', { text: category.name }),
+            category.description
+              ? el('span.text-muted.text-xs', { text: category.description })
               : null,
-          ]),
-          el('span.category-tile__name', { text: category.name }),
-          category.description
-            ? el('span.text-muted.text-xs', { text: category.description })
-            : null,
-        ]);
+          ]
+        );
       })
     );
   };
@@ -361,10 +388,74 @@ function newArrivals(catalogue, wishlist, onQuickView) {
       el('div.container', {}, [
         sectionHeading('New arrivals', {
           eyebrow: 'Just landed',
+          lede: 'The most recent additions to the shelves, flagged by the team rather than inferred from a date.',
           id: 'home-new',
           action: button({
             label: 'All new arrivals',
             href: collectionHref({ sort: 'newest' }),
+            variant: 'ghost',
+            iconEnd: 'arrow-right',
+            className: 'btn--link',
+          }).element,
+        }),
+        host,
+      ]),
+    ]),
+    destroy() {
+      stop();
+      if (rail) rail.destroy();
+      rail = null;
+    },
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Popular                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A rail of products in merchandising order.
+ *
+ * The section says plainly that this is a hand-set rank. There is no order
+ * history behind it yet, so calling it "bestsellers" would be the one claim on
+ * this page that no data supports.
+ */
+function popular(catalogue, wishlist, onQuickView) {
+  const host = el('div');
+  let rail = null;
+
+  const paint = (products) => {
+    if (rail) rail.destroy();
+    rail = null;
+
+    if (products.length === 0) {
+      host.replaceChildren();
+      return;
+    }
+
+    rail = productRail({
+      products: products.slice(0, 8),
+      wishlist,
+      onQuickView,
+      ariaLabel: 'Popular products',
+    });
+    host.replaceChildren(rail.element);
+  };
+
+  paint(catalogue.selectPopular());
+
+  const stop = catalogue.subscribe(paint, { selector: catalogue.selectPopular });
+
+  return {
+    element: el('section.section.section--subtle', { 'aria-labelledby': 'home-popular' }, [
+      el('div.container', {}, [
+        sectionHeading('Popular picks', {
+          eyebrow: 'Most reached for',
+          lede: 'Ordered by our own merchandising rank. There are no sales figures behind this row yet, so we are not calling them bestsellers.',
+          id: 'home-popular',
+          action: button({
+            label: 'Everything else',
+            href: COLLECTION_HREF,
             variant: 'ghost',
             iconEnd: 'arrow-right',
             className: 'btn--link',
@@ -387,6 +478,7 @@ function newArrivals(catalogue, wishlist, onQuickView) {
 
 function featureBand(catalogue) {
   const media = el('div.feature__media', {}, [el('div.skeleton', { style: 'block-size:100%' })]);
+  const lede = el('p.text-secondary');
 
   const paint = (products) => {
     const lead = products.find((product) => product.primary_image);
@@ -402,21 +494,28 @@ function featureBand(catalogue) {
         decoding: 'async',
       })
     );
+
+    // The count is read out of the catalogue instead of written into the copy.
+    // This paragraph used to claim "about forty products" while the mock shipped
+    // nine, which is a small lie and the easiest kind for a storefront to tell.
+    const total = catalogue.selectListable().length;
+    lede.textContent =
+      `We stock ${formatCount(total, 'product')}, deliberately fewer than we could carry, and ` +
+      'we keep every one of them on our own shelves. That is why the stock count on the ' +
+      'page is the stock count on the shelf.';
   };
 
   paint(catalogue.selectFeatured());
 
   return {
-    element: el('section.section.section--subtle', { 'aria-labelledby': 'home-feature' }, [
+    element: el('section.section', { 'aria-labelledby': 'home-feature' }, [
       el('div.container', {}, [
         el('div.feature', {}, [
           media,
           el('div.feature__content', {}, [
             el('p.hero__eyebrow', { text: 'Why Aster & Oak' }),
             el('h2.text-balance', { id: 'home-feature', text: 'Fewer brands, better chosen.' }),
-            el('p.text-secondary', {
-              text: 'We stock about forty products instead of forty thousand, and we keep every one of them on our own shelves. That is why the stock count on the page is the stock count on the shelf.',
-            }),
+            lede,
             el(
               'ul.feature__list',
               { role: 'list' },
@@ -476,7 +575,9 @@ function trustStrip() {
         'div.trust-strip',
         {},
         TRUST.map((item) =>
-          el('div.trust-item', {}, [
+          // `id` is a real anchor target: the footer links to these guarantees
+          // rather than to a help page that does not exist yet.
+          el('div.trust-item', { id: item.anchor }, [
             el('span.trust-item__icon', { 'aria-hidden': 'true' }, [icon(item.icon)]),
             el('div', {}, [
               el('h3.trust-item__title', { text: item.title }),

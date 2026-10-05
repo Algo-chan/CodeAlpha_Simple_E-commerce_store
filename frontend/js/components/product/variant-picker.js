@@ -305,6 +305,10 @@ export function variantPicker({
 
     const { element: control } = select({
       id: `variant-${key}`,
+      // The label is asked for because `select` only renders one when it is
+      // given; in select mode the group wrapper carries no `aria-labelledby`, so
+      // without this the control has no accessible name at all.
+      label: entry.label,
       value: selection[key] ?? '',
       options: [
         // "Any" is the honest label for the empty option: empty means "not

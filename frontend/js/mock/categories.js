@@ -121,6 +121,15 @@ const CATEGORIES = [
     is_active: true,
   },
   {
+    id: '30000000-0000-4000-8000-000000000014',
+    parent_id: '30000000-0000-4000-8000-000000000003',
+    name: 'Bedroom & Bedding',
+    slug: 'bedroom-and-bedding',
+    description: 'Sheets, pillows and bedding cut for Ethiopian bed sizes.',
+    sort_order: 2,
+    is_active: true,
+  },
+  {
     id: '30000000-0000-4000-8000-000000000013',
     parent_id: '30000000-0000-4000-8000-000000000003',
     name: 'Bulk Orders',

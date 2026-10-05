@@ -34,14 +34,67 @@
 
 Deferred from this phase, since it was scoped to the database only:
 
-- [ ] Design brand identity (colors, typography, logo placeholder) → moves to the UI phase
+- [ ] Design brand identity (colours, typography, logo placeholder) → moves to the UI phase
 - [ ] Refine `frontend/css/tokens.css` → moves to the UI phase
 
 `npm run migrate && npm run seed` still needs a PostgreSQL server to run; both
 have been validated against an in-process PostgreSQL (PGlite) instead. See
 [setup.md](./setup.md) for the server requirement.
 
-## Phase 3 — Authentication & Users (core platform)
+## Phase 3 — Frontend Design System & UI Foundation (done)
+
+No business logic, no API calls: a design system and a set of reusable,
+context-agnostic storefront primitives that later phases plug data into.
+
+- [x] Centralised design tokens: colour, typography, spacing, layout, borders,
+      shadows, motion, z-index (`frontend/styles/tokens.css`)
+- [x] Typography: one display face plus one sans, non-blocking load
+- [x] Mobile-first responsive system across six breakpoints
+- [x] CSS foundation: reset, base, layout, utilities, animations, components
+- [x] Storefront shell: announcement bar, sticky header, footer
+- [x] Navigation: desktop dropdowns, mobile drawer, keyboard support
+- [x] Search: predictive overlay, product and category suggestions, recent searches
+- [x] `ProductCard` with badges, ratings, variants, wishlist, quick view, quick add
+- [x] Product gallery: thumbnails, hover swap, swipe, zoom/fullscreen foundations
+- [x] Flexible variant picker driven by attribute data, not product category
+- [x] Cart drawer (side panel / bottom sheet) with mock state
+- [x] Wishlist interactions and empty state
+- [x] Toast system, modal/drawer/sheet/dropdown primitives with focus management
+- [x] Button, form, rating, badge and price primitives
+- [x] Skeleton, empty and error states
+- [x] Motion system with `prefers-reduced-motion` support
+- [x] Mock data matching the Phase 2 schema and the future API response shape
+- [x] Documentation: [frontend-design-system.md](./frontend-design-system.md)
+
+## Phase 4 — Storefront Experience (done)
+
+The customer-facing storefront, built from the Phase 3 primitives. Still no
+backend: mock data in, `localStorage` for cart and wishlist.
+
+- [x] Homepage composed of reusable, data-driven sections: hero, category
+      discovery, featured, new arrivals, editor's picks, editorial band, how it
+      works, guarantees, newsletter
+- [x] Collection page: facets, sorting, pagination, URL round-trip
+- [x] Product page: gallery, variants, availability, related products
+- [x] Cart and wishlist pages alongside the drawer
+- [x] Search wired to mock data: scoring, suggestions, no-results, clear
+- [x] Quick view functional against mock data, including variant availability
+- [x] Cart state: add/remove/quantity/undo, stock ceilings, integer-only totals
+- [x] Wishlist state with product ids and count badge
+- [x] Responsive mobile experience: bottom sheets, compact header, touch targets
+- [x] Loading, empty and error states on every data path
+- [x] 153 frontend tests on the pure logic (`node:test`)
+- [x] Accessibility pass: landmarks, focus management, live regions, reduced motion
+- [x] No dead links: every footer and card action resolves to real content
+- [x] Documentation: [frontend-storefront.md](./frontend-storefront.md)
+
+Deferred from this phase, since it was scoped to the storefront UI:
+
+- [ ] Real API integration → Phase 5+
+- [ ] Checkout, payment and orders → later phases
+- [ ] Final brand identity → still placeholder, configurable in one file
+
+## Phase 5 — Authentication & Users (core platform)
 
 - [ ] User model, hashing with bcrypt, unique email
 - [ ] Auth endpoints: register, login, refresh, logout
@@ -49,24 +102,24 @@ have been validated against an in-process PostgreSQL (PGlite) instead. See
 - [ ] Profile, addresses, password change, password reset
 - [ ] Admin-only user management
 - [ ] Auth tests, rate-limited login
+- [ ] Replace the account placeholder and merge the local wishlist into an account
 
-## Phase 4 — Catalogue (products & categories)
+## Phase 6 — Catalogue API (products & categories)
 
 - [ ] Categories tree (parent/child), breadcrumbs
-- [ ] Products + product_variants + product_images
+- [ ] Products + product_variants + product_images endpoints
 - [ ] Inventory tracking (quantity, reserved), transactions
 - [ ] Search, filtering, sorting, pagination
-- [ ] Product details page + product card component
-- [ ] Catalogue API + frontend views
+- [ ] Swap `mockApi` for `core/api.js`; keep component contracts unchanged
 
-## Phase 5 — Cart & Wishlist
+## Phase 7 — Cart & Wishlist API
 
 - [ ] Persistent cart per authenticated user
-- [ ] Cart totals (subtotal, shipping placeholder, tax placeholder)
+- [ ] Cart endpoints, server-side totals
 - [ ] Wishlist add/remove/list
-- [ ] Cart drawer component, toast notifications
+- [ ] Reconcile client cart state against the server on load
 
-## Phase 6 — Checkout & Orders (sales)
+## Phase 8 — Checkout & Orders (sales)
 
 - [ ] Checkout flow, address selection, shipping/payment
 - [ ] Cash on Delivery (COD) first
@@ -75,19 +128,20 @@ have been validated against an in-process PostgreSQL (PGlite) instead. See
 - [ ] Orders history + order details
 - [ ] Order status updates
 
-## Phase 7 — Payments (extensible)
+## Phase 9 — Payments (extensible)
 
 - [ ] Payment intents structure, webhooks foundation
 - [ ] Keep COD working, prepare Stripe/Paystack for later
 - [ ] Payment statuses synchronized with orders
 
-## Phase 8 — Reviews & Ratings
+## Phase 10 — Reviews & Ratings
 
-- [ ] Reviews: create/list, one per user per product
+- [ ] Review submission (read-only fixtures today)
+- [ ] One review per user per product
 - [ ] Average rating + distribution
 - [ ] Moderation status (pending/approved/rejected)
 
-## Phase 9 — Admin Dashboard
+## Phase 11 — Admin Dashboard
 
 - [ ] Admin layout, navigation, RBAC
 - [ ] Product/inventory management
@@ -95,21 +149,24 @@ have been validated against an in-process PostgreSQL (PGlite) instead. See
 - [ ] Coupons, discounts
 - [ ] Basic analytics (sales, orders, products)
 
-## Phase 10 — Polish, QA & Deployment
+## Phase 12 — Polish, QA & Deployment
 
-- [ ] Performance: image optimization, lazy loading
-- [ ] Accessibility: keyboard, ARIA, focus management
-- [ ] Responsive QA (mobile/tablet/desktop)
+- [ ] Performance: real product photography, image optimisation
+- [ ] Accessibility audit with assistive technology
+- [ ] Cross-browser QA
 - [ ] API documentation expansion (OpenAPI/Swagger) if needed
-- [ ] Error boundaries, empty states, loading skeletons
+- [ ] Final brand identity: name, wordmark, palette
 - [ ] Security hardening, production `.env` checklist
 - [ ] Deployment strategy (Render/Railway/Fly/Heroku, Vercel/Cloudflare Pages)
-- [ ] CI (lint + test + build) if desired
+- [ ] CI (lint + test) if desired
 
 ### Notes
 
 - Nothing business-specific was built in Phase 1 on purpose.
-- Every new feature follows the same layering: route → controller → service →
-  repository. The health check is the reference implementation.
+- Every new backend feature follows the same layering: route → controller →
+  service → repository. The health check is the reference implementation.
+- Phases 3 and 4 deliberately shipped no API calls: the storefront was built
+  against fixtures shaped like the Phase 2 schema, so swapping in the real client
+  is a change to `app.js` and not to any component.
 - Keep the design original (inspired by Shopify/Wix in UX goals, not copied).
 - Prefer clarity and maintainability over premature abstraction.

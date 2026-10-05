@@ -27,7 +27,7 @@ const CLOSE_DELAY = 180;
  * @returns {{ element: HTMLElement, destroy(): void }}
  */
 export function createNav(categories = [], { activeSlug, onNavigate } = {}) {
-  const list = el('ul.nav__list', { role: 'list' });
+  const list = el('ul.nav__list.nav__list--top', { role: 'list' });
 
   for (const category of categories) {
     list.append(buildNavItem(category, activeSlug, onNavigate));
@@ -102,8 +102,7 @@ export function createNav(categories = [], { activeSlug, onNavigate } = {}) {
     const active = event.target instanceof Element ? event.target.closest('.nav__item') : null;
     const index = active ? items.indexOf(active) : -1;
     const triggerOf = (item) => item?.querySelector('.nav__link');
-    const firstLinkInPanel = (item) =>
-      item?.querySelector('.nav__panel a, .nav__panel button');
+    const firstLinkInPanel = (item) => item?.querySelector('.nav__panel a, .nav__panel button');
 
     switch (event.key) {
       case 'ArrowDown': {
@@ -185,15 +184,16 @@ function buildNavItem(category, activeSlug, onNavigate, index = 0) {
   const isActive = category.slug === activeSlug;
   const useMega = children.length >= MEGA_THRESHOLD;
 
-  const link = el('a.nav__link', {
-    id: `nav-trigger-${category.slug}`,
-    href: categoryUrl(category),
-    ...(isActive ? { 'aria-current': 'page' } : {}),
-    ...(onNavigate ? { onClick: () => onNavigate(category) } : {}),
-  }, [
-    category.name,
-    hasPanel ? icon('chevron-down', { className: 'nav__chevron' }) : null,
-  ]);
+  const link = el(
+    'a.nav__link',
+    {
+      id: `nav-trigger-${category.slug}`,
+      href: categoryUrl(category),
+      ...(isActive ? { 'aria-current': 'page' } : {}),
+      ...(onNavigate ? { onClick: () => onNavigate(category) } : {}),
+    },
+    [category.name, hasPanel ? icon('chevron-down', { className: 'nav__chevron' }) : null]
+  );
 
   const item = el(
     `li.nav__item${hasPanel ? (useMega ? '.nav__item--mega' : '.nav__item--simple') : ''}`,
@@ -214,7 +214,9 @@ function buildPanel(category, children, useMega) {
 
   const body = useMega
     ? buildMega(category, children)
-    : el('ul.nav__list', { role: 'list' },
+    : el(
+        'ul.nav__list',
+        { role: 'list' },
         children.map((child) =>
           el('li', {}, [
             el('a.nav__list-link', { href: categoryUrl(child) }, [
@@ -249,7 +251,9 @@ function buildMega(category, children) {
       index === 0 && category.description
         ? el('p.nav__mega-description', { text: category.description })
         : null,
-      el('ul.nav__list', { role: 'list' },
+      el(
+        'ul.nav__list',
+        { role: 'list' },
         group.map((child) =>
           el('li', {}, [
             el('a.nav__mega-link', { href: categoryUrl(child) }, [

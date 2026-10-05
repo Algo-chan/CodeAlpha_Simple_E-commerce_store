@@ -110,7 +110,18 @@ export function buildProductView(product, { variants: rawVariants, reviews, cate
     .filter((variant) => variant.is_active !== false)
     .map((variant) => buildVariantView(variant, product, primary_image));
 
-  const sellable = variants.filter((variant) => variant.is_purchasable);
+  // A digital product legitimately has no variant rows, so the UI still needs one
+  // line to sell. That synthetic variant is folded in here rather than only onto
+  // `default_variant` further down, so price, availability and the sold-out
+  // badge are all derived from the same list. Otherwise a downloadable reads as
+  // "Sold out" with a null price on its card while its own default variant is
+  // perfectly buyable.
+  const synthetic_variant =
+    variants.length === 0 ? buildSyntheticDigitalVariant(product, primary_image) : null;
+
+  const sellable = [...(synthetic_variant ? [synthetic_variant] : []), ...variants].filter(
+    (variant) => variant.is_purchasable
+  );
   const priced = sellable.length > 0 ? sellable : variants;
 
   const prices = priced.map((variant) => variant.price_minor);
@@ -150,6 +161,11 @@ export function buildProductView(product, { variants: rawVariants, reviews, cate
     category_name: category?.name ?? null,
     is_digital,
     is_featured: Boolean(product.is_featured),
+    // Merchandising metadata for the homepage. `is_new` is an editorial claim
+    // rather than a date inference, and `display_order` is the hand-set ranking
+    // behind the popular row - neither is derived, so neither is faked.
+    is_new: Boolean(product.is_new),
+    display_order: product.display_order ?? 0,
     status: product.status,
     is_listable: product.status === LISTABLE_STATUS,
     description: product.description ?? '',
@@ -161,9 +177,9 @@ export function buildProductView(product, { variants: rawVariants, reviews, cate
     primary_image,
 
     variants,
-    // A digital product with no variant is still purchasable, so the UI needs a
-    // synthetic line to sell. This mirrors how the API must behave too.
-    default_variant: variants[0] ?? buildSyntheticDigitalVariant(product, primary_image),
+    // Same synthetic line used for price and availability above, so the thing
+    // the card advertises is the thing the basket receives.
+    default_variant: variants[0] ?? synthetic_variant,
 
     price_min_minor,
     price_max_minor,
@@ -190,6 +206,7 @@ export function buildProductView(product, { variants: rawVariants, reviews, cate
       in_stock,
       is_digital,
       is_featured: Boolean(product.is_featured),
+      is_new: Boolean(product.is_new),
     }),
   };
 }
@@ -273,7 +290,7 @@ function buildImages(product) {
   const angles = product.images?.length ? product.images : ['Front'];
   return mediaSet(product.slug, angles).map((image) => ({
     ...image,
-    thumb_url: thumbnailFor(product.slug, { angle: image.angle, variant: image.sortOrder }),
+    thumb_url: thumbnailFor(product.slug, { angle: image.angle, variant: image.sort_order }),
   }));
 }
 
@@ -394,6 +411,7 @@ function buildBadges({
   in_stock,
   is_digital,
   is_featured,
+  is_new,
 }) {
   const badges = [];
 
@@ -403,6 +421,7 @@ function buildBadges({
   else {
     if (is_on_sale && discount_percent) badges.push(`sale-${discount_percent}`);
     if (is_low_stock) badges.push('low-stock');
+    if (is_new) badges.push('new');
     if (is_digital) badges.push('digital');
     if (is_featured) badges.push('featured');
   }
@@ -415,6 +434,7 @@ export const BADGE_LABELS = Object.freeze({
   digital: 'Instant download',
   'sold-out': 'Sold out',
   'low-stock': 'Low stock',
+  new: 'New',
   featured: 'Featured',
 });
 
