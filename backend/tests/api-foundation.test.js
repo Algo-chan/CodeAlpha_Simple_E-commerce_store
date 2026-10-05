@@ -20,6 +20,11 @@ test('unknown routes return a 404 envelope', async () => {
   assert.equal(typeof response.body.error.message, 'string');
 });
 
+// Phase 5 implemented the public catalogue; the rest are still ahead. Keeping the
+// placeholder list in step with `routes/v1.routes.js` is what stops a route from
+// silently disappearing: if one is implemented and forgotten here, this fails.
+const IMPLEMENTED = new Set(['products', 'categories', 'search']);
+
 const RESOURCE_PATHS = [
   '/api/v1/auth',
   '/api/v1/products',
@@ -31,7 +36,7 @@ const RESOURCE_PATHS = [
   '/api/v1/reviews',
   '/api/v1/users',
   '/api/v1/admin',
-];
+].filter((path) => !IMPLEMENTED.has(path.split('/').pop()));
 
 for (const path of RESOURCE_PATHS) {
   test(`${path} is mounted and reports NOT_IMPLEMENTED`, async () => {

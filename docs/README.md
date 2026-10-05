@@ -8,6 +8,7 @@
 | [database-erd.md](./database-erd.md)                     | ER diagrams, column reference, enforced rules                         |
 | [frontend-design-system.md](./frontend-design-system.md) | Design tokens, typography, spacing, components, motion, accessibility |
 | [frontend-storefront.md](./frontend-storefront.md)       | Homepage architecture, state, cart, search, API integration points    |
+| [product-discovery.md](./product-discovery.md)           | Catalogue, search, category and detail endpoints, and the decisions   |
 | [setup.md](./setup.md)                                   | Prerequisites, install, PostgreSQL, run commands, troubleshooting     |
 | [roadmap.md](./roadmap.md)                               | Build phases and what is deliberately deferred                        |
 
@@ -22,7 +23,7 @@ Other useful references:
 
 ## Current phase
 
-**Phase 4 — storefront experience (complete).**
+**Phase 6 — catalogue API (backend complete, frontend pending).**
 
 Phase 1 remains in place, plus:
 
@@ -44,20 +45,33 @@ Phase 4 built the storefront on top of it:
 - Functional search, quick view, variant selection, cart and wishlist state
 - 153 frontend tests over the pure logic
 
-Still to come: services and APIs, authentication, checkout, orders, payments and
-the admin area. The frontend currently makes **no** API calls — it runs entirely
-on fixtures in `frontend/js/mock/`, shaped so the real client can replace them
-without any component changing.
+Phase 5 built the read-only catalogue on the real database:
+
+- `GET /products` with server-side filtering, sorting, pagination and facets
+- `GET /products/:slug` plus `/reviews` and `/related`
+- `GET /categories` and `/categories/:slug`, scoped to the whole subtree
+- `GET /search` and `/search/suggest`, reaching variant attributes
+- Availability modelled as `stock: null` (untracked) versus `stock.available: 0`
+  (sold out), with `is_listable` independent of purchasability
+- 96 catalogue tests: 59 through the whole stack on PGlite, 37 unit
+
+See [product-discovery.md](./product-discovery.md) for the endpoint contracts and the
+reasoning behind the filter, money and availability rules.
+
+Still to come: the frontend swap to `core/api.js`, authentication, cart and wishlist
+APIs, checkout, orders, payments and the admin area. The frontend still makes **no**
+API calls — it runs on fixtures in `frontend/js/mock/`, shaped so the real client
+can replace them without any component changing.
 
 The Phase 1 infrastructure still in place:
 
 - Express application with JSON parsing, CORS, Helmet, compression, rate limiting
-- `/api/v1` versioned routing with a real health check and 501 placeholders
+- `/api/v1` versioned routing with a real health check; the catalogue routes are
+  implemented and the remaining resources are still 501 placeholders
 - Centralized success/error envelope, 404 handling and safe error responses
 - PostgreSQL connection pool, health probe, migration runner and seed runner
 - Validated environment configuration (`.env` is git-ignored)
 - ESLint, Prettier, automated tests for both workspaces (`npm run verify`)
 
-The database layer is done, but no product logic runs on it yet: there are no
-repositories, services or endpoints for the catalogue, cart, checkout, orders or
-admin.
+The catalogue runs on the real database. Cart, wishlist, orders, payments and admin
+have no repositories, services or endpoints yet.

@@ -18,15 +18,33 @@ const currentDir = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Builds the Express application.
+ *
  * Exported separately from `server.js` so tests can mount it with supertest
  * without opening a real port.
+ *
+ * @param {{ db?: object }} [options]
+ * @param {object} [options.db] a database executor to attach as `req.db`.
+ *   Production omits it, and the repositories fall back to the `pg` pool. Tests
+ *   pass a PGlite instance so the whole HTTP stack can be exercised with no
+ *   PostgreSQL server running — including validation, controllers, routing and
+ *   the error envelope, none of which a service-level test would cover.
  */
-export function createApp() {
+export function createApp({ db } = {}) {
   const app = express();
 
   // Behind a proxy (nginx / a hosting platform) so `req.ip` and rate limiting
   // see the real client IP.
   app.set('trust proxy', 1);
+
+  // Attached before any route so every controller and service can reach the
+  // executor through the request rather than importing a pool directly. That
+  // indirection is what makes the catalogue layer testable at all.
+  if (db) {
+    app.use((req, _res, next) => {
+      req.db = db;
+      next();
+    });
+  }
 
   // --- Global security & parsing middleware ---------------------------
   app.use(helmetMiddleware);

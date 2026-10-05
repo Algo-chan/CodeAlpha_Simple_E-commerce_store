@@ -88,6 +88,55 @@ curl http://localhost:4000/api/v1/health
 
 Service banner: name, API version, health path.
 
+## Catalogue endpoints (implemented)
+
+Read-only and public. Full contracts, filter semantics and the reasoning behind the
+availability and money rules are in
+[product-discovery.md](./product-discovery.md).
+
+| Method | Path                             |
+| ------ | -------------------------------- |
+| GET    | `/api/v1/products`               |
+| GET    | `/api/v1/products/:slug`         |
+| GET    | `/api/v1/products/:slug/reviews` |
+| GET    | `/api/v1/products/:slug/related` |
+| GET    | `/api/v1/categories`             |
+| GET    | `/api/v1/categories/:slug`       |
+| GET    | `/api/v1/search`                 |
+| GET    | `/api/v1/search/suggest`         |
+
+Listing query parameters: `category`, `brand`, `productType`, `minPrice`,
+`maxPrice`, `availability`, `attr.<key>`, `sort`, `page`, `limit`, `q`,
+`includeFacets`. Repeated and comma-separated parameters are both accepted.
+
+Sort keys are `featured`, `newest`, `price-asc`, `price-desc`, `name-asc`,
+`name-desc`. Anything else is a 422.
+
+Responses send `Cache-Control: public, max-age=60, stale-while-revalidate=120`.
+Public is safe because nothing in this surface is per-user.
+
+A malformed parameter is a 422 with per-field errors, never a silent clamp:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "details": {
+      "errors": [
+        {
+          "field": "page",
+          "message": "page must be 1 or more",
+          "code": "too_small",
+          "source": "query"
+        }
+      ]
+    }
+  }
+}
+```
+
 ## Planned endpoints (mounted, return 501)
 
 These paths exist so the URL surface and CORS behaviour are testable today.
@@ -98,30 +147,28 @@ Every method on them answers:
   "success": false,
   "error": {
     "code": "NOT_IMPLEMENTED",
-    "message": "Products API is not implemented yet."
+    "message": "Cart API is not implemented yet."
   }
 }
 ```
 
-| Path                 | Planned responsibility                                |
-| -------------------- | ----------------------------------------------------- |
-| `/api/v1/auth`       | Register, login, refresh, logout, password reset      |
-| `/api/v1/products`   | List/filter/sort, details, variants, related products |
-| `/api/v1/categories` | Tree, breadcrumbs                                     |
-| `/api/v1/cart`       | Add/update/remove items, totals                       |
-| `/api/v1/wishlist`   | Add/remove/list saved products                        |
-| `/api/v1/orders`     | Checkout, order history, order status                 |
-| `/api/v1/payments`   | Cash on Delivery, online payment intents, webhooks    |
-| `/api/v1/reviews`    | Create, list, moderate, aggregate ratings             |
-| `/api/v1/users`      | Profile, addresses, password                          |
-| `/api/v1/admin`      | Dashboard, products, inventory, coupons, analytics    |
+| Path               | Planned responsibility                             |
+| ------------------ | -------------------------------------------------- |
+| `/api/v1/auth`     | Register, login, refresh, logout, password reset   |
+| `/api/v1/cart`     | Add/update/remove items, totals                    |
+| `/api/v1/wishlist` | Add/remove/list saved products                     |
+| `/api/v1/orders`   | Checkout, order history, order status              |
+| `/api/v1/payments` | Cash on Delivery, online payment intents, webhooks |
+| `/api/v1/reviews`  | Create, moderate, aggregate ratings                |
+| `/api/v1/users`    | Profile, addresses, password                       |
+| `/api/v1/admin`    | Dashboard, products, inventory, coupons, analytics |
+
+Note that reading a product's reviews is implemented above; _writing_ one is not,
+because it needs an account.
 
 Planned route shapes (for reference, not implemented):
 
 ```
-GET    /api/v1/products?category=&minPrice=&maxPrice=&search=&sort=&page=&limit=
-GET    /api/v1/products/:id
-GET    /api/v1/products/:id/related
 POST   /api/v1/auth/register
 POST   /api/v1/auth/login
 POST   /api/v1/auth/refresh
@@ -129,13 +176,15 @@ GET    /api/v1/cart
 POST   /api/v1/cart/items
 PATCH  /api/v1/cart/items/:id
 DELETE /api/v1/cart/items/:id
+POST   /api/v1/reviews
 POST   /api/v1/orders            (checkout)
 GET    /api/v1/orders
 GET    /api/v1/orders/:id
 GET    /api/v1/admin/analytics/overview
 ```
 
-Each will follow the same layering: route → controller → service → repository.
+Each will follow the same layering: route → validation → controller → service →
+repository.
 
 ## Authentication (design)
 

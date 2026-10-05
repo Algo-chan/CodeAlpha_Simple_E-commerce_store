@@ -90,7 +90,7 @@ backend: mock data in, `localStorage` for cart and wishlist.
 
 Deferred from this phase, since it was scoped to the storefront UI:
 
-- [ ] Real API integration → Phase 5+
+- [ ] Real API integration → Phase 6, backend done, frontend pending
 - [ ] Checkout, payment and orders → later phases
 - [ ] Final brand identity → still placeholder, configurable in one file
 
@@ -106,11 +106,32 @@ Deferred from this phase, since it was scoped to the storefront UI:
 
 ## Phase 6 — Catalogue API (products & categories)
 
-- [ ] Categories tree (parent/child), breadcrumbs
-- [ ] Products + product_variants + product_images endpoints
-- [ ] Inventory tracking (quantity, reserved), transactions
-- [ ] Search, filtering, sorting, pagination
+Backend complete and documented in
+[product-discovery.md](./product-discovery.md). Frontend transition still pending.
+
+- [x] Categories tree (parent/child) with descendant-inclusive counts, breadcrumbs
+- [x] `GET /categories`, `/categories/:slug` — a category page is a listing scoped
+      to its subtree, validated in two stages so the path slug wins over any
+      `?category=` parameter
+- [x] `GET /products`, `/products/:slug`, `/products/:slug/reviews`,
+      `/products/:slug/related` — read-only, public, `Cache-Control: max-age=60`
+- [x] Availability model: `stock` is `null` (untracked/digital) or an object with
+      `available`; never `0`. `is_listable` is independent of purchasability, so a
+      sold-out product stays in the grid
+- [x] Editorial fields with no column behind them: `is_new` derived from
+      `created_at`, `is_featured: false`, `display_order: 0`
+- [x] Search, filtering, sorting, pagination — server-side, with facets counted
+      per-dimension and sort keys matching the frontend spellings
+- [x] Attribute filters: OR within a key, AND across keys; variant attributes are
+      searchable so the filter panel never offers an option search cannot find
+- [x] Review presenter with server-derived verified-purchase status, and no
+      reviewer email or account id in the payload
+- [x] 96 catalogue tests (59 HTTP through the full stack on PGlite, 37 unit)
 - [ ] Swap `mockApi` for `core/api.js`; keep component contracts unchanged
+- [ ] Move `canSelectAttribute`/`findVariantFor` out of `mock/view.js`
+- [ ] `cart.js`: read `variant.is_active`, and treat `stock === null` as in stock
+- [ ] Inventory write endpoints (quantity, reserved, transactions) — deferred, as
+      the read model did not need them
 
 ## Phase 7 — Cart & Wishlist API
 
