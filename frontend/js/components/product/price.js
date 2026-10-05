@@ -18,7 +18,7 @@
  */
 import { el } from '../../core/dom.js';
 import { formatMoney } from '../../utils/format.js';
-import { LOW_STOCK_THRESHOLD } from '../../mock/view.js';
+import { LOW_STOCK_THRESHOLD } from '../../utils/product-view.js';
 
 /**
  * @typedef {object} PriceOptions

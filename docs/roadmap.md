@@ -83,7 +83,7 @@ backend: mock data in, `localStorage` for cart and wishlist.
 - [x] Wishlist state with product ids and count badge
 - [x] Responsive mobile experience: bottom sheets, compact header, touch targets
 - [x] Loading, empty and error states on every data path
-- [x] 153 frontend tests on the pure logic (`node:test`)
+- [x] 154 frontend tests on the pure logic (`node:test`)
 - [x] Accessibility pass: landmarks, focus management, live regions, reduced motion
 - [x] No dead links: every footer and card action resolves to real content
 - [x] Documentation: [frontend-storefront.md](./frontend-storefront.md)
@@ -127,9 +127,17 @@ Backend complete and documented in
 - [x] Review presenter with server-derived verified-purchase status, and no
       reviewer email or account id in the payload
 - [x] 96 catalogue tests (59 HTTP through the full stack on PGlite, 37 unit)
-- [ ] Swap `mockApi` for `core/api.js`; keep component contracts unchanged
-- [ ] Move `canSelectAttribute`/`findVariantFor` out of `mock/view.js`
-- [ ] `cart.js`: read `variant.is_active`, and treat `stock === null` as in stock
+- [x] Whole suite green: 191 backend, 154 frontend, lint and format clean
+- [ ] Swap `mockApi` for `core/api.js` and move collection/search/category pages
+      onto server-driven URL state; component contracts unchanged
+- [x] Move `canSelectAttribute`/`findVariantFor` out of `mock/view.js` into
+      `frontend/js/utils/product-view.js`, so components stop importing from
+      `mock/`; badge vocabulary and the low-stock threshold moved with them
+- [x] `cart.js`: read `variant.is_active` / `variant.is_purchasable` instead of the
+      fixture-only `stock.is_active`, and treat `stock === null` as in stock
+- [x] Drop the fabricated `stock.is_active: quantity > 0` from the fixtures and emit
+      the backend's `is_tracked` instead, so "sold out" (`available === 0`) and "row
+      inactive" stop being the same event
 - [ ] Inventory write endpoints (quantity, reserved, transactions) — deferred, as
       the read model did not need them
 

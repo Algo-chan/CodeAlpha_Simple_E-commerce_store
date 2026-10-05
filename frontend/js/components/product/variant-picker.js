@@ -28,7 +28,7 @@
 import { el, qs } from '../../core/dom.js';
 import { icon } from '../../utils/icons.js';
 import { select } from '../forms/field.js';
-import { canSelectAttribute, findVariantFor } from '../../mock/view.js';
+import { canSelectAttribute, findVariantFor } from '../../utils/product-view.js';
 
 /** Attributes rendered as colour swatches rather than text buttons. */
 const COLOR_KEYS = new Set(['color', 'colour']);

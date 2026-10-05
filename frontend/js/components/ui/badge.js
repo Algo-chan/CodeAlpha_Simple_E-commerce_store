@@ -5,12 +5,13 @@
  * colour alone, because colour is the one signal a colourblind shopper cannot
  * read and the one that disappears in a screenshot printed in black and white.
  *
- * Badge vocabulary lives in mock/view.js (`BADGE_LABELS`) so the meaning of a
- * badge key is defined once.
+ * Badge vocabulary lives in utils/product-view.js (`BADGE_LABELS`) so the meaning
+ * of a badge key is defined once, outside the fixture layer — the real API sends
+ * the same keys.
  */
 import { el } from '../../core/dom.js';
 import { icon } from '../../utils/icons.js';
-import { badgeLabel } from '../../mock/view.js';
+import { badgeLabel } from '../../utils/product-view.js';
 
 /** Icons per badge key. Absent means the badge is text only. */
 const BADGE_ICONS = {

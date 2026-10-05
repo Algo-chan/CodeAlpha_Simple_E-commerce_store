@@ -13,15 +13,27 @@
  *
  * Keeping this pure and synchronous means the whole storefront can be rendered
  * from a fixture in a test, with no network and no fake timers.
+ *
+ * SCOPE: this module builds view models FROM FIXTURES. The rules that interpret a
+ * view model — badge wording, variant selection, the low-stock threshold — live in
+ * `utils/product-view.js`, because the real API produces the same view model and
+ * components must not reach into `mock/` for vocabulary. This file re-exports them
+ * for the fixtures' own convenience; new code should import from `utils/`.
  */
 import { mediaSet, mediaFor, thumbnailFor, placeholderFor } from './media.js';
 import { discountPercent } from '../utils/format.js';
+import {
+  BADGE_LABELS,
+  LOW_STOCK_THRESHOLD,
+  badgeLabel,
+  canSelectAttribute,
+  findVariantFor,
+} from '../utils/product-view.js';
 
 /** Only these may appear in a listing. DRAFT and ARCHIVED never do. */
 export const LISTABLE_STATUS = 'ACTIVE';
 
-/** Below this, a product is badged as low stock rather than just "in stock". */
-export const LOW_STOCK_THRESHOLD = 5;
+export { BADGE_LABELS, LOW_STOCK_THRESHOLD, badgeLabel, canSelectAttribute, findVariantFor };
 
 /**
  * Fallback price for a digital product that has neither a variant nor a
@@ -217,7 +229,10 @@ export function buildProductView(product, { variants: rawVariants, reviews, cate
 
 function buildVariantView(variant, product, primaryImage) {
   const stock = variant.stock ?? null;
-  const is_purchasable = stock === null ? true : stock.is_active !== false && stock.available > 0;
+  // Same rule as the backend's `toVariant`: a variant is purchasable when it is
+  // active and either untracked (`stock === null`) or has stock on hand. Sold out
+  // means `available === 0`, never "the row went inactive".
+  const is_purchasable = variant.is_active !== false && (stock === null || stock.available > 0);
 
   return {
     id: String(variant.id),
@@ -340,46 +355,6 @@ function humaniseAttribute(key) {
  * @param {Record<string, string>} selection
  * @returns {object|null} the variant, or null when nothing matches
  */
-export function findVariantFor(product, selection) {
-  const entries = Object.entries(selection ?? {}).filter(([, value]) => value);
-  if (entries.length === 0) return product.default_variant ?? null;
-
-  return (
-    (product.variants ?? []).find((variant) =>
-      entries.every(([key, value]) => String(variant.attributes?.[key]) === String(value))
-    ) ?? null
-  );
-}
-
-/**
- * Whether an option value can be reached from the current selection.
- *
- * This is what stops the classic dead end where "Black / 42" is sold out and
- * the shopper cannot work out that switching to White fixes it. The check
- * considers the other chosen attributes but ignores the option's own key, so
- * the shopper can always undo a bad choice.
- *
- * @param {ViewProduct} product
- * @param {string} key          the option being tested
- * @param {string} value        the candidate value
- * @param {Record<string, string>} selection current selection
- * @returns {{ enabled: boolean, variant: object|null }}
- */
-export function canSelectAttribute(product, key, value, selection) {
-  const others = Object.entries(selection ?? {}).filter(
-    ([otherKey, otherValue]) => otherKey !== key && otherValue
-  );
-
-  const variant = (product.variants ?? []).find((candidate) => {
-    if (String(candidate.attributes?.[key]) !== String(value)) return false;
-    return others.every(
-      ([otherKey, otherValue]) => String(candidate.attributes?.[otherKey]) === String(otherValue)
-    );
-  });
-
-  return { enabled: Boolean(variant?.is_purchasable), variant: variant ?? null };
-}
-
 /* -------------------------------------------------------------------------- */
 /* Ratings and badges                                                           */
 /* -------------------------------------------------------------------------- */
@@ -427,26 +402,6 @@ function buildBadges({
   }
 
   return badges.slice(0, 2);
-}
-
-/** Human label for a badge key. */
-export const BADGE_LABELS = Object.freeze({
-  digital: 'Instant download',
-  'sold-out': 'Sold out',
-  'low-stock': 'Low stock',
-  new: 'New',
-  featured: 'Featured',
-});
-
-/**
- * @param {string} badge
- * @returns {string}
- */
-export function badgeLabel(badge) {
-  if (BADGE_LABELS[badge]) return BADGE_LABELS[badge];
-  const match = /^sale-(\d+)$/.exec(badge);
-  if (match) return `${match[1]}% off`;
-  return badge;
 }
 
 /* -------------------------------------------------------------------------- */

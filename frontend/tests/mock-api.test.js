@@ -504,7 +504,9 @@ test('a sold-out variant is never purchasable, whatever the stock row says', () 
   for (const product of catalogue.products) {
     for (const variant of product.variants ?? []) {
       const available = variant.stock?.available;
-      if (available === 0 || variant.stock?.is_active === false) {
+      // Tracked and empty, or not purchasable for any other reason. `stock` of
+      // `null` is deliberately excluded: untracked means digital, which is buyable.
+      if (available === 0 || variant.is_purchasable !== true) {
         assert.equal(
           variant.is_purchasable,
           false,

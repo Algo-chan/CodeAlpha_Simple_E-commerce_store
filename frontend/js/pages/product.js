@@ -27,7 +27,7 @@ import { productGallery } from '../components/product/product-gallery.js';
 import { variantPicker } from '../components/product/variant-picker.js';
 import { wishlistButton } from '../components/product/wishlist-button.js';
 import { productRail } from '../components/product/product-card.js';
-import { LOW_STOCK_THRESHOLD } from '../mock/view.js';
+import { LOW_STOCK_THRESHOLD } from '../utils/product-view.js';
 
 /**
  * @param {object} options

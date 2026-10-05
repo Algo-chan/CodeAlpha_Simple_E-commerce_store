@@ -53,8 +53,7 @@ function pickVariantWithStock(catalogue, min, max) {
     .find(
       (item) =>
         item.is_purchasable &&
-        item.stock &&
-        item.stock.is_active !== false &&
+        item.stock !== null &&
         item.stock.available >= min &&
         item.stock.available <= max
     );
@@ -115,20 +114,39 @@ test('an unknown variant id is refused', () => {
   assert.equal(result.reason, 'unavailable');
 });
 
-test('a deactivated stock row cannot be added', () => {
+test('a sold-out variant cannot be added', () => {
   const { catalogue, cart } = harness();
-  // The fixtures express "sold out" as an inactive inventory row, which is a
-  // different refusal from a stock ceiling and is reported as such.
+  // Sold out is `available === 0` on a tracked row. It is not the same event as a
+  // deactivated variant: the row is still active, there is just nothing on hand.
   const soldOut = catalogue
     .selectListable()
     .flatMap((product) => product.variants ?? [])
-    .find((variant) => variant.stock && variant.stock.is_active === false);
+    .find((variant) => variant.stock !== null && variant.stock.available === 0);
 
   assert.ok(soldOut, 'the fixture set should include a sold-out variant');
 
   const result = cart.add(soldOut.id);
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'unavailable');
+});
+
+test('an inactive variant cannot be added even with stock on hand', () => {
+  // No fixture is inactive, so it is built directly. This is the case the old
+  // `stock.is_active` check missed: stock exists, yet the variant is not for sale.
+  const { cart } = harness();
+  const deactivated = {
+    id: '50000000-0000-4000-8000-000000009997',
+    product_id: '40000000-0000-4000-8000-000000009997',
+    sku: 'DEACT-1',
+    price_minor: 100000,
+    attributes: {},
+    is_active: false,
+    product: { slug: 'deactivated', name: 'Deactivated', primary_image: null },
+    stock: { quantity: 10, reserved_quantity: 0, available: 10, is_tracked: true },
+  };
+
+  assert.equal(cart.add(deactivated).reason, 'unavailable');
+  assert.equal(cart.getState().lines.length, 0);
 });
 
 test('zero available stock on an active row is refused as a stock ceiling', () => {
@@ -142,7 +160,7 @@ test('zero available stock on an active row is refused as a stock ceiling', () =
     price_minor: 100000,
     attributes: { color: 'Black' },
     product: { slug: 'zero-stock', name: 'Zero stock product', primary_image: null },
-    stock: { quantity: 0, available: 0, is_active: true },
+    stock: { quantity: 0, available: 0, is_tracked: true },
   };
 
   const result = cart.add(zeroStock);
@@ -163,7 +181,7 @@ test('reserved units are excluded from the purchasable ceiling', () => {
     price_minor: 100000,
     attributes: {},
     product: { slug: 'reserved', name: 'Partly reserved', primary_image: null },
-    stock: { quantity: 10, reserved_quantity: 8, available: 2, is_active: true },
+    stock: { quantity: 10, reserved_quantity: 8, available: 2, is_tracked: true },
   };
 
   assert.equal(cart.add(partlyReserved, 3).reason, 'max-stock');

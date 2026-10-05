@@ -25,7 +25,7 @@ import { productGallery } from './product-gallery.js';
 import { variantPicker } from './variant-picker.js';
 import { stepper } from '../forms/stepper.js';
 import { wishlistButton } from './wishlist-button.js';
-import { LOW_STOCK_THRESHOLD } from '../../mock/view.js';
+import { LOW_STOCK_THRESHOLD } from '../../utils/product-view.js';
 
 /**
  * The canonical product URL.

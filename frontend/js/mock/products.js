@@ -924,7 +924,7 @@ const REVIEWS = [
  * @returns {Array<{id:string, product_id:string, sku:string, price_minor:number,
  *   compare_at_price_minor:number|null, attributes:object, is_active:boolean,
  *   stock:{quantity:number, reserved_quantity:number, available:number,
- *          reorder_level:number, is_active:boolean}|null}>}
+ *          reorder_level:number, is_tracked:boolean}|null}>}
  */
 export function listVariants() {
   return VARIANTS.map((variant) => {
@@ -950,7 +950,13 @@ export function listVariants() {
               reserved_quantity: reserved,
               available: Math.max(0, quantity - reserved),
               reorder_level: base?.reorder_level ?? 0,
-              is_active: quantity > 0,
+              // `is_tracked: true` just restates that a row exists. What it must NOT
+              // claim is that the row is "active" only while stock remains — an
+              // inventory row stays active when it empties, and it is `available`
+              // that reaches zero. A flag derived from `quantity > 0` here is how
+              // a sold-out variant silently became a "deactivated" one, a
+              // distinction no caller can act on. Mirrors the backend shape.
+              is_tracked: true,
             },
     };
   });

@@ -76,9 +76,18 @@ export function createCartStore(deps = {}) {
         ? variantOrId
         : resolveVariant(variantOrId);
     if (!variant) return { ok: false, reason: 'unavailable' };
-    if (variant.stock && variant.stock.is_active === false) {
-      return { ok: false, reason: 'unavailable' };
-    }
+
+    // `is_active` lives on the VARIANT, not on the stock row. Reading
+    // `stock.is_active` works only against the fixture shape, so the moment real
+    // data arrived — where the stock object is `{quantity, reserved, available,
+    // is_tracked}` — the check would read `undefined` and quietly let a
+    // deactivated variant into the basket.
+    if (variant.is_active === false) return { ok: false, reason: 'unavailable' };
+
+    // Belt and braces: `is_purchasable` is what the server computed, so trust it
+    // over re-deriving the same conclusion from `stock` here. A disagreement
+    // between the two means the server knows something this client does not.
+    if (variant.is_purchasable === false) return { ok: false, reason: 'unavailable' };
 
     const requested = clampQuantity(quantity, 1, MAX_QUANTITY);
     const existing = store.getState().lines.find((line) => line.variantId === variant.id);
@@ -230,13 +239,17 @@ export function createCartStore(deps = {}) {
         return { ...line, unavailableReason: 'missing' };
       }
 
-      if (variant.stock?.is_active === false) {
+      // Variant-level flag. See the note in `add`: this is not `stock.is_active`.
+      if (variant.is_active === false) {
         changed = true;
         return { ...line, unavailableReason: 'inactive' };
       }
 
       const ceiling = resolveCeiling(variant);
-      // `stock === null` means digital or untracked, so there is no ceiling.
+      // `stock === null` means digital or untracked, so there is no ceiling — the
+      // line stays buyable. Only a tracked row that is genuinely empty is sold
+      // out, and treating "untracked" as "empty" would mark every download
+      // unfulfillable.
       const unavailableReason = ceiling !== null && ceiling <= 0 ? 'sold-out' : null;
       const quantity =
         unavailableReason === 'sold-out'
@@ -353,20 +366,32 @@ function clampQuantity(value, min, max) {
 }
 
 /**
- * Maximum purchasable quantity for a variant.
- * `null` means unbounded - the variant has no inventory row, which per Phase 2
- * means the item is digital and stock is not tracked.
+ * Maximum purchasable quantity for a variant, or `null` when unbounded.
+ *
+ * `null` is load-bearing. A variant with no inventory row is digital or
+ * deliberately untracked, and `null` says "no ceiling exists" — which is not the
+ * same claim as a ceiling of zero. Conflating them marks every download sold out.
  *
  * Prefers `available` (quantity minus reserved) over the raw `quantity`:
- * reserved units are committed to someone else's order, and offering them here
- * is exactly how a mock becomes an oversell once real stock lands behind it.
+ * reserved units are committed to someone else's order, and offering them here is
+ * exactly how a mock becomes an oversell once real stock lands behind it.
+ *
+ * @param {object} variant
+ * @returns {number|null}
  */
 function resolveCeiling(variant) {
   const stock = variant.stock;
-  if (!stock) return null;
+  // Explicit `null` check, not falsiness. `available: 0` is a real, meaningful
+  // value that must survive to the caller as a zero ceiling.
+  if (stock === null || stock === undefined) return null;
+
   const available = stock.available ?? stock.quantity;
   if (available === null || available === undefined) return null;
-  return Math.min(Number(available), MAX_QUANTITY);
+
+  const count = Number(available);
+  if (!Number.isFinite(count)) return null;
+
+  return Math.min(Math.max(count, 0), MAX_QUANTITY);
 }
 
 /**
