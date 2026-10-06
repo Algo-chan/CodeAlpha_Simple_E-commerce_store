@@ -98,6 +98,11 @@ test('registration creates an ACTIVE CUSTOMER, sets a session cookie, never retu
   assert.ok(session, 'registration should start a session');
   assert.match(session.raw, /HttpOnly/, 'the session cookie must be HttpOnly');
   assert.match(session.raw, /SameSite=Lax/, 'SameSite=Lax for CSRF defence');
+  assert.equal(
+    JSON.stringify(res.body).includes('password_hash'),
+    false,
+    'the hash never leaves the server'
+  );
 });
 
 test('the database stores only the sha-256 of the session token', async () => {
@@ -132,7 +137,7 @@ test('a duplicate email is refused with 409 CONFLICT', async () => {
 
 test('registration validation: missing fields, bad email, bad phone, weak password, mismatch', async () => {
   const cases = [
-    { body: {}, field: '_root', why: 'all fields missing' },
+    { body: {}, field: 'name', why: 'all fields missing' },
     { body: { ...REGISTER_BODY, email: 'not-an-email' }, field: 'email' },
     { body: { ...REGISTER_BODY, phone: 'abc' }, field: 'phone' },
     { body: { ...REGISTER_BODY, phone: '0911' }, field: 'phone', why: 'too short' },
@@ -300,10 +305,11 @@ test('profile updates can never change role, status or email', async () => {
   const res = await request(app)
     .patch('/api/v1/auth/profile')
     .set(cookie)
-    .send({ role: 'ADMIN', status: 'INACTIVE', email: 'evil@example.com' });
+    .send({ name: 'Tamper Test', role: 'ADMIN', status: 'INACTIVE', email: 'evil@example.com' });
 
   assert.equal(res.status, 200);
   const user = res.body.data.user;
+  assert.equal(user.name, 'Tamper Test', 'the legitimate field is applied');
   assert.equal(user.role, 'CUSTOMER');
   assert.equal(user.status, 'ACTIVE');
   assert.equal(user.email, 'tamper@example.com');

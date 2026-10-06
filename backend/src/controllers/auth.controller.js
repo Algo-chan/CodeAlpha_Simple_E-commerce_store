@@ -58,7 +58,7 @@ export const login = asyncHandler(async (req, res) => {
     ...requestMeta(req),
   });
   setSessionCookie(res, token);
-  sendSuccess(res, { user });
+  sendSuccess(res, { data: { user } });
 });
 
 /** `POST /api/v1/auth/logout` — idempotent: clears the cookie either way. */
@@ -71,19 +71,19 @@ export const logout = asyncHandler(async (req, res) => {
 
 /** `GET /api/v1/auth/me` — session already resolved by `authenticate`. */
 export const me = asyncHandler(async (req, res) => {
-  sendSuccess(res, { user: req.user });
+  sendSuccess(res, { data: { user: req.user } });
 });
 
 /** `PATCH /api/v1/auth/profile` */
 export const updateProfile = asyncHandler(async (req, res) => {
   const user = await service.updateProfile(req.db, req.user.id, req.body);
-  sendSuccess(res, { user });
+  sendSuccess(res, { data: { user } });
 });
 
 /** `POST /api/v1/auth/password` */
 export const changePassword = asyncHandler(async (req, res) => {
   await service.changePassword(req.db, req.user.id, req.session.tokenHash, req.body);
-  sendSuccess(res, null, 'Password updated.');
+  sendSuccess(res, { message: 'Password updated.' });
 });
 
 /* -------------------------------------------------------------------------- */
@@ -92,7 +92,7 @@ export const changePassword = asyncHandler(async (req, res) => {
 
 export const listAddresses = asyncHandler(async (req, res) => {
   const addresses = await service.listAddresses(req.db, req.user.id);
-  sendSuccess(res, { addresses });
+  sendSuccess(res, { data: { addresses } });
 });
 
 export const createAddress = asyncHandler(async (req, res) => {
@@ -102,17 +102,17 @@ export const createAddress = asyncHandler(async (req, res) => {
 
 export const updateAddress = asyncHandler(async (req, res) => {
   const address = await service.updateAddress(req.db, req.user.id, req.params.id, req.body);
-  sendSuccess(res, { address });
+  sendSuccess(res, { data: { address } });
 });
 
 export const deleteAddress = asyncHandler(async (req, res) => {
   const address = await service.deleteAddress(req.db, req.user.id, req.params.id);
-  sendSuccess(res, { address });
+  sendSuccess(res, { data: { address } });
 });
 
 export const setDefaultAddress = asyncHandler(async (req, res) => {
   const address = await service.setDefaultAddress(req.db, req.user.id, req.params.id);
-  sendSuccess(res, { address });
+  sendSuccess(res, { data: { address } });
 });
 
 export default {

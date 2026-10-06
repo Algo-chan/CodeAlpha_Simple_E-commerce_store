@@ -52,22 +52,25 @@ export async function findById(db, id, userId) {
  * later ones start as non-default (the unique partial index enforces that only
  * one default can exist). `label` defaults to 'Default' to match the column.
  *
+ * Field names match the API body (snake_case), so the service can forward the
+ * validated payload unchanged.
+ *
  * @param {object} [db]
- * @param {{ userId: string, label?: string, fullName: string, phone: string,
+ * @param {{ userId: string, label?: string, full_name: string, phone: string,
  *           city: string, area: string, street: string,
- *           landmark?: string, additionalNotes?: string }} input
+ *           landmark?: string, additional_notes?: string }} input
  */
 export async function create(db, input) {
   const {
     userId,
     label = 'Default',
-    fullName,
+    full_name,
     phone,
     city,
     area,
     street,
     landmark = null,
-    additionalNotes = null,
+    additional_notes = null,
   } = input;
 
   const result = await executor(db)(
@@ -76,7 +79,7 @@ export async function create(db, input) {
      SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9,
             NOT EXISTS (SELECT 1 FROM addresses WHERE user_id = $1)
      RETURNING ${COLUMNS}`,
-    [userId, label, fullName, phone, city, area, street, landmark, additionalNotes]
+    [userId, label, full_name, phone, city, area, street, landmark, additional_notes]
   );
   return result.rows[0] ?? null;
 }
@@ -89,9 +92,9 @@ export async function create(db, input) {
  * @param {object} [db]
  * @param {string} id
  * @param {string} userId
- * @param {{ label?: string, fullName?: string, phone?: string, city?: string,
+ * @param {{ label?: string, full_name?: string, phone?: string, city?: string,
  *           area?: string, street?: string, landmark?: string|null,
- *           additionalNotes?: string|null }} fields
+ *           additional_notes?: string|null }} fields
  * @returns {Promise<object|null>}
  */
 export async function update(db, id, userId, fields) {
@@ -111,13 +114,13 @@ export async function update(db, id, userId, fields) {
       id,
       userId,
       fields.label ?? null,
-      fields.fullName ?? null,
+      fields.full_name ?? null,
       fields.phone ?? null,
       fields.city ?? null,
       fields.area ?? null,
       fields.street ?? null,
       fields.landmark ?? null,
-      fields.additionalNotes ?? null,
+      fields.additional_notes ?? null,
     ]
   );
   return result.rows[0] ?? null;
