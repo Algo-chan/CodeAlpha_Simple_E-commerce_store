@@ -123,9 +123,9 @@ routes/x.routes.js  →  controllers/x.controller.js  →  services/x.service.js
 3. **Placeholders return 501, not empty 200s.** Every planned resource is
    mounted and answers `NOT_IMPLEMENTED`, so the URL surface is visible and
    testable without shipping fake business logic.
-4. **Authentication fails closed.** `authenticate` currently returns 501 rather
-   than letting requests through; `authorize()` implements role checking
-   properly because it is generic infrastructure.
+4. **Authentication fails closed.** `authenticate` resolves the session cookie
+   and rejects missing, forged, expired, revoked or suspended sessions with
+   401/403; `authorize()` implements role checking against `req.user.role`.
 5. **Hand-written migration runner.** ~150 lines of readable code instead of a
    framework dependency. It tracks files in `schema_migrations` with a checksum,
    and runs each file in a transaction.
@@ -176,14 +176,15 @@ trace, answered with a generic message in production).
 | ---------------- | ------------------------------------------------------------------ |
 | Secrets          | `.env` git-ignored, `.env.example` committed, `.env.local` blocked |
 | Env validation   | Zod schema, production requires a strong `JWT_SECRET`              |
-| Password hashing | `BCRYPT_SALT_ROUNDS` configured; `bcrypt` used when auth is built  |
-| Authentication   | `middleware/auth.js` structure, fails closed with 501              |
+| Password hashing | bcrypt with `BCRYPT_SALT_ROUNDS`; hashes never leave the server    |
+| Authentication   | Session cookie (`ecom_session`), SHA-256-hashed token in the DB    |
 | Authorization    | `authorize(ROLES.ADMIN, ...)` implemented and role-checked         |
 | Input validation | `middleware/validate.js` + Zod schemas                             |
 | SQL injection    | Parameterized queries only, enforced by convention                 |
 | HTTP headers     | Helmet on every response                                           |
 | CORS             | Explicit origin allowlist from `FRONTEND_URL`                      |
-| Rate limiting    | Global API limiter; stricter limiter ready for auth routes         |
+| Rate limiting    | Global API limiter plus a stricter limiter on register/login       |
+| CSRF             | SameSite=Lax cookie + `requireSameOrigin` on auth mutations        |
 | Error leakage    | Stack traces and internal messages never sent in production        |
 | Body size        | JSON/urlencoded limited to 100 kB                                  |
 

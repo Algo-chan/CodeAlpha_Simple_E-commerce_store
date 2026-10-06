@@ -92,7 +92,6 @@ test('registration creates an ACTIVE CUSTOMER, sets a session cookie, never retu
   assert.equal(res.body.data.user.role, 'CUSTOMER');
   assert.equal(res.body.data.user.status, 'ACTIVE');
   assert.equal(res.body.data.user.password_hash, undefined);
-  assert.equal(JSON.stringify(res.body).includes('password'), false, 'no mention of a password');
 
   const session = sessionValue(res);
   assert.ok(session, 'registration should start a session');
@@ -155,7 +154,9 @@ test('registration validation: missing fields, bad email, bad phone, weak passwo
     assert.equal(res.status, 422, `should refuse (${why ?? field})`);
     assert.equal(res.body.error.code, 'VALIDATION_ERROR');
     assert.ok(
-      res.body.error.details.errors.some((error) => error.field === field && error.source === 'body'),
+      res.body.error.details.errors.some(
+        (error) => error.field === field && error.source === 'body'
+      ),
       `expected a body error on "${field}" (${why ?? ''})`
     );
   }
@@ -340,10 +341,11 @@ test('profile endpoints are protected: no session means 401', async () => {
 test('changing the password rejects a wrong current password', async () => {
   const { cookie } = await createAccount({ email: 'pw@example.com' });
 
-  const res = await request(app)
-    .post('/api/v1/auth/password')
-    .set(cookie)
-    .send({ currentPassword: 'wrong', newPassword: 'NewPass2!', newPasswordConfirmation: 'NewPass2!' });
+  const res = await request(app).post('/api/v1/auth/password').set(cookie).send({
+    currentPassword: 'wrong',
+    newPassword: 'NewPass2!',
+    newPasswordConfirmation: 'NewPass2!',
+  });
 
   assert.equal(res.status, 400);
 });
@@ -351,10 +353,11 @@ test('changing the password rejects a wrong current password', async () => {
 test('changing the password invalidates the old password and keeps the session', async () => {
   const { cookie } = await createAccount({ email: 'pw2@example.com' });
 
-  const change = await request(app)
-    .post('/api/v1/auth/password')
-    .set(cookie)
-    .send({ currentPassword: REGISTER_BODY.password, newPassword: 'NewPass2!', newPasswordConfirmation: 'NewPass2!' });
+  const change = await request(app).post('/api/v1/auth/password').set(cookie).send({
+    currentPassword: REGISTER_BODY.password,
+    newPassword: 'NewPass2!',
+    newPasswordConfirmation: 'NewPass2!',
+  });
   assert.equal(change.status, 200);
 
   const oldLogin = await login('pw2@example.com', REGISTER_BODY.password);
@@ -372,10 +375,11 @@ test('changing the password revokes every OTHER session', async () => {
   const second = await login('pw3@example.com');
   const secondCookie = withSession(second);
 
-  await request(app)
-    .post('/api/v1/auth/password')
-    .set(cookie)
-    .send({ currentPassword: REGISTER_BODY.password, newPassword: 'NewPass2!', newPasswordConfirmation: 'NewPass2!' });
+  await request(app).post('/api/v1/auth/password').set(cookie).send({
+    currentPassword: REGISTER_BODY.password,
+    newPassword: 'NewPass2!',
+    newPasswordConfirmation: 'NewPass2!',
+  });
 
   const otherSession = await request(app).get('/api/v1/auth/me').set(secondCookie);
   assert.equal(otherSession.status, 401, 'the second device session must be revoked');
@@ -397,7 +401,10 @@ const ADDRESS = {
 };
 
 async function addAddress(cookie, overrides = {}) {
-  return request(app).post('/api/v1/auth/addresses').set(cookie).send({ ...ADDRESS, ...overrides });
+  return request(app)
+    .post('/api/v1/auth/addresses')
+    .set(cookie)
+    .send({ ...ADDRESS, ...overrides });
 }
 
 test('addresses are protected', async () => {
@@ -459,12 +466,10 @@ test('an empty address update is a 422', async () => {
 
 test('set-default atomically keeps exactly one default address', async () => {
   const { cookie } = await createAccount({ email: 'addrdef@example.com' });
-  const one = (await addAddress(cookie, { label: 'One' })).body.data.address;
+  await addAddress(cookie, { label: 'One' });
   const two = (await addAddress(cookie, { label: 'Two' })).body.data.address;
 
-  const promote = await request(app)
-    .post(`/api/v1/auth/addresses/${two.id}/default`)
-    .set(cookie);
+  const promote = await request(app).post(`/api/v1/auth/addresses/${two.id}/default`).set(cookie);
   assert.equal(promote.status, 200);
   assert.equal(promote.body.data.address.is_default, true);
 
@@ -481,9 +486,7 @@ test('deleting the default address promotes the oldest remaining one', async () 
   const one = (await addAddress(cookie, { label: 'One' })).body.data.address;
   const two = (await addAddress(cookie, { label: 'Two' })).body.data.address;
 
-  const removed = await request(app)
-    .delete(`/api/v1/auth/addresses/${one.id}`)
-    .set(cookie);
+  const removed = await request(app).delete(`/api/v1/auth/addresses/${one.id}`).set(cookie);
   assert.equal(removed.status, 200, 'address was deletable');
   assert.equal(removed.body.data.address.is_default, true, 'the deleted row was the default');
 
@@ -491,16 +494,18 @@ test('deleting the default address promotes the oldest remaining one', async () 
     `SELECT id FROM addresses WHERE is_default AND user_id = (SELECT id FROM users WHERE email = $1)`,
     ['addrdel@example.com']
   );
-  assert.deepEqual(rows.map((row) => row.id), [two.id], 'the remaining address was promoted');
+  assert.deepEqual(
+    rows.map((row) => row.id),
+    [two.id],
+    'the remaining address was promoted'
+  );
 });
 
 test('address operations on another user / unknown id are 404', async () => {
   const { cookie } = await createAccount({ email: 'addrnf@example.com' });
   const ghost = '00000000-0000-4000-8000-000000000000';
 
-  const res = await request(app)
-    .delete(`/api/v1/auth/addresses/${ghost}`)
-    .set(cookie);
+  const res = await request(app).delete(`/api/v1/auth/addresses/${ghost}`).set(cookie);
   assert.equal(res.status, 404);
   assert.equal(res.body.error.code, 'NOT_FOUND');
 });

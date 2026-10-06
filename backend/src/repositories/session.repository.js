@@ -73,10 +73,7 @@ export async function findByTokenHash(db, tokenHash) {
  * @returns {Promise<boolean>} whether a row was deleted
  */
 export async function deleteByTokenHash(db, tokenHash) {
-  const result = await executor(db)(
-    `DELETE FROM user_sessions WHERE token_hash = $1`,
-    [tokenHash]
-  );
+  const result = await executor(db)(`DELETE FROM user_sessions WHERE token_hash = $1`, [tokenHash]);
   return (result.rowCount ?? 0) > 0;
 }
 

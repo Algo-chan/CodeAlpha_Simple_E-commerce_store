@@ -30,10 +30,19 @@ const HIDE_DELTA = 8;
  * @param {Array<object>} options.categories
  * @param {any} options.cart      cart store
  * @param {any} options.wishlist  wishlist store
+ * @param {any} [options.auth]    auth store; without one the account action
+ *                                stays a disabled placeholder
  * @param {string} [options.activeSlug]
  * @param {{ onOpenSearch?: Function, onOpenCart?: Function }} [options.hooks]
  */
-export function createHeader({ categories = [], cart, wishlist, activeSlug, hooks = {} }) {
+export function createHeader({
+  categories = [],
+  cart,
+  wishlist,
+  auth = null,
+  activeSlug,
+  hooks = {},
+}) {
   const { onOpenSearch, onOpenCart } = hooks;
 
   /* --- Brand --------------------------------------------------------------- */
@@ -66,15 +75,13 @@ export function createHeader({ categories = [], cart, wishlist, activeSlug, hook
     [icon('heart'), wishlistCount]
   );
 
-  // Account is a later phase. It renders disabled with an explanation rather
-  // than as a link that 404s, which is the difference between "not yet" and
-  // "broken".
+  // Account used to be a disabled placeholder. With the auth store it is a
+  // real link that flips between "sign in" and "your account" as the session
+  // changes. Sign-in leaves the session state unknown until the store has been
+  // checked, so the link simply never claims a state it does not have.
   const accountAction = el(
-    'span.header-action.header-action--disabled',
-    {
-      'aria-hidden': 'true',
-      title: 'Accounts arrive in a later phase',
-    },
+    'a.header-action.header-action--account',
+    { href: '/login.html', 'aria-label': 'Sign in or create an account' },
     [icon('user')]
   );
 
@@ -182,6 +189,27 @@ export function createHeader({ categories = [], cart, wishlist, activeSlug, hook
     ),
 
     on(cartButton, 'click', () => onOpenCart?.()),
+
+    ...[
+      auth
+        ? auth.subscribe(
+            ({ status, user }) => {
+              if (status === 'authenticated' && user) {
+                accountAction.href = '/account.html';
+                accountAction.setAttribute('aria-label', `Your account, ${user.name}`);
+                accountAction.title = 'Your account';
+                accountAction.classList.add('is-active');
+              } else {
+                accountAction.href = '/login.html';
+                accountAction.setAttribute('aria-label', 'Sign in or create an account');
+                accountAction.title = 'Sign in';
+                accountAction.classList.remove('is-active');
+              }
+            },
+            { immediate: true }
+          )
+        : null,
+    ].filter(Boolean),
 
     bindScrollBehaviour(bar),
   ];

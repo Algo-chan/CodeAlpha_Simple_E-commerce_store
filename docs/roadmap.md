@@ -94,15 +94,41 @@ Deferred from this phase, since it was scoped to the storefront UI:
 - [ ] Checkout, payment and orders → later phases
 - [ ] Final brand identity → still placeholder, configurable in one file
 
-## Phase 5 — Authentication & Users (core platform)
+## Phase 5 — Authentication & Customers (done)
 
-- [ ] User model, hashing with bcrypt, unique email
-- [ ] Auth endpoints: register, login, refresh, logout
-- [ ] Implement `authenticate` and `authorize` middleware with JWTs
-- [ ] Profile, addresses, password change, password reset
-- [ ] Admin-only user management
-- [ ] Auth tests, rate-limited login
-- [ ] Replace the account placeholder and merge the local wishlist into an account
+Cookie-session identity: bcrypt-hashed credentials, opaque server-side session
+tokens (stored as hashes, so revocation and logout are real), and the first
+authenticated API surface — profile, addresses and password change. This
+supersedes the JWT access/refresh sketch in api.md; a cookie whose hash is all
+that reaches the database makes logout and password changes actually revoke,
+which paper access tokens cannot.
+
+- [x] `users`, `user_sessions`, `addresses` tables with partial-unique
+      constraints (one active session set per user, one default address per
+      user)
+- [x] Password hashing with bcrypt (`BCRYPT_SALT_ROUNDS`); unknown email and
+      wrong password answer identically so sign-in confirms no accounts
+- [x] Opaque 32-byte session tokens stored as SHA-256; `HttpOnly`,
+      `SameSite=Lax` cookie; expiry from `SESSION_TTL_HOURS`; logout revokes
+- [x] `authenticate` fails closed (missing/forged/expired/revoked/suspended →
+      401/403) and `authorize(ROLES.ADMIN, ...)` guards staff routes
+- [x] Auth endpoints: register, login, logout, me, profile, password, addresses
+      (list/create/edit/delete/set-default)
+- [x] CSRF defense: SameSite=Lax plus `requireSameOrigin`; a stricter per-IP
+      limiter on register/login only
+- [x] Registration strips privileged fields and lowercases email; suspended
+      accounts are refused everywhere, even with a live session
+- [x] Address rules enforced in SQL too: the first address becomes the default,
+      `set-default` is atomic, and deleting the default promotes the oldest
+- [x] Changing the password revokes every other session and keeps the current
+      one
+- [x] 36 API tests covering the whole surface; suite green: 246 backend
+- [x] Storefront: auth store, one-time guest-basket transition (snapshot at
+      sign-in, settle at boot), login/register/account pages, auth-aware header
+- [x] Frontend tests for the auth store and the guest merge; suite green:
+      172 frontend
+- [ ] Email verification and password reset → deferred (no email provider yet)
+- [ ] Admin user management → the staff surface, Phase 11
 
 ## Phase 6 — Catalogue API (products & categories)
 
@@ -127,7 +153,7 @@ Backend complete and documented in
 - [x] Review presenter with server-derived verified-purchase status, and no
       reviewer email or account id in the payload
 - [x] 96 catalogue tests (59 HTTP through the full stack on PGlite, 37 unit)
-- [x] Whole suite green: 191 backend, 154 frontend, lint and format clean
+- [x] Whole suite green: 246 backend, 172 frontend, lint and format clean
 - [ ] Swap `mockApi` for `core/api.js` and move collection/search/category pages
       onto server-driven URL state; component contracts unchanged
 - [x] Move `canSelectAttribute`/`findVariantFor` out of `mock/view.js` into

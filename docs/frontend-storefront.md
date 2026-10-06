@@ -324,9 +324,13 @@ drawer with expandable category accordions, clear back and close controls.
 The header is compact rather than tall: the announcement bar is dismissible and
 the category strip collapses into the drawer below 64em.
 
-**Account is a placeholder.** No auth, no login, no registration — the entry
-point exists so the header layout is final, and it says so rather than opening a
-form that cannot work.
+**Account** — a session-aware header entry and three pages: sign in, register
+and a full account page (profile, address book, security). Sign-in/register run
+through `authForm`; the account page re-renders its content after every
+mutation. A guest's local basket and saved items are snapshotted at sign-in and
+settled by the next boot (`state/guest-merge.js`), so the transition never reads
+as data loss. Detail style and layout notes live alongside the styles in
+`frontend/styles/components/account.css`.
 
 ---
 
@@ -462,10 +466,10 @@ What changes when the backend lands:
 | `mockApi` imported in `app.js`   | `api` from `core/api.js` — same method names and `{ data }` shape                          |
 | `boot()` awaits `getCatalogue()` | Unchanged; add caching if the category list warrants it                                    |
 | Cart in `localStorage`           | Cart endpoints; `cart.add/remove/setQuantity` become requests, state shape unchanged       |
-| Wishlist in `localStorage`       | Wishlist endpoints behind authentication                                                   |
+| Wishlist in `localStorage`       | Wishlist endpoints behind authentication (guest basket already snapshots for the upload)   |
 | `searchProducts()` client-side   | `GET /products/search`; the UI already treats it as async and handles failure              |
 | Filters applied in memory        | Optional server-side filtering and pagination; `queryProducts` keeps the same result shape |
-| Account placeholder              | Authentication, then real account pages                                                    |
+| Auth pages, account page         | Done — profiles/addresses/password already hit the real API; catalogues still mock         |
 | Checkout button inert            | Checkout flow, orders, payments                                                            |
 
 The rule throughout: **components receive data and configuration, never fetch
@@ -475,8 +479,9 @@ it.** Swapping the client changes `app.js`, not a single component.
 
 ## 18. Deliberately not built
 
-- Authentication, registration, login, password reset
-- Real API endpoints, repositories or database queries from the frontend
+- Cart, wishlist and catalogue still run on the mock service — real endpoints
+  land with their phases
+- Password reset and email verification
 - Checkout, payment, order creation, order history
 - Admin dashboard
 - Analytics or any invented sales figure

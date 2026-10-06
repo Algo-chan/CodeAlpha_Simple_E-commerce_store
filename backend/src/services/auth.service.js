@@ -90,11 +90,7 @@ export async function register(db, input) {
     // The pre-check is an optimisation and a friendly message; the unique index
     // is the real guarantee against racing registrations.
     if (error.code === '23505') {
-      throw new AppError(
-        'An account with this email already exists.',
-        409,
-        ERROR_CODES.CONFLICT
-      );
+      throw new AppError('An account with this email already exists.', 409, ERROR_CODES.CONFLICT);
     }
     throw error;
   }
@@ -123,7 +119,11 @@ export async function login(db, input) {
   }
 
   if (user.status !== 'ACTIVE') {
-    throw new AppError('This account is suspended. Contact support for help.', 403, ERROR_CODES.FORBIDDEN);
+    throw new AppError(
+      'This account is suspended. Contact support for help.',
+      403,
+      ERROR_CODES.FORBIDDEN
+    );
   }
 
   const token = await createSession(db, user, { userAgent, ipAddress });

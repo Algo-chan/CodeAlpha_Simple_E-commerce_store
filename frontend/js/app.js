@@ -24,6 +24,8 @@ import { mockApi } from './mock/api.js';
 import { createCatalogueStore } from './state/catalogue.js';
 import { createCartStore } from './state/cart.js';
 import { createWishlistStore } from './state/wishlist.js';
+import { createAuthStore } from './state/auth.js';
+import { snapshotGuestState, finalizeGuestTransition } from './state/guest-merge.js';
 import { createUiStore } from './state/ui.js';
 import { createFilterStore } from './state/filters.js';
 import { createSearchHistory } from './state/search-history.js';
@@ -42,6 +44,9 @@ const pages = {
   wishlist: () => import('./pages/wishlist.js'),
   product: () => import('./pages/product.js'),
   cart: () => import('./pages/cart.js'),
+  login: () => import('./pages/login.js'),
+  register: () => import('./pages/register.js'),
+  account: () => import('./pages/account.js'),
 };
 
 /**
@@ -93,6 +98,36 @@ async function boot() {
     resolveVariant: (variantId) => catalogue.getVariant(variantId),
   });
 
+  /**
+   * The one place the guest basket changes hands.
+   *
+   * On a live sign-in the basket is snapshotted and settled in the same tick:
+   * the local cart survives the transition untouched, so "settling" is standing
+   * the one-time record down and confirming nothing was lost. A `restore`
+   * (a session found at boot) has no new basket to snapshot, but it must still
+   * settle any sync a previous sign-in left behind.
+   *
+   * @param {object|null} user
+   * @param {'login'|'register'|'logout'|'restore'} reason
+   */
+  function bindSessionChange(user, reason) {
+    const settled = finalizeGuestTransition({ cart, wishlist });
+
+    if (reason === 'login' || reason === 'register') {
+      snapshotGuestState({ lines: cart.selectLines(), productIds: wishlist.getState().productIds });
+    }
+
+    if (settled.cleared && settled.restoredLines + settled.restoredSaved > 0) {
+      ui.pushToast({ title: 'We kept your basket and saved items', tone: 'success' });
+    }
+
+    if (user) cart.reconcile();
+  }
+
+  const auth = createAuthStore({
+    onSessionChange: bindSessionChange,
+  });
+
   // Toasts first: an "added to cart" can be raised while the shell is still
   // building, and it needs somewhere to appear.
   const toastRegion = createToastRegion({ store: ui });
@@ -117,6 +152,7 @@ async function boot() {
     categories,
     cart,
     wishlist,
+    auth,
     activeSlug: categorySlug ?? undefined,
     hooks: {
       onOpenCart: (trigger) => cartDrawer.open({ trigger }),
@@ -134,8 +170,14 @@ async function boot() {
   // against live price and availability.
   cart.reconcile();
 
+  // Confirm whether the session cookie is worth anything. Fire-and-forget: the
+  // store holds the answer, the header listens to it, and the account page
+  // re-checks if this has not settled by the time it renders.
+  void auth.refresh();
+
   context = {
     api: mockApi,
+    auth,
     catalogue,
     cart,
     wishlist,

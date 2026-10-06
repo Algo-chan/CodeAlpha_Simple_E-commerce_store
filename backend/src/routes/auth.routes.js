@@ -27,16 +27,46 @@ const router = Router();
 // like the API-wide limiter, so the suite never trips it by exercising logins.
 const credentialLimits = env.isTest ? [] : [createAuthLimiter()];
 
-router.post('/register', requireSameOrigin, ...credentialLimits, validateRequest({ body: registerSchema }), controller.register);
-router.post('/login', requireSameOrigin, ...credentialLimits, validateRequest({ body: loginSchema }), controller.login);
+router.post(
+  '/register',
+  requireSameOrigin,
+  ...credentialLimits,
+  validateRequest({ body: registerSchema }),
+  controller.register
+);
+router.post(
+  '/login',
+  requireSameOrigin,
+  ...credentialLimits,
+  validateRequest({ body: loginSchema }),
+  controller.login
+);
 router.post('/logout', requireSameOrigin, controller.logout);
 
 router.get('/me', authenticate, controller.me);
-router.patch('/profile', requireSameOrigin, authenticate, validateRequest({ body: profileUpdateSchema }), controller.updateProfile);
-router.post('/password', requireSameOrigin, authenticate, validateRequest({ body: passwordChangeSchema }), controller.changePassword);
+router.patch(
+  '/profile',
+  requireSameOrigin,
+  authenticate,
+  validateRequest({ body: profileUpdateSchema }),
+  controller.updateProfile
+);
+router.post(
+  '/password',
+  requireSameOrigin,
+  authenticate,
+  validateRequest({ body: passwordChangeSchema }),
+  controller.changePassword
+);
 
 router.get('/addresses', authenticate, controller.listAddresses);
-router.post('/addresses', requireSameOrigin, authenticate, validateRequest({ body: createAddressSchema }), controller.createAddress);
+router.post(
+  '/addresses',
+  requireSameOrigin,
+  authenticate,
+  validateRequest({ body: createAddressSchema }),
+  controller.createAddress
+);
 router.patch(
   '/addresses/:id',
   requireSameOrigin,

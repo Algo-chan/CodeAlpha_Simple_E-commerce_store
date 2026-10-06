@@ -53,7 +53,10 @@ export const apiLimiter = rateLimit({
  * and actually observe the 429 without exhausting the shared instance.
  * @param {{ windowMs?: number, limit?: number }} [overrides]
  */
-export function createAuthLimiter({ windowMs = env.RATE_LIMIT_WINDOW_MS, limit = env.AUTH_RATE_LIMIT_MAX } = {}) {
+export function createAuthLimiter({
+  windowMs = env.RATE_LIMIT_WINDOW_MS,
+  limit = env.AUTH_RATE_LIMIT_MAX,
+} = {}) {
   return rateLimit({
     windowMs,
     limit,

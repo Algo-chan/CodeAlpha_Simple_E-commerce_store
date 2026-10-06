@@ -29,12 +29,20 @@ export function authenticate(req, res, next) {
     .then((resolved) => {
       if (!resolved) {
         return next(
-          new AppError('Your session has expired. Please sign in again.', 401, ERROR_CODES.UNAUTHORIZED)
+          new AppError(
+            'Your session has expired. Please sign in again.',
+            401,
+            ERROR_CODES.UNAUTHORIZED
+          )
         );
       }
       if (resolved.user.status !== 'ACTIVE') {
         return next(
-          new AppError('This account is suspended. Contact support for help.', 403, ERROR_CODES.FORBIDDEN)
+          new AppError(
+            'This account is suspended. Contact support for help.',
+            403,
+            ERROR_CODES.FORBIDDEN
+          )
         );
       }
       req.session = resolved.session;
@@ -65,9 +73,7 @@ export function authorize(...allowedRoles) {
 
   return function authorizeMiddleware(req, res, next) {
     if (!req.user) {
-      return next(
-        new AppError('Authentication required.', 401, ERROR_CODES.UNAUTHORIZED)
-      );
+      return next(new AppError('Authentication required.', 401, ERROR_CODES.UNAUTHORIZED));
     }
 
     const userRoles = Array.isArray(req.user.roles) ? req.user.roles : [req.user.role];

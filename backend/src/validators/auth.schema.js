@@ -14,10 +14,10 @@ import { emailSchema, shortTextSchema } from './common.schema.js';
  * Phone numbers match the database CHECK: digits only, an optional leading +,
  * 9-15 characters. ETB convention (09... / +251...) falls inside this range.
  */
-export const phoneSchema = z.string().trim().regex(
-  /^\+?[0-9]{9,15}$/,
-  'Enter a valid phone number (digits only, 9-15, e.g. 0911000000)'
-);
+export const phoneSchema = z
+  .string()
+  .trim()
+  .regex(/^\+?[0-9]{9,15}$/, 'Enter a valid phone number (digits only, 9-15, e.g. 0911000000)');
 
 /**
  * Strong passwords: at least 8 characters and one of each class. Each rule is

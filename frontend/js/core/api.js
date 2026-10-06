@@ -65,6 +65,10 @@ export async function request(path, options = {}) {
   try {
     response = await fetch(url, {
       ...rest,
+      // The backend authenticates with an HttpOnly session cookie. It must be
+      // sent on same-origin-ish cross-port requests too - the storefront runs
+      // on :5173 and the API on :4000 - so credentials are included by default.
+      credentials: 'include',
       signal: controller.signal,
       headers: {
         Accept: 'application/json',

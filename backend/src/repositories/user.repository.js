@@ -82,10 +82,9 @@ export async function updateProfile(db, id, { name, phone }) {
  * @param {string} id
  */
 export async function setLastLogin(db, id) {
-  await executor(db)(
-    `UPDATE users SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1`,
-    [id]
-  );
+  await executor(db)(`UPDATE users SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1`, [
+    id,
+  ]);
 }
 
 /**

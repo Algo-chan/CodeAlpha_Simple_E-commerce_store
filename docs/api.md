@@ -137,6 +137,54 @@ A malformed parameter is a 422 with per-field errors, never a silent clamp:
 }
 ```
 
+## Authentication endpoints (implemented)
+
+Identity is a session cookie, not a token. Registration and login exchange
+credentials for `Set-Cookie: ecom_session=...` (`HttpOnly`, `SameSite=Lax`,
+`Path=/`, `Max-Age` from `SESSION_TTL_HOURS`). The cookie value is an opaque
+random token; the server persists only its SHA-256 hash, so a database dump
+leaks nothing usable. Sessions are revoked at logout and by a password change
+(the latter also revokes every other session). There is deliberately no
+access/refresh-token pair and no `/refresh` endpoint.
+
+Passwords are hashed with bcrypt. An unknown email and a wrong password both
+answer 401 `UNAUTHORIZED` with the same message, so sign-in never confirms which
+accounts exist. There is no email verification or password reset yet.
+
+| Method | Path                                 | Auth    | Purpose                                          |
+| ------ | ------------------------------------ | ------- | ------------------------------------------------ |
+| POST   | `/api/v1/auth/register`              | public  | Create an account; sets a session                |
+| POST   | `/api/v1/auth/login`                 | public  | Sign in; sets a session                          |
+| POST   | `/api/v1/auth/logout`                | public  | Revoke the session and clear the cookie          |
+| GET    | `/api/v1/auth/me`                    | session | Resolve the session to a user                    |
+| PATCH  | `/api/v1/auth/profile`               | session | Update `name` / `phone`                          |
+| POST   | `/api/v1/auth/password`              | session | Change password (revokes every other session)    |
+| GET    | `/api/v1/auth/addresses`             | session | List addresses, default first                    |
+| POST   | `/api/v1/auth/addresses`             | session | Create an address; the first becomes the default |
+| PATCH  | `/api/v1/auth/addresses/:id`         | session | Edit an address                                  |
+| DELETE | `/api/v1/auth/addresses/:id`         | session | Delete; default promotes the oldest remaining    |
+| POST   | `/api/v1/auth/addresses/:id/default` | session | Make this address the single default             |
+
+Registration body: `name` (min 2), `email` (lowercased), `phone`
+(`^\+?[0-9]{9,15}$`), `password` (8+ characters plus lowercase, uppercase, digit
+and symbol), `passwordConfirmation`. Login body: `email`, `password`. Password
+change body: `currentPassword`, `newPassword`, `newPasswordConfirmation`.
+
+Register and login sit behind a stricter per-IP limiter. Every mutating auth
+call also requires `requireSameOrigin` (SameSite=Lax plus an `Origin` check
+against the configured frontend origins), so a cross-site form can never drive a
+signed-in browser into a state change. A suspended account cannot log in and
+answers 403 `FORBIDDEN`.
+
+A user serialises as `{ id, name, email, phone, role, status, last_login_at,
+password_changed_at, created_at, updated_at }`; privileged fields are stripped
+in the service. Register answers 201 `{ data: { user } }`; login, `/me` and
+profile return `{ data: { user } }`; password change returns a message and no
+`data`. Addresses return `{ data: { addresses } }` (each with `is_default`) and
+address mutations `{ data: { address } }`. `/me` with a missing, forged or
+expired cookie is a plain 401 — the storefront reads that as "guest", not
+"error".
+
 ## Planned endpoints (mounted, return 501)
 
 These paths exist so the URL surface and CORS behaviour are testable today.
@@ -152,16 +200,15 @@ Every method on them answers:
 }
 ```
 
-| Path               | Planned responsibility                             |
-| ------------------ | -------------------------------------------------- |
-| `/api/v1/auth`     | Register, login, refresh, logout, password reset   |
-| `/api/v1/cart`     | Add/update/remove items, totals                    |
-| `/api/v1/wishlist` | Add/remove/list saved products                     |
-| `/api/v1/orders`   | Checkout, order history, order status              |
-| `/api/v1/payments` | Cash on Delivery, online payment intents, webhooks |
-| `/api/v1/reviews`  | Create, moderate, aggregate ratings                |
-| `/api/v1/users`    | Profile, addresses, password                       |
-| `/api/v1/admin`    | Dashboard, products, inventory, coupons, analytics |
+| Path               | Planned responsibility                                     |
+| ------------------ | ---------------------------------------------------------- |
+| `/api/v1/cart`     | Add/update/remove items, totals                            |
+| `/api/v1/wishlist` | Add/remove/list saved products                             |
+| `/api/v1/orders`   | Checkout, order history, order status                      |
+| `/api/v1/payments` | Cash on Delivery, online payment intents, webhooks         |
+| `/api/v1/reviews`  | Create, moderate, aggregate ratings                        |
+| `/api/v1/users`    | User administration (profile/addresses live under `/auth`) |
+| `/api/v1/admin`    | Dashboard, products, inventory, coupons, analytics         |
 
 Note that reading a product's reviews is implemented above; _writing_ one is not,
 because it needs an account.
@@ -169,9 +216,6 @@ because it needs an account.
 Planned route shapes (for reference, not implemented):
 
 ```
-POST   /api/v1/auth/register
-POST   /api/v1/auth/login
-POST   /api/v1/auth/refresh
 GET    /api/v1/cart
 POST   /api/v1/cart/items
 PATCH  /api/v1/cart/items/:id
@@ -184,16 +228,25 @@ GET    /api/v1/admin/analytics/overview
 ```
 
 Each will follow the same layering: route → validation → controller → service →
-repository.
+repository. Account and address management is already live under `/auth` (see the
+authentication section above); `/api/v1/users` is reserved for staff-side user
+administration.
 
-## Authentication (design)
+## Authentication (design choices)
 
-- `POST /auth/login` returns an access token (short-lived) and a refresh token.
-- Access token: sent as `Authorization: Bearer <token>`; verified by
-  `middleware/auth.js`.
-- Role-based access: `authorize(ROLES.ADMIN)` on admin routes; roles are
-  `CUSTOMER`, `ADMIN`, and `SELLER` (reserved).
-- Refresh tokens are stored hashed server-side and rotated on use.
+The implementation lives in `backend/src/{controllers,services,middleware}/*auth*`
+and `backend/src/utils/cookies.js`. The defaults it chose over the earlier
+token sketch:
 
-This design is prepared in code but **not implemented** — the middleware returns
-`501 NOT_IMPLEMENTED` until the user system exists.
+- **Session cookie, no JWT.** `ecom_session` holds an opaque random token; the
+  server keeps only its SHA-256 hash. A leaked database cannot mint sessions, a
+  leaked header cannot be replayed after revoke, and there is no refresh-token
+  rotation to get wrong.
+- **Server-side revocation.** Logout deletes the row, so a stolen cookie stops
+  working immediately; password change takes every other session with it.
+- **`authenticate` fails closed.** Missing, malformed, expired, revoked or
+  suspended sessions all answer 401/403; nobody is let through "just to see".
+- **`authorize(ROLES.ADMIN, ...)`** for staff routes; roles are `CUSTOMER`,
+  `ADMIN`, and `SELLER` (reserved).
+- **CSRF defense** via SameSite=Lax plus `requireSameOrigin`, and a stricter
+  per-IP limiter on the credential endpoints.

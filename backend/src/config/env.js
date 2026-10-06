@@ -59,7 +59,12 @@ const envSchema = z
     BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
 
     // --- Session cookie ---------------------------------------------------
-    SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(24 * 365).default(168),
+    SESSION_TTL_HOURS: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(24 * 365)
+      .default(168),
 
     // --- Rate limiting ------------------------------------------------
     RATE_LIMIT_WINDOW_MS: z.coerce

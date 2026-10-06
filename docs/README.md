@@ -58,10 +58,24 @@ Phase 5 built the read-only catalogue on the real database:
 See [product-discovery.md](./product-discovery.md) for the endpoint contracts and the
 reasoning behind the filter, money and availability rules.
 
-Still to come: the frontend swap to `core/api.js`, authentication, cart and wishlist
-APIs, checkout, orders, payments and the admin area. The frontend still makes **no**
-API calls — it runs on fixtures in `frontend/js/mock/`, shaped so the real client
-can replace them without any component changing.
+Authentication shipped as its own phase ahead of the catalogue API:
+
+- Session-cookie identity: opaque random tokens stored as SHA-256, bcrypt
+  password hashing, logout and password changes revoke sessions for real
+- `register`, `login`, `logout`, `me`, `profile`, `password` plus a full
+  address book, all behind `SameSite=Lax` + `requireSameOrigin` CSRF defence
+- Storefront sign-in/registration/account pages with an auth-aware header and a
+  one-time guest-basket transition (snapshot at sign-in, settled at boot)
+- 36 backend auth tests and 8 auth-interface + 7 guest-merge frontend tests
+
+See [roadmap.md](./roadmap.md) Phase 5 and the authentication section of
+[api.md](./api.md) for the endpoints and the security decisions.
+
+Still to come: the frontend swap of catalogue, search and cart to `core/api.js`,
+the cart and wishlist APIs, checkout, orders, payments and the admin area. The
+catalogue-facing storefront still runs on fixtures in `frontend/js/mock/`,
+shaped so the real client can replace them without any component changing; auth
+and the account page already talk to the real API.
 
 The Phase 1 infrastructure still in place:
 

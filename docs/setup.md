@@ -37,7 +37,7 @@ DB_PASSWORD=your_password
 DB_NAME=ecommerce_store
 ```
 
-Generate strong secrets when authentication is implemented:
+Generate a strong secret for `JWT_SECRET` (required in production):
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"

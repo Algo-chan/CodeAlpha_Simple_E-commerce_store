@@ -1,10 +1,12 @@
 /**
  * Address repository — the only place allowed to run address SQL.
  *
- * All statements are single-statement writable CTEs. The "one default per user"
- * partial unique index makes default-promotion inherently multi-row, but doing
- * it in ONE statement keeps it atomic even through an executor that has no
- * transaction plumbing (an in-process PGlite in tests, the pool in production).
+ * Default-address swaps (set-default, delete + promote) need two conflicting
+ * writes, so they use patterns the executor accepts without transaction
+ * plumbing (an in-process PGlite in tests, the pool in production): a single
+ * UPDATE can clear-and-claim because Postgres lets one statement swap unique
+ * values, and the partial unique index hard-fails a racing promote rather than
+ * ever leaving two defaults.
  */
 
 import { query as poolQuery } from '../config/db.js';
@@ -128,9 +130,14 @@ export async function update(db, id, userId, fields) {
 
 /**
  * Deletes an address. When the deleted row was the default and another address
- * remains, the oldest remaining one is promoted in the same statement, so the
- * invariant "exactly one default while addresses exist" never needs a second,
- * non-atomic round trip.
+ * remains, the oldest remaining one is promoted right after, so the invariant
+ * "exactly one default while addresses exist" is usually restored in one call.
+ *
+ * The delete and the promotion are two statements rather than two data-modifying
+ * CTEs because WITH sub-statements run concurrently and cannot see each other's
+ * effects (the promote would either miss the deletion or hit the unique index).
+ * The partial unique index is the safety net: a racing double-promotion fails
+ * loudly as a CONFLICT instead of leaving two defaults.
  *
  * @param {object} [db]
  * @param {string} id
@@ -139,37 +146,39 @@ export async function update(db, id, userId, fields) {
  */
 export async function remove(db, id, userId) {
   const result = await executor(db)(
-    `WITH deleted AS (
-       DELETE FROM addresses
-        WHERE id = $1 AND user_id = $2
-        RETURNING *
-     ),
-     promote AS (
-       UPDATE addresses
+    `DELETE FROM addresses WHERE id = $1 AND user_id = $2 RETURNING ${COLUMNS}`,
+    [id, userId]
+  );
+  const deleted = result.rows[0] ?? null;
+  if (!deleted) return null;
+
+  if (deleted.is_default) {
+    await executor(db)(
+      `UPDATE addresses
           SET is_default = TRUE
-        WHERE user_id = $2
-          AND EXISTS (SELECT 1 FROM deleted WHERE is_default)
+        WHERE user_id = $1
           AND id = (
             SELECT a.id
               FROM addresses a
-             WHERE a.user_id = $2
+             WHERE a.user_id = $1
              ORDER BY a.created_at ASC, a.id ASC
              LIMIT 1
-          )
-       RETURNING 1
-     )
-     SELECT id, user_id, label, full_name, phone, city, area, street, landmark,
-            additional_notes, is_default, created_at, updated_at
-       FROM deleted`,
-    [id, userId]
-  );
-  return result.rows[0] ?? null;
+          )`,
+      [userId]
+    );
+  }
+
+  return deleted;
 }
 
 /**
- * Sets an address as the customer's default, atomically clearing any previous
- * default in the same statement. Returns the row when the address belongs to
- * the customer, otherwise null.
+ * Sets an address as the customer's default. One statement clears every other
+ * default in the same pass (is_default = (id = $1)) instead of a "clear then
+ * set" pair of CTEs, which Postgres evaluates concurrently and which therefore
+ * races on the partial unique index. A single UPDATE may swap unique values
+ * because the conflicting row is modified by the same statement.
+ *
+ * Returns the row when the address belongs to the customer, otherwise null.
  *
  * @param {object} [db]
  * @param {string} id
@@ -178,25 +187,14 @@ export async function remove(db, id, userId) {
  */
 export async function setDefault(db, id, userId) {
   const result = await executor(db)(
-    `WITH target AS (
-       SELECT id FROM addresses WHERE id = $1 AND user_id = $2 FOR UPDATE
-     ),
-     cleared AS (
+    `WITH applied AS (
        UPDATE addresses
-          SET is_default = FALSE
-        WHERE user_id = $2 AND is_default AND id <> $1
-          AND EXISTS (SELECT 1 FROM target)
-       RETURNING 1
-     ),
-     promoted AS (
-       UPDATE addresses
-          SET is_default = TRUE
-        WHERE id = $1 AND user_id = $2
-       RETURNING ${COLUMNS}
+          SET is_default = (id = $1)
+        WHERE user_id = $2
+          AND EXISTS (SELECT 1 FROM addresses WHERE id = $1 AND user_id = $2)
+        RETURNING ${COLUMNS}
      )
-     SELECT id, user_id, label, full_name, phone, city, area, street, landmark,
-            additional_notes, is_default, created_at, updated_at
-       FROM promoted`,
+     SELECT ${COLUMNS} FROM applied WHERE id = $1`,
     [id, userId]
   );
   return result.rows[0] ?? null;

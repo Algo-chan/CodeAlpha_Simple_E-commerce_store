@@ -31,9 +31,7 @@ export function requireSameOrigin(req, res, next) {
   const allowed = origin === sameHost || env.frontendOrigins.includes(origin);
 
   if (!allowed) {
-    return next(
-      new AppError('Cross-origin request rejected.', 403, ERROR_CODES.FORBIDDEN)
-    );
+    return next(new AppError('Cross-origin request rejected.', 403, ERROR_CODES.FORBIDDEN));
   }
 
   return next();
