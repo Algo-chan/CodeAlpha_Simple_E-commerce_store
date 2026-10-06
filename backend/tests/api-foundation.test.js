@@ -20,10 +20,11 @@ test('unknown routes return a 404 envelope', async () => {
   assert.equal(typeof response.body.error.message, 'string');
 });
 
-// Phase 5 implemented the public catalogue; the rest are still ahead. Keeping the
-// placeholder list in step with `routes/v1.routes.js` is what stops a route from
-// silently disappearing: if one is implemented and forgotten here, this fails.
-const IMPLEMENTED = new Set(['products', 'categories', 'search']);
+// Phase 5 implemented the public catalogue; Phase 6 added customer auth. The
+// rest are still ahead. Keeping the placeholder list in step with
+// `routes/v1.routes.js` is what stops a route from silently disappearing: if
+// one is implemented and forgotten here, this fails.
+const IMPLEMENTED = new Set(['products', 'categories', 'search', 'auth']);
 
 const RESOURCE_PATHS = [
   '/api/v1/auth',
@@ -49,8 +50,18 @@ for (const path of RESOURCE_PATHS) {
   });
 }
 
+// Auth is implemented in Phase 6, so `/api/v1/auth` needs a registered
+// session — its placeholders are gone. Asserting the removal keeps this file in
+// step with the versioned router.
+test('GET /api/v1/auth (bare) is not a placeholder 501 anymore', async () => {
+  const response = await request(app).get('/api/v1/auth');
+
+  assert.equal(response.status, 404);
+  assert.equal(response.body.error.code, 'NOT_FOUND');
+});
+
 test('unknown method on a known resource still reports NOT_IMPLEMENTED', async () => {
-  const response = await request(app).post('/api/v1/auth/login').send({ email: 'a@b.com' });
+  const response = await request(app).post('/api/v1/cart/items').send({ productId: 'x' });
 
   assert.equal(response.status, 501);
   assert.equal(response.body.error.code, 'NOT_IMPLEMENTED');

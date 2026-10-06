@@ -19,6 +19,7 @@
     "test:watch": "node --test --watch tests/**/*.test.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "compression": "^1.8.2",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",

@@ -1,51 +1,47 @@
-import { ERROR_CODES, ROLES } from '../config/constants.js';
-import { AppError } from '../utils/app-error.js';
-import env from '../config/env.js';
-import { logger } from '../utils/logger.js';
-
 /**
- * Extracts a bearer token from the Authorization header.
- * @param {import('express').Request} req
- * @returns {string|null}
+ * Authentication & authorization middleware.
+ *
+ * `authenticate` resolves the httpOnly session cookie against the sessions
+ * table and attaches the validated user to the request. Every account route
+ * runs behind it, so controllers never trust a client-supplied user id: the
+ * identity always comes from the session.
+ *
+ * `authorize` is the role gate. It must run AFTER `authenticate`.
  */
-export function extractBearerToken(req) {
-  const header = req.headers.authorization;
-  if (!header || typeof header !== 'string') return null;
-
-  const [scheme, token] = header.split(' ');
-  if (!scheme || scheme.toLowerCase() !== 'bearer' || !token) return null;
-  return token.trim();
-}
+import { ERROR_CODES, ROLES, SESSION_COOKIE_NAME } from '../config/constants.js';
+import { AppError } from '../utils/app-error.js';
+import { readCookie } from '../utils/cookies.js';
+import { resolveSession, sanitizeUser } from '../services/auth.service.js';
 
 /**
- * Authentication middleware placeholder.
- *
- * The token verification logic will live in `services/auth.service.js`.
- * Because JWT verification is intentionally NOT implemented yet, this
- * middleware rejects all requests with 501 NOT_IMPLEMENTED so the architecture
- * is visible but never silently insecure.
- *
- * TODO(auth): replace the body below with a real JWT verification call.
+ * Required authentication: 401 without a valid session, 403 for a session
+ * whose account has since been suspended.
  */
 export function authenticate(req, res, next) {
-  if (env.isTest) {
-    return next(
-      new AppError('Authentication is not implemented yet', 501, ERROR_CODES.NOT_IMPLEMENTED)
-    );
-  }
-
-  const token = extractBearerToken(req);
+  const token = readCookie(req, SESSION_COOKIE_NAME);
   if (!token) {
     return next(
-      new AppError('Missing or malformed Authorization header', 401, ERROR_CODES.UNAUTHORIZED)
+      new AppError('You must be signed in to access this resource.', 401, ERROR_CODES.UNAUTHORIZED)
     );
   }
 
-  // TODO(auth): verify signature + expiry, load the user, attach to req.user.
-  logger.debug('Authentication placeholder reached', { hasToken: Boolean(token) });
-  return next(
-    new AppError('Authentication is not implemented yet', 501, ERROR_CODES.NOT_IMPLEMENTED)
-  );
+  return resolveSession(req.db, token)
+    .then((resolved) => {
+      if (!resolved) {
+        return next(
+          new AppError('Your session has expired. Please sign in again.', 401, ERROR_CODES.UNAUTHORIZED)
+        );
+      }
+      if (resolved.user.status !== 'ACTIVE') {
+        return next(
+          new AppError('This account is suspended. Contact support for help.', 403, ERROR_CODES.FORBIDDEN)
+        );
+      }
+      req.session = resolved.session;
+      req.user = sanitizeUser(resolved.user);
+      return next();
+    })
+    .catch((error) => next(error));
 }
 
 /**
@@ -68,10 +64,9 @@ export function authorize(...allowedRoles) {
   }
 
   return function authorizeMiddleware(req, res, next) {
-    // Auth placeholder never populates req.user, so fail closed with 501.
     if (!req.user) {
       return next(
-        new AppError('Authentication is not implemented yet', 501, ERROR_CODES.NOT_IMPLEMENTED)
+        new AppError('Authentication required.', 401, ERROR_CODES.UNAUTHORIZED)
       );
     }
 
@@ -92,4 +87,4 @@ export function authorize(...allowedRoles) {
   };
 }
 
-export default { authenticate, authorize, extractBearerToken };
+export default { authenticate, authorize };

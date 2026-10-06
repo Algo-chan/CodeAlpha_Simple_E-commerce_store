@@ -3,6 +3,7 @@ import healthRoutes from './health.routes.js';
 import productRoutes from './catalogue.routes.js';
 import categoryRoutes from './categories.routes.js';
 import searchRoutes from './search.routes.js';
+import authRoutes from './auth.routes.js';
 import { RESOURCE_PLACEHOLDERS, createPlaceholderRouter } from './placeholder.routes.js';
 
 /**
@@ -25,12 +26,15 @@ router.use('/products', productRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/search', searchRoutes);
 
+/* Implemented: customer authentication and the account surface. */
+router.use('/auth', authRoutes);
+
 /*
- * Not implemented. Accounts, cart, checkout, payments, orders and admin are all
- * later phases; answering 501 says "this URL does not exist yet", which is true,
+ * Not implemented. Cart, checkout, payments, orders and admin are all later
+ * phases; answering 501 says "this URL does not exist yet", which is true,
  * rather than 404, which would suggest it never will.
  */
-const implemented = new Set(['/products', '/categories', '/search']);
+const implemented = new Set(['/products', '/categories', '/search', '/auth']);
 
 for (const { path, name } of RESOURCE_PLACEHOLDERS) {
   if (implemented.has(path)) continue;

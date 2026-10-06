@@ -15,7 +15,6 @@ import { AppError } from '../utils/app-error.js';
  * Naming: the path is the public URL, the name appears in the error message.
  */
 export const RESOURCE_PLACEHOLDERS = [
-  { path: '/auth', name: 'Authentication' },
   { path: '/products', name: 'Products' },
   { path: '/categories', name: 'Categories' },
   { path: '/cart', name: 'Cart' },

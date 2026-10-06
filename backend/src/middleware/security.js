@@ -47,19 +47,29 @@ export const apiLimiter = rateLimit({
   },
 });
 
-/** Stricter limiter reserved for auth routes once they exist. */
-export const authLimiter = rateLimit({
-  windowMs: env.RATE_LIMIT_WINDOW_MS,
-  limit: env.AUTH_RATE_LIMIT_MAX,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  message: {
-    success: false,
-    error: {
-      code: ERROR_CODES.RATE_LIMITED,
-      message: 'Too many attempts. Please try again later.',
+/**
+ * Builds the stricter limiter reserved for the credential endpoints.
+ * A factory rather than a singleton so tests can mount one with a small window
+ * and actually observe the 429 without exhausting the shared instance.
+ * @param {{ windowMs?: number, limit?: number }} [overrides]
+ */
+export function createAuthLimiter({ windowMs = env.RATE_LIMIT_WINDOW_MS, limit = env.AUTH_RATE_LIMIT_MAX } = {}) {
+  return rateLimit({
+    windowMs,
+    limit,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: {
+        code: ERROR_CODES.RATE_LIMITED,
+        message: 'Too many attempts. Please try again later.',
+      },
     },
-  },
-});
+  });
+}
 
-export default { corsOptions, helmetMiddleware, apiLimiter, authLimiter };
+/** Stricter limiter reserved for auth routes once they exist. */
+export const authLimiter = createAuthLimiter();
+
+export default { corsOptions, helmetMiddleware, apiLimiter, authLimiter, createAuthLimiter };

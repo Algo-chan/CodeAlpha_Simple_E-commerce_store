@@ -539,7 +539,6 @@ test('cart, wishlist, orders, payments and admin remain unimplemented', async ()
     '/api/v1/orders',
     '/api/v1/payments',
     '/api/v1/admin',
-    '/api/v1/auth',
   ]) {
     const response = await get(path);
     assert.equal(response.status, 501, `${path} belongs to a later phase`);

@@ -7,6 +7,9 @@
 /** Base mount point for every API version, e.g. `/api`. */
 export const API_PREFIX = '/api';
 
+/** HTTP-only cookie name that carries the authentication session token. */
+export const SESSION_COOKIE_NAME = 'ecom_session';
+
 /** Current API version. Bumping this to `v2` keeps `v1` alive for old clients. */
 export const API_VERSION = 'v1';
 
