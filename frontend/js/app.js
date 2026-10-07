@@ -20,6 +20,7 @@
  */
 import { el, qs, on } from './core/dom.js';
 import { config } from './config.js';
+import { api } from './core/api.js';
 import { mockApi } from './mock/api.js';
 import { createCatalogueStore } from './state/catalogue.js';
 import { createCartStore } from './state/cart.js';
@@ -88,15 +89,8 @@ const teardown = [];
 async function boot() {
   const ui = createUiStore();
   const catalogue = createCatalogueStore();
-  const wishlist = createWishlistStore();
   const filters = createFilterStore();
   const searchHistory = createSearchHistory();
-
-  const cart = createCartStore({
-    // Asked to re-read price and stock, so a basket restored from storage cannot
-    // quote a price or a quantity that has since changed.
-    resolveVariant: (variantId) => catalogue.getVariant(variantId),
-  });
 
   /**
    * The one place the guest basket changes hands.
@@ -113,19 +107,64 @@ async function boot() {
   function bindSessionChange(user, reason) {
     const settled = finalizeGuestTransition({ cart, wishlist });
 
+    // A fresh sign-in hands the guest basket to the customer account: the
+    // saved list merges (the backend skips stale ids and is idempotent), and
+    // the cart re-reads, which is also the request that triggers the server's
+    // login merge when a guest-cart cookie is still attached.
     if (reason === 'login' || reason === 'register') {
       snapshotGuestState({ lines: cart.selectLines(), productIds: wishlist.getState().productIds });
+
+      void wishlist.mergeToServer().then((view) => {
+        if (view?.added > 0) {
+          const noun = view.added === 1 ? 'saved item' : 'saved items';
+          ui.pushToast({
+            title: `Moved ${view.added} ${noun} to your account`,
+            tone: 'success',
+          });
+        }
+      });
+
+      if (settled.cleared && settled.restoredLines + settled.restoredSaved > 0) {
+        ui.pushToast({ title: 'We kept your basket and saved items', tone: 'success' });
+      }
+
+      void cart.hydrate();
+      return;
     }
 
-    if (settled.cleared && settled.restoredLines + settled.restoredSaved > 0) {
-      ui.pushToast({ title: 'We kept your basket and saved items', tone: 'success' });
+    // A session found at boot: adopt the customer's own cart and wishlist.
+    if (reason === 'restore') {
+      void cart.hydrate();
+      void wishlist.hydrate();
+      return;
     }
 
-    if (user) cart.reconcile();
+    // Signing out returns the shopper to a fresh guest cart; their account
+    // cart stays on the server for the next sign-in.
+    if (reason === 'logout') {
+      void cart.hydrate();
+    }
   }
 
   const auth = createAuthStore({
     onSessionChange: bindSessionChange,
+  });
+
+  const cart = createCartStore({
+    // Asked to re-read price and stock, so a basket restored from storage cannot
+    // quote a price or a quantity that has since changed.
+    resolveVariant: (variantId) => catalogue.getVariant(variantId),
+    // Phase 7: the real cart API owns the basket. Guest carts ride on the
+    // httpOnly `ecom_cart` cookie; signed-in carts are the customer's, and the
+    // login merge happens automatically on the first authenticated request.
+    client: api,
+  });
+
+  const wishlist = createWishlistStore({
+    client: api,
+    // Guests keep their saved list in this browser; only a signed-in shopper
+    // has a server list to read, save against and merge into.
+    isAuthenticated: () => auth.selectIsAuthenticated(),
   });
 
   // Toasts first: an "added to cart" can be raised while the shell is still
@@ -169,6 +208,13 @@ async function boot() {
   // Now that the catalogue exists, a basket restored from storage can be checked
   // against live price and availability.
   cart.reconcile();
+
+  // The server cart is authoritative from the first paint: a repeat visitor's
+  // cookie cart is re-adopted, a signed-in shopper's user cart replaces the
+  // guest basket, and a brand-new visitor gets an empty one in a new cookie.
+  // (A session found here at boot is re-hydrated from `auth.refresh()`; both
+  // paths converge on the same store.)
+  void cart.hydrate();
 
   // Confirm whether the session cookie is worth anything. Fire-and-forget: the
   // store holds the answer, the header listens to it, and the account page

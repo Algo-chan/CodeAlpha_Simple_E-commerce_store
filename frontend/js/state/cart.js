@@ -35,21 +35,32 @@ export const MAX_QUANTITY = 10;
 export const FREE_SHIPPING_THRESHOLD_MINOR = config.freeShippingThreshold;
 
 const initialState = {
-  /** @type {Array<{variantId:string, productId:string, slug:string, name:string,
-   *                variantName:string|null, image:string|null,
-   *                unitPrice:number, quantity:number, maxQuantity:number,
+  /** @type {Array<{id?:string|null, variantId:string, productId:string, slug:string,
+   *                name:string, variantName:string|null, image:string|null,
+   *                unitPrice:number, compareAtPrice?: number|null, quantity:number,
+   *                maxQuantity:number, available?: number|null,
    *                unavailableReason?: 'missing'|'inactive'|'sold-out'|null}>} */
   lines: [],
   isOpen: false,
   /** Product id of the most recent add, so a card can flash "Added". */
   lastAddedVariantId: null,
+  /**
+   * Server-sync lifecycle. `idle` when no client is wired (the legacy pure-local
+   * store), `syncing` while a request is in flight, `ready` after the server has
+   * confirmed a cart, `error` after a failed request.
+   * @type {'idle'|'syncing'|'ready'|'error'}
+   */
+  syncStatus: 'idle',
+  syncError: null,
 };
 
 /**
- * @param {{ resolveVariant?: (variantId:number) => object|null }} [deps]
+ * @param {{ resolveVariant?: (variantId:number) => object|null,
+ *           client?: { get:(p:string)=>Promise<object>, post:(p:string, b?:object)=>Promise<object>,
+ *                      patch:(p:string, b?:object)=>Promise<object>, delete:(p:string)=>Promise<object> } | null }} [deps]
  */
 export function createCartStore(deps = {}) {
-  const { resolveVariant = () => null } = deps;
+  const { resolveVariant = () => null, client = null } = deps;
 
   const store = createStore(initialState, {
     name: 'cart',
@@ -57,10 +68,113 @@ export function createCartStore(deps = {}) {
       key: 'cart',
       version: CART_STORAGE_VERSION,
       // Only persist the basket, never `isOpen`: a reload should not reopen
-      // the drawer over the page the shopper actually asked for.
+      // the drawer over the page the shopper actually asked for. Sync metadata
+      // is session state and is intentionally not persisted either.
       select: ({ lines, lastAddedVariantId }) => ({ lines, lastAddedVariantId }),
     },
   });
+
+  /* --- Server sync --------------------------------------------------------- */
+
+  /** One serial promise chain: mutations reach the server in tap order. */
+  let chain = Promise.resolve();
+  function enqueue(task) {
+    const result = chain.then(task, task);
+    chain = result.catch(() => {});
+    return result;
+  }
+
+  function setSyncStatus(status, error = null) {
+    store.setState({ syncStatus: status, syncError: error });
+  }
+
+  /**
+   * Maps one server line onto the store's line shape. `id` is the cart-item
+   * row id the later PATCH/DELETE targets; everything else renders unchanged.
+   */
+  function fromServerItem(item) {
+    return {
+      id: item.id != null ? String(item.id) : null,
+      variantId: String(item.variantId),
+      productId: item.productId != null ? String(item.productId) : null,
+      slug: item.slug ?? '',
+      name: item.name ?? '',
+      variantName: item.variantName ?? null,
+      image: item.image ?? null,
+      unitPrice: Number(item.unitPrice) || 0,
+      compareAtPrice: item.compareAtPrice == null ? null : Number(item.compareAtPrice),
+      quantity: Math.max(1, Number(item.quantity) || 1),
+      maxQuantity: item.maxQuantity == null ? MAX_QUANTITY : Number(item.maxQuantity),
+      available: item.available == null ? null : Number(item.available),
+      unavailableReason: item.unavailableReason || null,
+    };
+  }
+
+  /**
+   * Replaces the basket with the server's, the only authoritative one.
+   *
+   * `markReady` stays false during an error rollback so a truthful
+   * `syncError` is not immediately painted over by the very request that
+   * restored the basket.
+   */
+  function applyServerCart(cart, { markReady = true } = {}) {
+    if (!cart || !Array.isArray(cart.items)) return;
+    store.setState((prev) => ({
+      lines: cart.items.map(fromServerItem),
+      lastAddedVariantId: prev.lastAddedVariantId,
+      ...(markReady ? { syncStatus: 'ready', syncError: null } : {}),
+    }));
+  }
+
+  /**
+   * Runs one server mutation, then replaces the basket with the server's view
+   * of it. On failure the optimistic line is rolled back to whatever the
+   * server last held (best effort) and the error is recorded, so the drawer
+   * can say what went wrong instead of quietly keeping fiction on screen.
+   *
+   * @param {() => Promise<{cart:object}>} operation
+   */
+  function pushToServer(operation) {
+    if (!client) return Promise.resolve(null);
+    return enqueue(async () => {
+      setSyncStatus('syncing');
+      try {
+        const data = await operation();
+        applyServerCart(data?.cart);
+        return data;
+      } catch (error) {
+        setSyncStatus('error', error);
+        try {
+          const before = await client.get('/cart');
+          applyServerCart(before?.cart, { markReady: false });
+        } catch {
+          /* offline: the optimistic basket stays visible under the error */
+        }
+        return null;
+      }
+    });
+  }
+
+  /**
+   * Reads the server cart and adopts it. Guests get (or continue) the cookie
+   * cart; a signed-in shopper's request is the one that triggers the server's
+   * login merge when a guest cookie is still attached.
+   * @returns {Promise<object|null>}
+   */
+  function hydrate() {
+    if (!client) return Promise.resolve(null);
+    return enqueue(async () => {
+      setSyncStatus('syncing');
+      try {
+        const data = await client.get('/cart');
+        applyServerCart(data?.cart);
+        return data;
+      } catch (error) {
+        setSyncStatus('error', error);
+        return null;
+      }
+    });
+  }
 
   /**
    * Adds a variant, or increases the quantity if it is already in the basket.
@@ -109,7 +223,14 @@ export function createCartStore(deps = {}) {
       const ceilingForLine = ceiling ?? MAX_QUANTITY;
       const next = Math.min(existing.quantity + requested, ceilingForLine);
       if (next === existing.quantity) return { ok: false, reason: 'max-stock' };
-      setQuantity(variant.id, next);
+      applyQuantity(variant.id, next);
+      if (client) {
+        // The server sums duplicate variants itself, so the POST reflects the
+        // tap's own quantity and the server resolves the merged line.
+        void pushToServer(() =>
+          client.post('/cart/items', { variantId: String(variant.id), quantity: requested })
+        );
+      }
       return { ok: true, quantity: next };
     }
 
@@ -136,11 +257,17 @@ export function createCartStore(deps = {}) {
       lastAddedVariantId: line.variantId,
     }));
 
+    if (client) {
+      void pushToServer(() =>
+        client.post('/cart/items', { variantId: String(line.variantId), quantity: requested })
+      );
+    }
+
     return { ok: true, quantity: requested };
   }
 
-  /** @param {number} variantId */
-  function setQuantity(variantId, quantity) {
+  /** Local-only quantity change; the public methods enqueue their own sync. */
+  function applyQuantity(variantId, quantity) {
     const { lines } = store.getState();
     const line = lines.find((item) => item.variantId === variantId);
     if (!line) return { ok: false, reason: 'not-in-cart' };
@@ -159,6 +286,22 @@ export function createCartStore(deps = {}) {
     return { ok: true, quantity: next };
   }
 
+  /** @param {number} variantId */
+  function setQuantity(variantId, quantity) {
+    const result = applyQuantity(variantId, quantity);
+    if (client && result.ok) {
+      const line = store.getState().lines.find((item) => item.variantId === variantId);
+      // A line with no server id was added while offline; PATCHing a phantom
+      // id cannot reach it, and the failed add already surfaced the error.
+      if (line?.id) {
+        void pushToServer(() =>
+          client.patch(`/cart/items/${line.id}`, { quantity: result.quantity })
+        );
+      }
+    }
+    return result;
+  }
+
   /** Nudges by `delta`, used by the quantity stepper. */
   function step(variantId, delta) {
     const line = store.getState().lines.find((item) => item.variantId === variantId);
@@ -168,10 +311,14 @@ export function createCartStore(deps = {}) {
 
   /** @param {string} variantId */
   function remove(variantId) {
+    const line = store.getState().lines.find((item) => item.variantId === variantId);
     store.setState((prev) => ({
       lines: prev.lines.filter((item) => item.variantId !== variantId),
       lastAddedVariantId: prev.lastAddedVariantId === variantId ? null : prev.lastAddedVariantId,
     }));
+    if (client && line?.id) {
+      void pushToServer(() => client.delete(`/cart/items/${line.id}`));
+    }
   }
 
   /**
@@ -198,11 +345,23 @@ export function createCartStore(deps = {}) {
       lastAddedVariantId: line.variantId,
     }));
 
+    if (client) {
+      // Undo re-adds by variant; the server dedupes and clamps, so re-POSTing
+      // a known variant is how a restored line re-joins the authoritative cart.
+      void pushToServer(() =>
+        client.post('/cart/items', {
+          variantId: String(line.variantId),
+          quantity: Math.max(1, Number(line.quantity) || 1),
+        })
+      );
+    }
+
     return { ok: true };
   }
 
   function clear() {
     store.setState({ lines: [], lastAddedVariantId: null });
+    if (client) void pushToServer(() => client.delete('/cart'));
   }
 
   /* --- Drawer visibility ---------------------------------------------------- */
@@ -317,6 +476,9 @@ export function createCartStore(deps = {}) {
 
   const selectIsEmpty = store.select(({ lines }) => lines.length === 0);
 
+  const selectSyncStatus = store.select(({ syncStatus }) => syncStatus);
+  const selectSyncError = store.select(({ syncError }) => syncError);
+
   /** True when every line has been flagged, i.e. nothing in here is buyable. */
   const selectIsUnfulfillable = store.select(
     ({ lines }) => lines.length > 0 && lines.every((line) => Boolean(line.unavailableReason))
@@ -352,12 +514,15 @@ export function createCartStore(deps = {}) {
     close,
     toggle,
     reconcile,
+    hydrate,
     selectLines,
     selectCount,
     selectSubtotal,
     selectIsEmpty,
     selectIsUnfulfillable,
     selectShippingProgress,
+    selectSyncStatus,
+    selectSyncError,
   };
 }
 

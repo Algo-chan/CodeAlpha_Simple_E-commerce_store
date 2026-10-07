@@ -49,6 +49,12 @@ export function createCartDrawer({ cart, toasts = null, onCheckout = null }) {
         const lines = cart.selectLines();
         inner.append(cartShippingProgress(cart.selectShippingProgress(), lines.length > 0));
 
+        if (cart.selectSyncStatus() === 'error') {
+          inner.append(syncErrorBanner({ cart }));
+        } else if (cart.selectSyncStatus() === 'syncing') {
+          inner.append(syncNote());
+        }
+
         if (lines.length === 0) {
           inner.append(emptyCartState());
           context.footer.replaceChildren(
@@ -99,6 +105,31 @@ export function createCartDrawer({ cart, toasts = null, onCheckout = null }) {
     const list = el('ul.cart__lines', { role: 'list' });
     for (const line of lines) list.append(cartLineItem({ line, cart, toasts }));
     return list;
+  }
+
+  /** "The cart and the server are talking." — shown while a sync is in flight. */
+  function syncNote() {
+    return el('p.cart__note', { role: 'status', text: 'Syncing your cart…' });
+  }
+
+  /**
+   * A sync failed. The basket shown is the optimistic one (or the last
+   * confirmed one), and retry re-reads the authoritative server cart.
+   */
+  function syncErrorBanner({ cart }) {
+    const retry = button({
+      label: 'Retry',
+      variant: 'ghost',
+      size: 'sm',
+      onClick: () => cart.hydrate(),
+    }).element;
+
+    return el('div.form-alert.form-alert--error', { role: 'alert' }, [
+      el('div', {}, [
+        el('p', { text: 'Your cart could not be saved to the server.' }),
+        retry,
+      ]),
+    ]);
   }
 
   function summary() {
