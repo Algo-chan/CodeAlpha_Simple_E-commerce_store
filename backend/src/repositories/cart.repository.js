@@ -192,7 +192,7 @@ export async function updateItemQuantity(db, cartId, itemId, quantity) {
       WHERE id = $1 AND cart_id = $2`,
     [itemId, cartId, quantity]
   );
-  return (result.rowCount ?? 0) > 0;
+  return changed(result);
 }
 
 export async function deleteItem(db, cartId, itemId) {
@@ -200,12 +200,12 @@ export async function deleteItem(db, cartId, itemId) {
     `DELETE FROM cart_items WHERE id = $1 AND cart_id = $2`,
     [itemId, cartId]
   );
-  return (result.rowCount ?? 0) > 0;
+  return changed(result);
 }
 
 export async function clearItems(db, cartId) {
   const result = await executor(db)(`DELETE FROM cart_items WHERE cart_id = $1`, [cartId]);
-  return result.rowCount ?? 0;
+  return rowsAffected(result);
 }
 
 export async function countItems(db, cartId) {

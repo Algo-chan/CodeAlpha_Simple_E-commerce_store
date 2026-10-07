@@ -384,23 +384,6 @@ test('DELETE removes one line; a line from another cart is a 404', async () => {
     .delete(`/api/v1/cart/items/${lineId}`)
     .set('Origin', 'http://localhost:5173')
     .set(...Object.entries({ Cookie: shopper.session.raw }).flat());
-  const probe = await request(app)
-    .get('/api/v1/cart')
-    .set(...Object.entries({ Cookie: shopper.session.raw }).flat());
-  const { rows: itemRows } = await db.query(
-    `SELECT id, cart_id, quantity FROM cart_items WHERE id = $1`,
-    [lineId]
-  );
-  const { rows: cartRows } = await db.query(`SELECT id, user_id, session_token FROM carts`);
-  console.error('OWN DEBUG', {
-    status: own.status,
-    body: own.body,
-    setCookie: own.headers['set-cookie'],
-    probe: { status: probe.status, owner: probe.body?.data?.cart?.owner, cartId: probe.body?.data?.cart?.id },
-    itemRows,
-    cartRows,
-    lineId,
-  });
   assert.equal(own.status, 200);
   assert.equal(own.body.data.cart.items.length, 0);
 });

@@ -12,6 +12,12 @@ function executor(db) {
   return db.query ?? poolQuery;
 }
 
+/** Row count for the last write. `pg` reports `rowCount`; PGlite reports `affectedRows`. */
+function changed(result) {
+  const n = result?.rowCount ?? result?.affectedRows ?? 0;
+  return Number(n) > 0;
+}
+
 const ITEM_SELECT = `
   SELECT
     wi.product_id,
@@ -73,7 +79,7 @@ export async function insertItem(db, wishlistId, productId) {
      RETURNING id`,
     [wishlistId, productId]
   );
-  return (result.rowCount ?? 0) > 0;
+  return changed(result);
 }
 
 export async function deleteItem(db, wishlistId, productId) {
@@ -81,18 +87,30 @@ export async function deleteItem(db, wishlistId, productId) {
     `DELETE FROM wishlist_items WHERE wishlist_id = $1 AND product_id = $2`,
     [wishlistId, productId]
   );
-  return (result.rowCount ?? 0) > 0;
+  return changed(result);
 }
 
-/** The ids out of `productIds` that exist and are currently active. */
+/**
+ * The ids out of `productIds` that exist and are currently active.
+ *
+ * Loop per id rather than `= ANY($1::uuid[])`: PGlite does not serialise
+ * array bind parameters, so the array form silently matches nothing there
+ * while working on real Postgres. A handful of ids makes the round-trips
+ * irrelevant and keeps one query plan for both engines.
+ */
 export async function findActiveProductIds(db, productIds) {
-  if (!productIds || productIds.length === 0) return [];
-  const result = await executor(db)(
-    `SELECT id FROM products
-      WHERE id = ANY($1::uuid[]) AND status = 'ACTIVE'`,
-    [productIds]
-  );
-  return result.rows.map((row) => String(row.id));
+  const ids = Array.isArray(productIds) ? productIds : [productIds];
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (unique.length === 0) return [];
+  const active = [];
+  for (const id of unique) {
+    const result = await executor(db)(
+      `SELECT id FROM products WHERE id = $1 AND status = 'ACTIVE'`,
+      [id]
+    );
+    if (result.rows[0]) active.push(String(result.rows[0].id));
+  }
+  return active;
 }
 
 export async function findProduct(db, productId) {
