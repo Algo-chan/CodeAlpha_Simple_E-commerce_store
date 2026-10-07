@@ -532,17 +532,21 @@ test('GET /api/v1/products/:slug/related works standalone', async () => {
 /* Phase boundaries                                                              */
 /* -------------------------------------------------------------------------- */
 
-test('cart, wishlist, orders, payments and admin remain unimplemented', async () => {
-  for (const path of [
-    '/api/v1/cart',
-    '/api/v1/wishlist',
-    '/api/v1/orders',
-    '/api/v1/payments',
-    '/api/v1/admin',
-  ]) {
+test('orders, payments and admin remain unimplemented', async () => {
+  for (const path of ['/api/v1/orders', '/api/v1/payments', '/api/v1/admin']) {
     const response = await get(path);
     assert.equal(response.status, 501, `${path} belongs to a later phase`);
   }
+});
+
+// Cart and wishlist became real in Phase 7: the placeholder must be gone.
+test('cart and wishlist are no longer placeholders', async () => {
+  const cart = await get('/api/v1/cart');
+  assert.notEqual(cart.status, 501, 'cart must be implemented');
+
+  const wishlist = await get('/api/v1/wishlist');
+  assert.notEqual(wishlist.status, 501, 'wishlist must be implemented');
+  assert.equal(wishlist.status, 401, 'wishlist requires a signed-in shopper');
 });
 
 test('catalogue endpoints are read-only: no write method is accepted', async () => {

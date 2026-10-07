@@ -10,6 +10,27 @@ export const API_PREFIX = '/api';
 /** HTTP-only cookie name that carries the authentication session token. */
 export const SESSION_COOKIE_NAME = 'ecom_session';
 
+/** HTTP-only cookie name that carries the guest cart session token. */
+export const CART_COOKIE_NAME = 'ecom_cart';
+
+/** Lifetime of a guest cart (and its cookie), in seconds: 30 days. */
+export const GUEST_CART_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+
+/**
+ * Cart limits. The upper bound mirrors the `cart_items_quantity_sane` CHECK
+ * constraint so a violation is a clean 422 instead of a database error.
+ */
+export const CART_LIMITS = Object.freeze({
+  MAX_QUANTITY_PER_LINE: 100,
+  MAX_LINES: 50,
+});
+
+/** Upper bound on how many product ids one wishlist merge call may carry. */
+export const WISHLIST_LIMITS = Object.freeze({
+  MAX_ITEMS: 200,
+  MAX_MERGE_IDS: 200,
+});
+
 /** Current API version. Bumping this to `v2` keeps `v1` alive for old clients. */
 export const API_VERSION = 'v1';
 

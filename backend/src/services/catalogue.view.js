@@ -621,7 +621,7 @@ function parseJsonArray(value) {
 /* -------------------------------------------------------------------------- */
 
 /** Ensures attributes are a flat string map, whatever the driver returned. */
-function normaliseAttributes(attributes) {
+export function normaliseAttributes(attributes) {
   if (attributes === null || attributes === undefined) return {};
   const source = typeof attributes === 'string' ? safeParse(attributes) : attributes;
   if (!source || typeof source !== 'object' || Array.isArray(source)) return {};
@@ -725,7 +725,7 @@ export function humaniseAttribute(key) {
 }
 
 /** "Black / 42" from `{color:'Black', size:'42'}`. */
-function buildVariantLabel(attributes) {
+export function buildVariantLabel(attributes) {
   const entries = Object.entries(attributes ?? {});
   if (entries.length === 0) return null;
   return entries.map(([, value]) => String(value)).join(' / ');

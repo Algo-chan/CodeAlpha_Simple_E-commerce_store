@@ -53,6 +53,28 @@ export function authenticate(req, res, next) {
 }
 
 /**
+ * Optional authentication for routes that serve both shoppers and guests
+ * (the cart). A valid session cookie resolves `req.user`; anything else —
+ * no cookie, expired session, suspended account — simply leaves `req.user`
+ * unset so the caller falls through to the guest path. The cart layer never
+ * trusts a client-supplied user id, so a dead cookie can only mean "guest".
+ */
+export function authenticateIfPresent(req, res, next) {
+  const token = readCookie(req, SESSION_COOKIE_NAME);
+  if (!token) return next();
+
+  return resolveSession(req.db, token)
+    .then((resolved) => {
+      if (resolved && resolved.user.status === 'ACTIVE') {
+        req.session = resolved.session;
+        req.user = sanitizeUser(resolved.user);
+      }
+      return next();
+    })
+    .catch((error) => next(error));
+}
+
+/**
  * Role-based access control.
  * Must run AFTER `authenticate` so that `req.user` exists.
  *
@@ -93,4 +115,4 @@ export function authorize(...allowedRoles) {
   };
 }
 
-export default { authenticate, authorize };
+export default { authenticate, authenticateIfPresent, authorize };
