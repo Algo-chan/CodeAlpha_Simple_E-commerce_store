@@ -16,7 +16,6 @@ import './setup.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
-import crypto from 'node:crypto';
 import { createMigratedDb } from './helpers/database.js';
 import { createApp } from '../src/app.js';
 import { hashCartToken } from '../src/repositories/cart.repository.js';
@@ -68,7 +67,14 @@ async function makeVariant({
   await db.query(
     `INSERT INTO product_variants (id, product_id, sku, price, attributes, is_active)
      VALUES ($1, $2, $3, $4, $5::JSONB, $6)`,
-    [variantId, productId, `SKU-CART-${seq}`, price, JSON.stringify({ color: 'Black', size: '42' }), variantActive]
+    [
+      variantId,
+      productId,
+      `SKU-CART-${seq}`,
+      price,
+      JSON.stringify({ color: 'Black', size: '42' }),
+      variantActive,
+    ]
   );
   if (stock !== null) {
     await db.query(
@@ -94,15 +100,13 @@ function withCookie(res, name) {
 }
 
 async function register(email) {
-  const res = await request(app)
-    .post('/api/v1/auth/register')
-    .send({
-      name: 'Cart Tester',
-      email,
-      phone: '0911223344',
-      password: 'StrongPass1!',
-      passwordConfirmation: 'StrongPass1!',
-    });
+  const res = await request(app).post('/api/v1/auth/register').send({
+    name: 'Cart Tester',
+    email,
+    phone: '0911223344',
+    password: 'StrongPass1!',
+    passwordConfirmation: 'StrongPass1!',
+  });
   assert.equal(res.status, 201, `register should succeed (${email}): ${res.body?.error?.message}`);
   return res;
 }
@@ -138,10 +142,9 @@ test('a guest gets a new cart and a secure httpOnly cookie on first read', async
   assert.match(cookie.raw, /SameSite=Lax/);
   assert.ok(cookie.value.length >= 32, 'token must be long enough to be unguessable');
 
-  const { rows } = await db.query(
-    `SELECT session_token FROM carts WHERE id = $1`,
-    [res.body.data.cart.id]
-  );
+  const { rows } = await db.query(`SELECT session_token FROM carts WHERE id = $1`, [
+    res.body.data.cart.id,
+  ]);
   assert.equal(rows[0].session_token, hashCartToken(cookie.value), 'DB stores the sha-256 hash');
   assert.match(rows[0].session_token, /^[0-9a-f]{64}$/);
   assert.notEqual(rows[0].session_token, cookie.value, 'the raw token must never be persisted');
@@ -284,9 +287,17 @@ test('sold-out variants and inactive/draft items are refused at add time', async
   const unknown = '00000000-0000-4000-8000-000000000000';
 
   const cases = [
-    { body: { variantId: soldOut.variantId, quantity: 1 }, status: 409, code: 'INSUFFICIENT_STOCK' },
+    {
+      body: { variantId: soldOut.variantId, quantity: 1 },
+      status: 409,
+      code: 'INSUFFICIENT_STOCK',
+    },
     { body: { variantId: draft.variantId, quantity: 1 }, status: 409, code: 'PRODUCT_UNAVAILABLE' },
-    { body: { variantId: inactiveVariant.variantId, quantity: 1 }, status: 409, code: 'PRODUCT_UNAVAILABLE' },
+    {
+      body: { variantId: inactiveVariant.variantId, quantity: 1 },
+      status: 409,
+      code: 'PRODUCT_UNAVAILABLE',
+    },
     { body: { variantId: unknown, quantity: 1 }, status: 404, code: 'VARIANT_NOT_FOUND' },
   ];
 
@@ -360,7 +371,6 @@ test('PATCH with an out-of-range quantity is a validation error', async () => {
 
 test('DELETE removes one line; a line from another cart is a 404', async () => {
   const { variantId: vA } = await makeVariant({ stock: 10 });
-  const { variantId: vB } = await makeVariant({ stock: 10 });
 
   const shopper = await createShopper(`boundary`);
   const guestAdd = await request(app)
@@ -476,10 +486,9 @@ test('login merge sums duplicate variants (guest 2 + user 1 = 3)', async () => {
   assert.ok(clear, 'the spent guest cookie must be retired');
   assert.match(clear.raw, /Max-Age=0/);
 
-  const { rows } = await db.query(
-    `SELECT status, merged_into_cart_id FROM carts WHERE id = $1`,
-    [guest.body.data.cart.id]
-  );
+  const { rows } = await db.query(`SELECT status, merged_into_cart_id FROM carts WHERE id = $1`, [
+    guest.body.data.cart.id,
+  ]);
   assert.equal(rows[0].status, 'CONVERTED', 'the guest cart is retired, not deleted');
   assert.equal(rows[0].merged_into_cart_id, merged.body.data.cart.id);
 });

@@ -12,7 +12,11 @@ import { requireSameOrigin } from '../middleware/csrf.js';
 import { authenticateIfPresent } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validate.js';
 import * as controller from '../controllers/cart.controller.js';
-import { addItemSchema, updateItemSchema, cartItemIdParamSchema } from '../validators/cart.schema.js';
+import {
+  addItemSchema,
+  updateItemSchema,
+  cartItemIdParamSchema,
+} from '../validators/cart.schema.js';
 
 const router = Router();
 

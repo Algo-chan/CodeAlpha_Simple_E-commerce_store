@@ -196,10 +196,10 @@ export async function updateItemQuantity(db, cartId, itemId, quantity) {
 }
 
 export async function deleteItem(db, cartId, itemId) {
-  const result = await executor(db)(
-    `DELETE FROM cart_items WHERE id = $1 AND cart_id = $2`,
-    [itemId, cartId]
-  );
+  const result = await executor(db)(`DELETE FROM cart_items WHERE id = $1 AND cart_id = $2`, [
+    itemId,
+    cartId,
+  ]);
   return changed(result);
 }
 
@@ -209,9 +209,10 @@ export async function clearItems(db, cartId) {
 }
 
 export async function countItems(db, cartId) {
-  const result = await executor(db)(`SELECT COUNT(*)::int AS n FROM cart_items WHERE cart_id = $1`, [
-    cartId,
-  ]);
+  const result = await executor(db)(
+    `SELECT COUNT(*)::int AS n FROM cart_items WHERE cart_id = $1`,
+    [cartId]
+  );
   return result.rows[0]?.n ?? 0;
 }
 

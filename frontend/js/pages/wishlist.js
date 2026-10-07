@@ -20,6 +20,7 @@ import { button } from '../components/ui/button.js';
 import { breadcrumb } from '../components/layout/breadcrumb.js';
 import { pageTitle } from '../components/layout/page-header.js';
 import { emptyWishlistState } from '../components/feedback/states.js';
+import { skeletonGrid } from '../components/feedback/skeleton.js';
 import { productGrid } from '../components/product/product-card.js';
 
 /**
@@ -53,12 +54,36 @@ export default function wishlistPage({ host, wishlist, catalogue, ui = null, qui
     clear(shell);
 
     const ids = wishlist.selectIds();
+    const syncStatus = wishlist.selectSyncStatus();
     const products = wishlist.sortBySavedOrder(
       ids.map((id) => catalogue.getProduct(id)).filter(Boolean)
     );
     const orphaned = ids.filter((id) => !catalogue.getProduct(id));
 
     shell.append(breadcrumb([{ label: 'Saved items' }]));
+
+    // A signed-in shopper's first server read may still be loading; the empty
+    // state would otherwise flash before their saved list arrives.
+    if (ids.length === 0 && syncStatus === 'syncing') {
+      shell.append(pageTitle('Saved items', { eyebrow: 'Loading…' }), skeletonGrid(8));
+      return;
+    }
+
+    if (syncStatus === 'error') {
+      shell.append(
+        el('div.form-alert.form-alert--error', { role: 'alert' }, [
+          el('div', {}, [
+            el('p', { text: 'Your saved items could not be saved to the server.' }),
+            button({
+              label: 'Retry',
+              variant: 'quiet-danger',
+              size: 'sm',
+              onClick: () => wishlist.hydrate(),
+            }).element,
+          ]),
+        ])
+      );
+    }
 
     if (ids.length === 0) {
       shell.append(

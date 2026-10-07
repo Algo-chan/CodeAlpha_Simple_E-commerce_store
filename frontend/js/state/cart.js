@@ -515,6 +515,8 @@ export function createCartStore(deps = {}) {
     toggle,
     reconcile,
     hydrate,
+    /** Resolves when every enqueued server operation has settled. */
+    flush: () => chain,
     selectLines,
     selectCount,
     selectSubtotal,

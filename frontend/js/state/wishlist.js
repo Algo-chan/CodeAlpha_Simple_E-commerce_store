@@ -269,6 +269,8 @@ export function createWishlistStore(deps = {}) {
     clear,
     hydrate,
     mergeToServer,
+    /** Resolves when every enqueued server operation has settled. */
+    flush: () => chain,
     selectIds,
     selectCount,
     selectIsEmpty,

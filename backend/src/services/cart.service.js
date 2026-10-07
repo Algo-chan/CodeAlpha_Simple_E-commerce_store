@@ -86,13 +86,13 @@ function toNumber(value) {
  */
 function toLine(row) {
   const price = toNumber(row.price) ?? 0;
-  const available = row.available === null || row.available === undefined
-    ? null
-    : Number(row.available);
+  const available =
+    row.available === null || row.available === undefined ? null : Number(row.available);
 
   let unavailableReason = null;
   if (!row.variant_row_id || !row.product_id) unavailableReason = 'missing';
-  else if (row.product_status !== 'ACTIVE' || row.is_active !== true) unavailableReason = 'inactive';
+  else if (row.product_status !== 'ACTIVE' || row.is_active !== true)
+    unavailableReason = 'inactive';
   else if (available !== null && available <= 0) unavailableReason = 'sold-out';
 
   const quantity = Number(row.quantity);

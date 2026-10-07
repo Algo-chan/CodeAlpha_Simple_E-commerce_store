@@ -17,6 +17,7 @@ import { button } from '../components/ui/button.js';
 import { breadcrumb } from '../components/layout/breadcrumb.js';
 import { pageTitle, sectionHeading } from '../components/layout/page-header.js';
 import { emptyCartState } from '../components/feedback/states.js';
+import { skeletonCart } from '../components/feedback/skeleton.js';
 import { cartLineItem, cartShippingProgress } from '../components/cart/cart-line.js';
 import { productRail } from '../components/product/product-card.js';
 
@@ -45,10 +46,34 @@ export default function cartPage({ host, cart, catalogue, wishlist, ui = null, q
     clear(shell);
 
     const lines = cart.selectLines();
+    const syncStatus = cart.selectSyncStatus();
 
     // `breadcrumb()` prepends Home itself, so passing it here would render
     // "Home / Home / Cart".
     shell.append(breadcrumb([{ label: 'Cart' }]));
+
+    // While the very first server read is still in flight the basket is not
+    // known to be empty; showing the empty state would flash a lie.
+    if (lines.length === 0 && syncStatus === 'syncing') {
+      shell.append(pageTitle('Your cart', { eyebrow: 'Loading…' }), skeletonCart(3));
+      return;
+    }
+
+    if (syncStatus === 'error') {
+      shell.append(
+        el('div.form-alert.form-alert--error', { role: 'alert' }, [
+          el('div', {}, [
+            el('p', { text: 'Your cart could not be saved to the server.' }),
+            button({
+              label: 'Retry',
+              variant: 'quiet-danger',
+              size: 'sm',
+              onClick: () => cart.hydrate(),
+            }).element,
+          ]),
+        ])
+      );
+    }
 
     if (lines.length === 0) {
       shell.append(pageTitle('Your cart', { eyebrow: 'Nothing here yet' }), emptyCartState());

@@ -25,9 +25,8 @@ function toItem(row) {
     slug: row.slug,
     name: row.name,
     image: row.primary_image ?? null,
-    priceMinor: row.price_minor === null || row.price_minor === undefined
-      ? null
-      : Number(row.price_minor),
+    priceMinor:
+      row.price_minor === null || row.price_minor === undefined ? null : Number(row.price_minor),
     savedAt: row.saved_at instanceof Date ? row.saved_at.toISOString() : row.saved_at,
   };
 }
@@ -79,10 +78,7 @@ export async function removeItem(db, userId, productId) {
  */
 export async function merge(db, userId, productIds) {
   return runInTransaction(db, async (tx) => {
-    const unique = [...new Set(productIds.map(String))].slice(
-      0,
-      WISHLIST_LIMITS.MAX_MERGE_IDS
-    );
+    const unique = [...new Set(productIds.map(String))].slice(0, WISHLIST_LIMITS.MAX_MERGE_IDS);
     const activeIds = await wishlists.findActiveProductIds(tx, unique);
     const wishlist = await wishlists.ensureWishlist(tx, userId);
 

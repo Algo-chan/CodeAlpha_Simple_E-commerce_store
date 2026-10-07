@@ -9,8 +9,7 @@
 import { z } from 'zod';
 import { CART_LIMITS } from '../config/constants.js';
 
-const uuid = (label) =>
-  z.string().uuid({ message: `${label} must be a valid UUID` });
+const uuid = (label) => z.string().uuid({ message: `${label} must be a valid UUID` });
 
 export const cartItemIdParamSchema = z.object({
   id: uuid('Cart item id'),

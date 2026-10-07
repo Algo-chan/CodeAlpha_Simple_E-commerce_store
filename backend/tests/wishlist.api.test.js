@@ -80,9 +80,7 @@ test('the wishlist API requires a signed-in shopper (401 without a session)', as
 test('the first authenticated read lazily creates the wishlist', async () => {
   const { session } = await createShopper('lazy');
 
-  const res = await request(app)
-    .get('/api/v1/wishlist')
-    .set('Cookie', session);
+  const res = await request(app).get('/api/v1/wishlist').set('Cookie', session);
 
   assert.equal(res.status, 200);
   assert.equal(res.body.data.wishlist.name, 'My Wishlist');

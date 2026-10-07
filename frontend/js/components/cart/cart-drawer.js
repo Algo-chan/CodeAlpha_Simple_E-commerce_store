@@ -125,10 +125,7 @@ export function createCartDrawer({ cart, toasts = null, onCheckout = null }) {
     }).element;
 
     return el('div.form-alert.form-alert--error', { role: 'alert' }, [
-      el('div', {}, [
-        el('p', { text: 'Your cart could not be saved to the server.' }),
-        retry,
-      ]),
+      el('div', {}, [el('p', { text: 'Your cart could not be saved to the server.' }), retry]),
     ]);
   }
 

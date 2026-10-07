@@ -40,14 +40,7 @@ router.use('/wishlist', wishlistRoutes);
  * answering 501 says "this URL does not exist yet", which is true, rather than
  * 404, which would suggest it never will.
  */
-const implemented = new Set([
-  '/products',
-  '/categories',
-  '/search',
-  '/auth',
-  '/cart',
-  '/wishlist',
-]);
+const implemented = new Set(['/products', '/categories', '/search', '/auth', '/cart', '/wishlist']);
 
 for (const { path, name } of RESOURCE_PLACEHOLDERS) {
   if (implemented.has(path)) continue;
