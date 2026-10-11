@@ -347,13 +347,31 @@ test('an unavailable product cannot be checked out', async () => {
   assert.equal(res.body.error.code, 'PRODUCT_UNAVAILABLE');
 });
 
-test('ONLINE is not an accepted payment method', async () => {
-  const { variantId } = await makeVariant({ stock: 5 });
+test('ONLINE checkout is accepted and the order stays PENDING until verified', async () => {
+  const { variantId } = await makeVariant({ stock: 5, price: 100000 });
   const cookie = await guestAdd(variantId, 1);
 
   const res = await guestCheckout(cookie, { ...GUEST_CONTACT, payment_method: 'ONLINE' });
-  assert.equal(res.status, 422);
-  assert.equal(res.body.error.code, 'VALIDATION_ERROR');
+  assert.equal(res.status, 201, `online checkout failed: ${res.body?.error?.message}`);
+  const { order } = res.body.data;
+
+  assert.equal(order.paymentMethod, 'ONLINE');
+  assert.equal(order.paymentStatus, 'PENDING');
+  assert.equal(order.status, 'PENDING', 'an online order is only confirmed by a verified payment');
+  assert.equal(order.payment.provider, 'MOCK');
+
+  // The intent has no provider reference until the shopper initiates the
+  // payment, and no gateway money has moved.
+  const { rows: payments } = await db.query(
+    `SELECT provider, method, status, transaction_reference
+       FROM payments WHERE order_id = (SELECT id FROM orders WHERE order_number = $1)`,
+    [order.orderNumber]
+  );
+  assert.equal(payments.length, 1);
+  assert.equal(payments[0].provider, 'MOCK');
+  assert.equal(payments[0].method, 'ONLINE');
+  assert.equal(payments[0].status, 'PENDING');
+  assert.equal(payments[0].transaction_reference, null);
 });
 
 /* -------------------------------------------------------------------------- */

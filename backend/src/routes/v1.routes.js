@@ -8,6 +8,7 @@ import cartRoutes from './cart.routes.js';
 import wishlistRoutes from './wishlist.routes.js';
 import checkoutRoutes from './checkout.routes.js';
 import orderRoutes from './order.routes.js';
+import paymentRoutes from './payment.routes.js';
 import { RESOURCE_PLACEHOLDERS, createPlaceholderRouter } from './placeholder.routes.js';
 
 /**
@@ -42,10 +43,18 @@ router.use('/checkout', checkoutRoutes);
 router.use('/orders', orderRoutes);
 
 /*
- * Not implemented. Payments and admin are later phases; answering 501 says
+ * Implemented: online payment intents and the signed provider webhook. COD stays
+ * the default checkout method; this surface only moves ONLINE orders from
+ * PENDING to PAID/FAILED after signature-verified notifications. `/payments`
+ * sits in the placeholder list too, below, but the `implemented` set wins over
+ * it exactly as it does for `/products`.
+ */
+router.use('/payments', paymentRoutes);
+
+/*
+ * Not implemented. Admin and reviews are later phases; answering 501 says
  * "this URL does not exist yet", which is true, rather than 404, which would
- * suggest it never will. `/payments` stays here on purpose: checkout writes a
- * payment row, but there is no payment-provider API in this phase.
+ * suggest it never will.
  */
 const implemented = new Set([
   '/products',
@@ -56,6 +65,7 @@ const implemented = new Set([
   '/wishlist',
   '/checkout',
   '/orders',
+  '/payments',
 ]);
 
 for (const { path, name } of RESOURCE_PLACEHOLDERS) {

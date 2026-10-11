@@ -50,7 +50,17 @@ export function createApp({ db } = {}) {
   app.use(helmetMiddleware);
   app.use(cors(corsOptions));
   app.use(compression());
-  app.use(express.json({ limit: '100kb' }));
+  app.use(
+    express.json({
+      limit: '100kb',
+      // Keep the exact bytes a provider signed. Payment webhooks are verified
+      // against the raw buffer, never a re-serialised copy of the parsed body:
+      // JSON whitespace and key order are not stable across a round-trip.
+      verify: (req, _res, buf) => {
+        if (buf?.length) req.rawBody = buf;
+      },
+    })
+  );
   app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 
   if (!env.isTest) {

@@ -28,11 +28,12 @@ test('unknown routes return a 404 envelope', async () => {
   assert.equal(typeof response.body.error.message, 'string');
 });
 
-// Phase 5 implemented the public catalogue; Phase 6 added customer auth and
-// Phase 7 the customer cart + wishlist; Phase 8 added checkout and order
-// history. The rest are still ahead. Keeping the placeholder list in step with
-// `routes/v1.routes.js` is what stops a route from silently disappearing: if
-// one is implemented and forgotten here, this fails.
+// Phase 5 implemented the public catalogue; Phase 6 added customer auth,
+// Phase 7 the customer cart + wishlist, Phase 8 checkout and order history, and
+// Phase 9 online payments (intents + webhooks). The rest are still ahead.
+// Keeping the placeholder list in step with `routes/v1.routes.js` is what stops
+// a route from silently disappearing: if one is implemented and forgotten here,
+// this fails.
 const IMPLEMENTED = new Set([
   'products',
   'categories',
@@ -42,6 +43,7 @@ const IMPLEMENTED = new Set([
   'wishlist',
   'checkout',
   'orders',
+  'payments',
 ]);
 
 const RESOURCE_PATHS = [

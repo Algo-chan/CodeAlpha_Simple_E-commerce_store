@@ -13,9 +13,11 @@
  * them. `city` and `street` are mandatory because the shipping snapshot's
  * database CHECK requires a non-empty city and a deliverable street.
  *
- * `payment_method` accepts only `COD`. Cash on delivery is the sole real method
- * in this phase; `ONLINE` is reserved in the schema but must not be reachable
- * until a provider exists, so the enum deliberately excludes it.
+ * `payment_method` accepts `COD` or `ONLINE`. COD remains the default and
+ * settles on delivery; ONLINE creates the order PENDING with the configured
+ * provider and only becomes real once a signature-verified notification arrives.
+ * When no online provider is configured the checkout service rejects ONLINE, so
+ * a store running COD-only never advertises a method it cannot fulfil.
  */
 import { z } from 'zod';
 import { CHECKOUT_LIMITS } from '../config/constants.js';
@@ -35,9 +37,7 @@ export const checkoutSchema = z
     additional_notes: z.string().trim().max(CHECKOUT_LIMITS.MAX_NOTES).optional(),
     customer_notes: z.string().trim().max(CHECKOUT_LIMITS.MAX_NOTES).optional(),
     payment_method: z
-      .enum(['COD'], {
-        message: 'Only cash on delivery is available.',
-      })
+      .enum(['COD', 'ONLINE'], { message: 'Choose a payment method.' })
       .default('COD'),
   })
   .strip();

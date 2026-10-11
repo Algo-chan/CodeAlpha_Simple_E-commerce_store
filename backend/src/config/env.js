@@ -81,9 +81,7 @@ const envSchema = z
      * (checkout stays COD-only) without a code change. `MOCK` is the sandbox
      * provider that stands in for a real gateway until credentials exist.
      */
-    PAYMENT_PROVIDER: z
-      .enum(['NONE', 'MOCK', 'TELEBIRR', 'STRIPE', 'PAYSTACK'])
-      .default('MOCK'),
+    PAYMENT_PROVIDER: z.enum(['NONE', 'MOCK', 'TELEBIRR', 'STRIPE', 'PAYSTACK']).default('MOCK'),
     /**
      * HMAC secret a provider uses to sign its webhooks. Never written to logs,
      * never returned to a client, and required in production when a provider is

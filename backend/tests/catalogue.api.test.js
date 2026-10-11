@@ -532,11 +532,27 @@ test('GET /api/v1/products/:slug/related works standalone', async () => {
 /* Phase boundaries                                                              */
 /* -------------------------------------------------------------------------- */
 
-test('payments and admin remain unimplemented', async () => {
-  for (const path of ['/api/v1/payments', '/api/v1/admin']) {
+test('admin remains unimplemented', async () => {
+  for (const path of ['/api/v1/admin']) {
     const response = await get(path);
     assert.equal(response.status, 501, `${path} belongs to a later phase`);
   }
+});
+
+// Payments became real in Phase 9: the init route demands a signed-in shopper,
+// and the public methods surface lists the provider registry.
+test('payments are no longer a placeholder', async () => {
+  const init = await request(app)
+    .post('/api/v1/payments')
+    .send({ order_number: 'ORD-00000000-0001' });
+  assert.equal(init.status, 401, 'creating a payment intent requires a signed-in shopper');
+
+  const methods = await get('/api/v1/payments/methods');
+  assert.equal(methods.status, 200);
+  assert.ok(
+    methods.body.data.providers.some((p) => p.name === 'MOCK'),
+    'the sandbox online provider must be registered'
+  );
 });
 
 // Checkout and orders became real in Phase 8: the placeholder must be gone, and

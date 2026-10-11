@@ -19,7 +19,7 @@
  *   8. allocate an order number
  *   9. insert the order (with a delivery-address snapshot)
  *  10. insert the order items (with name/SKU/options/price snapshots)
- *  11. insert the COD payment record
+ *  11. insert the payment record (COD = internal provider, ONLINE = configured)
  *  12. deduct inventory atomically and append a ledger row per tracked line
  *  13. clear the cart
  *  14. commit
@@ -43,6 +43,7 @@ import * as inventory from '../repositories/inventory.repository.js';
 import { calculateDeliveryFee } from './delivery.service.js';
 import { normaliseAttributes } from './catalogue.view.js';
 import { toOrderView } from './order.view.js';
+import { getActiveOnlineProvider } from '../payments/index.js';
 
 /* -------------------------------------------------------------------------- */
 /* Errors                                                                      */
@@ -127,6 +128,37 @@ function clean(value) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Payment method                                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Resolves the payment method and provider for a checkout.
+ *
+ * COD is always the store itself (provider INTERNAL). ONLINE is only accepted
+ * while an online provider is configured; otherwise the shopper gets a clear
+ * 503-style refusal instead of an order that can never be settled. The provider
+ * name is copied onto the payment row so the webhook knows which gateway owns it.
+ *
+ * @returns {{ method: string, provider: string }}
+ */
+function resolvePaymentMethod(input) {
+  const method = input?.payment_method ?? PAYMENT_METHOD.COD;
+  if (method !== PAYMENT_METHOD.ONLINE) {
+    return { method: PAYMENT_METHOD.COD, provider: PAYMENT_PROVIDER.INTERNAL };
+  }
+
+  const online = getActiveOnlineProvider();
+  if (!online) {
+    throw new AppError(
+      'Online payment is not available right now. Please use cash on delivery.',
+      422,
+      ERROR_CODES.SERVICE_UNAVAILABLE
+    );
+  }
+  return { method: PAYMENT_METHOD.ONLINE, provider: online.name };
+}
+
+/* -------------------------------------------------------------------------- */
 /* Checkout                                                                    */
 /* -------------------------------------------------------------------------- */
 
@@ -204,6 +236,7 @@ export async function checkout(db, context, input, { user = null } = {}) {
     const orderNumber = await orders.nextOrderNumber(tx);
 
     /* 9. The order, with an immutable shipping-address snapshot. */
+    const paymentMethod = resolvePaymentMethod(input);
     const order = await orders.insertOrder(tx, {
       orderNumber,
       userId: context.userId ?? null,
@@ -214,7 +247,7 @@ export async function checkout(db, context, input, { user = null } = {}) {
       total,
       currency: 'ETB',
       paymentStatus: PAYMENT_STATUS.PENDING,
-      paymentMethod: PAYMENT_METHOD.COD,
+      paymentMethod: paymentMethod.method,
       customerEmail: contact.email,
       customerPhone: contact.phone,
       shippingAddressSnapshot: address,
@@ -241,8 +274,8 @@ export async function checkout(db, context, input, { user = null } = {}) {
     /* 11. The payment record. COD starts PENDING; the provider is free-form. */
     const payment = await orders.insertPayment(tx, {
       orderId: order.id,
-      provider: PAYMENT_PROVIDER.INTERNAL,
-      method: PAYMENT_METHOD.COD,
+      provider: paymentMethod.provider,
+      method: paymentMethod.method,
       status: PAYMENT_STATUS.PENDING,
       amount: total,
       currency: 'ETB',

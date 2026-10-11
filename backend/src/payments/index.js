@@ -36,7 +36,9 @@ export function getProvider(name) {
  * @returns {object|null}
  */
 export function getActiveOnlineProvider() {
-  const configured = String(env.PAYMENT_PROVIDER ?? '').trim().toUpperCase();
+  const configured = String(env.PAYMENT_PROVIDER ?? '')
+    .trim()
+    .toUpperCase();
   if (!configured || configured === 'NONE') return null;
 
   const provider = REGISTRY.get(configured) ?? null;

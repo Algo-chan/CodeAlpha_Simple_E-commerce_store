@@ -202,11 +202,48 @@ Deferred from this phase:
 - [ ] Order status transitions (staff-side) → Phase 11
 - [ ] Online payment providers (Stripe/Paystack) → Phase 9
 
-## Phase 9 — Payments (extensible)
+## Phase 9 — Payments (extensible) (done)
 
-- [ ] Payment intents structure, webhooks foundation
-- [ ] Keep COD working, prepare Stripe/Paystack for later
-- [ ] Payment statuses synchronized with orders
+An in-house online-payment architecture that keeps COD as the default while a
+sandbox provider stands in for a real gateway. The provider boundary lives in
+`backend/src/payments/`: adapters expose `name`, `supportsOnline`,
+`supportsRefunds`, `initializePayment` and `processWebhook`, so a real gateway
+is a new adapter plus a `PAYMENT_PROVIDER` value, not a rewrite.
+
+- [x] Provider registry (`getProvider`/`getActiveOnlineProvider`/`listProviders`),
+      COD adapter (`INTERNAL`, offline) and `MOCK` sandbox adapter with
+      `MOCK-*` references and a redirect `nextAction`
+- [x] Payment intent creation (`POST /api/v1/payments`), signed-in owner-only,
+      guarded against COD orders (409 `PAYMENT_NOT_REQUIRED`), duplicates
+      (409) and settled orders; stale PENDING intents expired first
+- [x] Verified settlement: webhook signature over the raw body (HMAC-SHA256 of
+      `` `${timestamp}.${body}` ``, timestamp tolerance), provider-scoped URL,
+      unknown references 404, amount/currency mismatch 422
+- [x] Idempotent atomic settlement: `PENDING → PAID/FAILED` with `paid_at` /
+      `failure_reason`, order `payment_status` follows, a PAID online order also
+      becomes `CONFIRMED`; replay answers 200 `duplicate: true`; FAILED leaves
+      the order retryable with a fresh reference
+- [x] `expireStalePending` (service) marks aged PENDING intents FAILED so a
+      scheduled job can drop in later
+- [x] Refund capability declared on the provider contract, execution 501 for now
+- [x] Delivery estimates: ETA windows, availability and zone rules flow through
+      `delivery.service.js` into every order view
+- [x] COD checkout unchanged and still default; `ONLINE` checkout creates a
+      PENDING intent with the active provider
+- [x] 19 payments API tests + updated checkout/catalogue/foundation tests;
+      suite green: 309 backend, lint clean
+- [x] Environment: `PAYMENT_PROVIDER`, `PAYMENT_WEBHOOK_SECRET`
+      (production-required when a provider is on), `PAYMENT_WEBHOOK_TOLERANCE_SECONDS`,
+      `PAYMENT_MOCK_CHECKOUT_URL`, `PAYMENT_PENDING_TIMEOUT_MINUTES`
+- [x] Documentation: api.md payments section
+
+Deferred (the architecture is the deliverable; real rails are not):
+
+- [ ] Stripe/Paystack/Telebirr adapters + credentials → a provider adapter each
+- [ ] Automated refunds (contract ready, 501 by design)
+- [ ] Scheduled job driving `expireStalePending`
+- [ ] Guest-resumable online payment for orders placed while signed out
+- [ ] Storefront payment UI (intent redirect, webhook-fired confirmation)
 
 ## Phase 10 — Reviews & Ratings
 

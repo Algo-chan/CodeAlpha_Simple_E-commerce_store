@@ -23,7 +23,7 @@ Other useful references:
 
 ## Current phase
 
-**Phase 8 — checkout & orders (backend and storefront complete).**
+**Phase 9 — online payments architecture (backend complete).**
 
 Phase 1 remains in place, plus:
 
@@ -77,9 +77,18 @@ Also shipped:
   with the storefront adopting the server view on load
 - Phase 8: checkout (atomic order creation, Cash on Delivery) and customer order
   history, surfaced by the `checkout.html` and `orders.html` pages
+- Phase 9: an online-payment architecture that keeps COD default — a provider
+  registry in `backend/src/payments/` (`INTERNAL` COD adapter plus a `MOCK`
+  sandbox), signed and idempotent webhook settlement, payment/order status
+  synchronisation (PAID confirms the order), intent creation, stale-intent
+  expiry, and delivery ETA/availability estimates in every order view
+
+See the payments section of [api.md](./api.md) for the endpoints and the
+signature/verification rules.
 
 Still to come: the frontend swap of catalogue and search to `core/api.js`,
-online payments, and the admin area. The catalogue still runs on fixtures in
+real gateway adapters (the sandbox stands in), refund execution, and the admin
+area. The catalogue still runs on fixtures in
 `frontend/js/mock/`, shaped so the real client can replace them without any
 component changing; auth, the account page, cart, wishlist, checkout and orders
 already talk to the real API.
@@ -94,6 +103,6 @@ The Phase 1 infrastructure still in place:
 - Validated environment configuration (`.env` is git-ignored)
 - ESLint, Prettier, automated tests for both workspaces (`npm run verify`)
 
-The catalogue runs on the real database. Cart, wishlist, checkout and orders are
-implemented; payments beyond COD and the admin area have no repositories,
-services or endpoints yet.
+The catalogue runs on the real database. Cart, wishlist, checkout, orders and
+payments (COD plus the sandbox online flow) are implemented; real gateway
+adapters, refunds and the admin area remain.

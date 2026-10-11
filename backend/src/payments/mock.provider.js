@@ -15,7 +15,12 @@
  */
 import crypto from 'node:crypto';
 import env from '../config/env.js';
-import { ERROR_CODES, PAYMENT_METHOD, PAYMENT_PROVIDER, PAYMENT_STATUS } from '../config/constants.js';
+import {
+  ERROR_CODES,
+  PAYMENT_METHOD,
+  PAYMENT_PROVIDER,
+  PAYMENT_STATUS,
+} from '../config/constants.js';
 import { AppError } from '../utils/app-error.js';
 import { verifySignature as verifySignedMessage } from './signature.js';
 
@@ -137,11 +142,7 @@ export const mockProvider = {
 
   /** @returns {never} Refunds are architecture-only in this phase. */
   refund() {
-    throw new AppError(
-      'Automated refunds are not enabled yet.',
-      501,
-      ERROR_CODES.NOT_IMPLEMENTED
-    );
+    throw new AppError('Automated refunds are not enabled yet.', 501, ERROR_CODES.NOT_IMPLEMENTED);
   },
 };
 

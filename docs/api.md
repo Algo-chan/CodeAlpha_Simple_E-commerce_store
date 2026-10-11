@@ -43,19 +43,21 @@ Error:
 
 ## Error codes
 
-| Code                    | HTTP | Meaning                              |
-| ----------------------- | ---- | ------------------------------------ |
-| `VALIDATION_ERROR`      | 422  | Request failed schema validation     |
-| `BAD_REQUEST`           | 400  | Malformed request                    |
-| `UNAUTHORIZED`          | 401  | Missing or invalid credentials       |
-| `FORBIDDEN`             | 403  | Authenticated but not allowed        |
-| `NOT_FOUND`             | 404  | Route or resource does not exist     |
-| `CONFLICT`              | 409  | Duplicate key / uniqueness violation |
-| `UNPROCESSABLE_ENTITY`  | 422  | Semantically invalid data            |
-| `RATE_LIMITED`          | 429  | Too many requests                    |
-| `NOT_IMPLEMENTED`       | 501  | Endpoint is a planned placeholder    |
-| `SERVICE_UNAVAILABLE`   | 503  | Dependency unavailable               |
-| `INTERNAL_SERVER_ERROR` | 500  | Unexpected server error              |
+| Code                    | HTTP | Meaning                                   |
+| ----------------------- | ---- | ----------------------------------------- |
+| `VALIDATION_ERROR`      | 422  | Request failed schema validation          |
+| `BAD_REQUEST`           | 400  | Malformed request                         |
+| `UNAUTHORIZED`          | 401  | Missing or invalid credentials            |
+| `FORBIDDEN`             | 403  | Authenticated but not allowed             |
+| `NOT_FOUND`             | 404  | Route or resource does not exist          |
+| `CONFLICT`              | 409  | Duplicate key / uniqueness violation      |
+| `UNPROCESSABLE_ENTITY`  | 422  | Semantically invalid data                 |
+| `RATE_LIMITED`          | 429  | Too many requests                         |
+| `NOT_IMPLEMENTED`       | 501  | Endpoint is a planned placeholder         |
+| `SERVICE_UNAVAILABLE`   | 503  | Dependency unavailable                    |
+| `INTERNAL_SERVER_ERROR` | 500  | Unexpected server error                   |
+| `PAYMENT_NOT_REQUIRED`  | 409  | A COD order cannot start online payment   |
+| `DELIVERY_UNAVAILABLE`  | 422  | The destination is outside delivery areas |
 
 ## Implemented endpoints
 
@@ -200,10 +202,12 @@ never read from the request — the body carries fulfilment details only.
 
 `POST /checkout` accepts a flat body, matching the address book the customer has
 already used: `full_name`, `email`, `phone`, `label`, `city`, `area`, `street`,
-`landmark`, `additional_notes`, `customer_notes`, `payment_method`. Only `COD`
-is accepted for `payment_method`; `city`, `area` and `street` are required. A
-guest must supply `full_name`, `email` and `phone`; a signed-in customer may
-omit them and the account's values are used.
+`landmark`, `additional_notes`, `customer_notes`, `payment_method`.
+`payment_method` is `COD` (default) or `ONLINE`; `city`, `area` and `street` are
+required. A guest must supply `full_name`, `email` and `phone`; a signed-in
+customer may omit them and the account's values are used. An `ONLINE` order is
+created `PENDING` with the configured provider and stays `PENDING` until a
+verified notification arrives — checkout never asserts that money moved.
 
 The cart is identified exactly as the cart layer identifies it: the session user
 when present, otherwise the `ecom_cart` cookie. Identity never comes from the
@@ -232,6 +236,93 @@ Failures on checkout:
 `GET /api/v1/orders` paginates via `?page=&limit=` (default 20, max 100). Order
 detail is addressed by the human-readable `orderNumber`, never a UUID.
 
+## Payments (implemented)
+
+Online payment flows through three surfaces. COD still starts and ends at
+checkout — it never touches this layer.
+
+| Method | Path                                 | Auth    | Purpose                                      |
+| ------ | ------------------------------------ | ------- | -------------------------------------------- |
+| POST   | `/api/v1/payments`                   | session | Create a payment intent for one of my orders |
+| GET    | `/api/v1/payments/methods`           | public  | Which providers are configured (no secrets)  |
+| POST   | `/api/v1/payments/webhook/:provider` | signed  | Gateway callback; verified by signature      |
+
+### Initiation — `POST /api/v1/payments`
+
+Body: `{ "order_number": "ORD-YYYYMMDD-NNNN" }`. The order must belong to the
+signed-in shopper (a stranger's order is a 404), must have been checked out
+with `payment_method: ONLINE` (a COD order is 409 `PAYMENT_NOT_REQUIRED`), and
+must not already be settled (409 `CONFLICT`). Stale PENDING attempts on the
+order are expired first. When `PAYMENT_PROVIDER=NONE` or the configured provider
+is not online, this answers 503 `SERVICE_UNAVAILABLE`.
+
+The response is 201 with the intent plus where to send the shopper:
+
+```json
+{
+  "success": true,
+  "data": {
+    "payment": {
+      "orderNumber": "ORD-20261011-0001",
+      "provider": "MOCK",
+      "method": "ONLINE",
+      "status": "PENDING",
+      "amount": 150000,
+      "currency": "ETB",
+      "reference": "MOCK-…",
+      "paidAt": null,
+      "failureReason": null
+    },
+    "nextAction": { "type": "redirect", "url": "…" },
+    "sandbox": true
+  }
+}
+```
+
+`reference` is the provider's transaction id, stored so the webhook can find the
+row. `MOCK` is the sandbox adapter enabled by `PAYMENT_PROVIDER=MOCK`; naming
+`TELEBIRR`/`STRIPE`/`PAYSTACK` in that variable is how a real gateway is switched
+on (with an adapter added under `backend/src/payments/`).
+
+### Settlement — `POST /api/v1/payments/webhook/:provider`
+
+The provider posts a signed JSON notification. The server:
+
+1. **verifies the signature** over the **raw request body** (`x-payment-signature`
+   is HMAC-SHA256 of `` `${x-payment-timestamp}.${body}` `` using
+   `PAYMENT_WEBHOOK_SECRET`; timestamps older than
+   `PAYMENT_WEBHOOK_TOLERANCE_SECONDS` are rejected) — 401 on mismatch,
+   so a forged gateway cannot settle anything;
+2. **resolves the payment row** by the claimed transaction reference — an unknown
+   transaction is 404;
+3. **cross-checks** the amount and currency against the store's own order total
+   (422 `VALIDATION_ERROR` on mismatch, `details` says what was expected);
+4. **settles atomically** inside a transaction: the payment row moves
+   `PENDING → PAID/FAILED` (with `paid_at` for PAID, `failure_reason` for FAILED)
+   and the order's `payment_status` follows it. A PAID online order also advances
+   `status` to `CONFIRMED` — the single point where a payment confirms an order.
+
+Replays are idempotent: an already-settled status is a 200 with
+`"duplicate": true` and touches nothing, and the partial unique index on
+`transaction_reference` makes two payment rows for one transaction impossible.
+A FAILED notification leaves the order `PENDING` so the shopper can start a fresh
+intent, which gets a new reference and is settled on its own merits.
+
+Payment states: `PENDING`, `PAID`, `FAILED`, `REFUNDED` (refunds declared but not
+executable yet — the provider contract exposes the capability, `refundPayment`
+answers 501 `NOT_IMPLEMENTED`). Stale PENDING intents are expired as FAILED after
+`PAYMENT_PENDING_TIMEOUT_MINUTES` (exposed as `expireStalePending` on the service
+for a future scheduled job).
+
+### Delivery estimates
+
+The delivery rules stay config-driven in `backend/src/services/delivery.service.js`
+(`DELIVERY` in `constants.js`): a flat `DEFAULT_FEE_MINOR` waived at or above
+`FREE_THRESHOLD_MINOR`, an ordered `ZONES` list that a future per-area tariff can
+populate with fees, ETA windows (`etaMinDays`/`etaMaxDays`) and an `available`
+flag, and a default 2–5 day window. Every order view carries the derived estimate
+as `delivery: { zone, available, fee, estimatedDelivery, estimatedDeliveryDays }`.
+
 ## Planned endpoints (mounted, return 501)
 
 These paths exist so the URL surface and CORS behaviour are testable today.
@@ -251,7 +342,6 @@ Every method on them answers:
 | ------------------ | ---------------------------------------------------------- |
 | `/api/v1/cart`     | Add/update/remove items, totals                            |
 | `/api/v1/wishlist` | Add/remove/list saved products                             |
-| `/api/v1/payments` | Cash on Delivery, online payment intents, webhooks         |
 | `/api/v1/reviews`  | Create, moderate, aggregate ratings                        |
 | `/api/v1/users`    | User administration (profile/addresses live under `/auth`) |
 | `/api/v1/admin`    | Dashboard, products, inventory, coupons, analytics         |

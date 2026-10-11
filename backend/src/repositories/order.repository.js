@@ -127,6 +127,30 @@ export async function findByNumber(db, orderNumber) {
   return rows(result)[0] ?? null;
 }
 
+/** By primary key — used by the payment service when a webhook resolves an order. */
+export async function findById(db, id) {
+  const result = await executor(db)(`SELECT ${ORDER_COLUMNS} FROM orders WHERE id = $1`, [id]);
+  return rows(result)[0] ?? null;
+}
+
+/**
+ * Advances an order's state after a settled payment. Each column is only
+ * overwritten when a value is supplied, so one statement serves both "payment
+ * confirmed" and "payment failed" branches.
+ */
+export async function updateOrderState(db, orderId, { status, paymentStatus } = {}) {
+  const result = await executor(db)(
+    `UPDATE orders
+        SET status = COALESCE($2, status),
+            payment_status = COALESCE($3, payment_status),
+            updated_at = NOW()
+      WHERE id = $1
+      RETURNING ${ORDER_COLUMNS}`,
+    [orderId, status ?? null, paymentStatus ?? null]
+  );
+  return rows(result)[0] ?? null;
+}
+
 /** Scoped lookup for order history — an order belongs to exactly one customer. */
 export async function findByNumberForUser(db, orderNumber, userId) {
   const result = await executor(db)(
@@ -287,6 +311,7 @@ export default {
   nextOrderNumber,
   insertOrder,
   findByNumber,
+  findById,
   findByNumberForUser,
   listByUser,
   insertOrderItem,
@@ -294,4 +319,5 @@ export default {
   listItemsForOrders,
   insertPayment,
   findLatestPayment,
+  updateOrderState,
 };
