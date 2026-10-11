@@ -10,15 +10,18 @@ route → file → module mapping.
 | `/collection.html` | `collection.html` | `js/pages/collection.js` | complete |
 | `/product.html`    | `product.html`    | `js/pages/product.js`    | complete |
 | `/cart.html`       | `cart.html`       | `js/pages/cart.js`       | complete |
+| `/checkout.html`   | `checkout.html`   | `js/pages/checkout.js`   | complete |
+| `/orders.html`     | `orders.html`     | `js/pages/orders.js`     | complete |
 | `/wishlist.html`   | `wishlist.html`   | `js/pages/wishlist.js`   | complete |
+| `/login.html`      | `login.html`      | `js/pages/login.js`      | complete |
+| `/register.html`   | `register.html`   | `js/pages/register.js`   | complete |
+| `/account.html`    | `account.html`    | `js/pages/account.js`    | complete |
 
 Planned for later phases, and deliberately absent for now:
 
-| Route            | Planned module         | Phase |
-| ---------------- | ---------------------- | ----- |
-| `/checkout.html` | `js/pages/checkout.js` | 8     |
-| `/account.html`  | `js/pages/account.js`  | 5     |
-| `/admin.html`    | `js/pages/admin.js`    | 11    |
+| Route         | Planned module      | Phase |
+| ------------- | ------------------- | ----- |
+| `/admin.html` | `js/pages/admin.js` | 11    |
 
 ## Anatomy of a page
 

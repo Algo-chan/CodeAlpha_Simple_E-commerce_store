@@ -11,7 +11,7 @@
  * availability flag, removal, undo - so rebuilding is both simpler and less
  * likely to leave a row showing a quantity the store has already changed.
  */
-import { el, clear, on } from '../core/dom.js';
+import { el, clear } from '../core/dom.js';
 import { formatCount, formatMoney } from '../utils/format.js';
 import { button } from '../components/ui/button.js';
 import { breadcrumb } from '../components/layout/breadcrumb.js';
@@ -140,22 +140,27 @@ function summary({ cart, unfulfillable }) {
   const subtotal = cart.selectSubtotal();
   const buyable = cart.selectCount();
 
-  const checkout = button({ label: 'Checkout', variant: 'primary', block: true }).element;
-  const note = el('p.form-alert.form-alert--info', {
-    role: 'status',
-    // Focusable so focus can be moved here when the shopper asks why checkout is
-    // inert. A status region that never receives focus is announced inconsistently.
-    tabindex: '-1',
-    text: 'Checkout arrives in a later phase. Nothing on this page takes payment.',
-  });
+  // Checkout is a link, not a handler: the cart is server-backed, so the next
+  // page re-reads it anyway. It is disabled — not merely styled as such — when
+  // there is nothing orderable, so it cannot be tabbed to or followed.
+  const canCheckout = buyable > 0 && unfulfillable === 0;
+  const checkout = canCheckout
+    ? button({ label: 'Checkout', variant: 'primary', block: true, href: '/checkout.html' }).element
+    : button({ label: 'Checkout', variant: 'primary', block: true, disabled: true }).element;
 
-  on(checkout, 'click', () => {
-    checkout.setAttribute('aria-disabled', 'true');
-    checkout.title = 'Checkout arrives in a later phase';
-    note.focus();
-  });
-
-  if (buyable === 0) checkout.setAttribute('aria-disabled', 'true');
+  const note = canCheckout
+    ? null
+    : el('p.form-alert.form-alert--info', {
+        role: 'status',
+        // Focusable so focus can be moved here when the shopper asks why
+        // checkout is inert. A status region that never receives focus is
+        // announced inconsistently.
+        tabindex: '-1',
+        text:
+          buyable === 0
+            ? 'Nothing in your cart can be ordered right now.'
+            : 'Remove the items that can no longer be ordered to continue.',
+      });
 
   return el('div', {}, [
     el('h2.text-lg', { text: 'Order summary' }),

@@ -33,12 +33,16 @@ async function parseBody(response) {
 }
 
 /**
- * Performs a request and returns the parsed envelope.
+ * Performs a request and returns the whole envelope.
+ *
+ * List endpoints put pagination in `meta`, which `request` discards. Anything
+ * that needs it (order history) calls this instead of `request`.
+ *
  * @param {string} path - path relative to the API base, e.g. `/health`
  * @param {RequestInit & { query?: object }} [options]
- * @returns {Promise<any>} the `data` property of a successful response
+ * @returns {Promise<{ data: any, meta: object|null }>}
  */
-export async function request(path, options = {}) {
+export async function sendEnvelope(path, options = {}) {
   const { query, headers, ...rest } = options;
 
   // Joined, not concatenated: an injected base ending in "/" plus a path
@@ -103,11 +107,24 @@ export async function request(path, options = {}) {
     });
   }
 
-  return body?.data ?? null;
+  return { data: body?.data ?? null, meta: body?.meta ?? null };
+}
+
+/**
+ * Performs a request and returns just the `data` of a successful response.
+ * @param {string} path - path relative to the API base, e.g. `/health`
+ * @param {RequestInit & { query?: object }} [options]
+ * @returns {Promise<any>}
+ */
+export async function request(path, options = {}) {
+  const { data } = await sendEnvelope(path, options);
+  return data;
 }
 
 export const api = {
   get: (path, options) => request(path, { ...options, method: 'GET' }),
+  /** Like `get`, but returns `{ data, meta }` so pagination survives. */
+  getPage: (path, options) => sendEnvelope(path, { ...options, method: 'GET' }),
   post: (path, body, options) =>
     request(path, { ...options, method: 'POST', body: JSON.stringify(body ?? {}) }),
   put: (path, body, options) =>

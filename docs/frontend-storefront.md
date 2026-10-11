@@ -7,9 +7,13 @@ Design tokens and primitives are documented separately in
 [frontend-design-system.md](./frontend-design-system.md); this document covers
 composition, state and the seams that Phase 5+ will fill.
 
-**Current state: no backend calls.** Every product, category, price and image
-comes from `frontend/js/mock/`. Cart and wishlist persist to `localStorage`.
-Authentication, checkout, orders and payments are not built.
+**Current state: the catalogue is mocked; the basket, account and orders are
+real.** Every product, category, price and image still comes from
+`frontend/js/mock/`, but the cart is a server cart (guest cookie or customer
+account), wishlists sync to the account, and checkout creates a real order
+against the API. Authentication, profile, addresses, checkout and order history
+are live. Cash on Delivery is the only payment method; online payment is not
+built.
 
 ---
 
@@ -228,8 +232,8 @@ price anywhere in the stack.
 
 Desktop: right-side drawer. Mobile: bottom sheet. One implementation, adapted by
 breakpoint. Includes quantity steppers, remove with undo toast, subtotal,
-free-delivery progress, continue shopping, view cart, and a checkout path that is
-present but inert (there is no checkout yet).
+free-delivery progress, continue shopping, view cart, and a checkout link that is
+enabled whenever something in the basket can actually be ordered.
 
 ---
 
@@ -465,12 +469,12 @@ What changes when the backend lands:
 | -------------------------------- | ------------------------------------------------------------------------------------------ |
 | `mockApi` imported in `app.js`   | `api` from `core/api.js` — same method names and `{ data }` shape                          |
 | `boot()` awaits `getCatalogue()` | Unchanged; add caching if the category list warrants it                                    |
-| Cart in `localStorage`           | Cart endpoints; `cart.add/remove/setQuantity` become requests, state shape unchanged       |
-| Wishlist in `localStorage`       | Wishlist endpoints behind authentication (guest basket already snapshots for the upload)   |
+| Cart in `localStorage`           | Done — the server cart owns the basket; the store re-adopts it on load                     |
+| Wishlist in `localStorage`       | Done — the account's list, with the guest snapshot still uploaded on sign-in               |
 | `searchProducts()` client-side   | `GET /products/search`; the UI already treats it as async and handles failure              |
 | Filters applied in memory        | Optional server-side filtering and pagination; `queryProducts` keeps the same result shape |
 | Auth pages, account page         | Done — profiles/addresses/password already hit the real API; catalogues still mock         |
-| Checkout button inert            | Checkout flow, orders, payments                                                            |
+| Checkout button inert            | Done — the cart opens `checkout.html`; orders appear in `orders.html`                      |
 
 The rule throughout: **components receive data and configuration, never fetch
 it.** Swapping the client changes `app.js`, not a single component.
@@ -479,10 +483,10 @@ it.** Swapping the client changes `app.js`, not a single component.
 
 ## 18. Deliberately not built
 
-- Cart, wishlist and catalogue still run on the mock service — real endpoints
-  land with their phases
+- The catalogue still runs on the mock service — the products API and the
+  frontend swap land together
 - Password reset and email verification
-- Checkout, payment, order creation, order history
+- Payments beyond Cash on Delivery (order creation and history are live)
 - Admin dashboard
 - Analytics or any invented sales figure
 - Reviews submission (reviews are read-only fixtures)

@@ -16,8 +16,8 @@
  *      a variant is gone, the line stays with the reason and an explicit remove
  *      control. Deleting it would make the basket change with no explanation.
  *
- * Checkout belongs to a later phase, so the primary action states that instead
- * of pretending to submit an order.
+ * Checkout links onward to the checkout page, which re-reads the server cart and
+ * collects the delivery details. The drawer never submits an order itself.
  */
 import { el, clear } from '../../core/dom.js';
 import { formatMoney } from '../../utils/format.js';
@@ -30,10 +30,9 @@ import { cartLineItem, cartShippingProgress } from './cart-line.js';
  * @param {object} options
  * @param {object} options.cart    cart store
  * @param {object} [options.toasts] ui store, for the undo confirmation
- * @param {Function} [options.onCheckout]
  * @returns {{ panel: object, open(options?): void, close(): void, destroy(): void }}
  */
-export function createCartDrawer({ cart, toasts = null, onCheckout = null }) {
+export function createCartDrawer({ cart, toasts = null }) {
   const panel = createPanel({
     id: 'cart',
     variant: 'drawer',
@@ -158,37 +157,16 @@ export function createCartDrawer({ cart, toasts = null, onCheckout = null }) {
   }
 
   function footerActions() {
-    const checkout = button({
-      label: 'Checkout',
-      variant: 'primary',
-      block: true,
-      disabled: cart.selectCount() === 0,
-    }).element;
-
-    if (onCheckout) {
-      checkout.addEventListener('click', () => onCheckout());
-    } else {
-      // `aria-disabled` rather than `disabled`: a disabled button cannot be
-      // focused, so a keyboard user would never discover why it is unavailable.
-      // It stays operable and explains itself.
-      checkout.setAttribute('aria-disabled', 'true');
-      checkout.title = 'Checkout arrives in a later phase';
-      const note = el('p.cart__note.cart__note--inline', {
-        role: 'status',
-        // Focusable so focus can move here after the swap: a `role="status"`
-        // region that never receives focus is announced inconsistently, and the
-        // shopper's focus would otherwise be lost with the replaced button.
-        tabindex: '-1',
-        text: 'Checkout is not available in this build yet.',
-      });
-      checkout.addEventListener('click', () => {
-        checkout.replaceWith(note);
-        note.focus();
-      });
-    }
+    // A link, not a handler: the cart is server-backed, so the checkout page
+    // re-reads it anyway. It is disabled — not merely styled as such — when
+    // nothing orderable is in the basket, so it cannot be followed.
+    const canCheckout = cart.selectCount() > 0 && !cart.selectIsUnfulfillable();
 
     return [
-      checkout,
+      canCheckout
+        ? button({ label: 'Checkout', variant: 'primary', block: true, href: '/checkout.html' })
+            .element
+        : button({ label: 'Checkout', variant: 'primary', block: true, disabled: true }).element,
       button({ label: 'View full cart', href: '/cart.html', variant: 'ghost', block: true })
         .element,
     ];

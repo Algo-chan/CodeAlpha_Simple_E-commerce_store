@@ -133,6 +133,7 @@ function sidebar({ user, auth }) {
   const links = [
     { href: '#details', label: 'Your details', icon: 'user' },
     { href: '#addresses', label: 'Address book', icon: 'map-pin' },
+    { href: '/orders.html', label: 'Orders', icon: 'package' },
     { href: '#security', label: 'Security', icon: 'lock' },
     { href: '/wishlist.html', label: 'Saved items', icon: 'heart' },
     { href: '/cart.html', label: 'Your cart', icon: 'cart' },

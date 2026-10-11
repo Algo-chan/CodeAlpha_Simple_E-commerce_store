@@ -125,6 +125,7 @@ const ITEM_SELECT = `
     v.price,
     v.compare_at_price,
     v.attributes,
+    v.sku,
     v.is_active,
     p.id              AS product_id,
     p.slug,
@@ -227,7 +228,7 @@ export async function countItems(db, cartId) {
  */
 export async function lockVariant(db, variantId) {
   const result = await executor(db)(
-    `SELECT v.id, v.price, v.compare_at_price, v.attributes, v.is_active, v.product_id,
+    `SELECT v.id, v.price, v.compare_at_price, v.attributes, v.sku, v.is_active, v.product_id,
             p.slug, p.name AS product_name, p.status AS product_status
        FROM product_variants v
        JOIN products p ON p.id = v.product_id

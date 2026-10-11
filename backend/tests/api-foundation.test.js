@@ -29,11 +29,20 @@ test('unknown routes return a 404 envelope', async () => {
 });
 
 // Phase 5 implemented the public catalogue; Phase 6 added customer auth and
-// Phase 7 added the customer cart + wishlist. The rest are still ahead.
-// Keeping the placeholder list in step with `routes/v1.routes.js` is what stops
-// a route from silently disappearing: if one is implemented and forgotten
-// here, this fails.
-const IMPLEMENTED = new Set(['products', 'categories', 'search', 'auth', 'cart', 'wishlist']);
+// Phase 7 the customer cart + wishlist; Phase 8 added checkout and order
+// history. The rest are still ahead. Keeping the placeholder list in step with
+// `routes/v1.routes.js` is what stops a route from silently disappearing: if
+// one is implemented and forgotten here, this fails.
+const IMPLEMENTED = new Set([
+  'products',
+  'categories',
+  'search',
+  'auth',
+  'cart',
+  'wishlist',
+  'checkout',
+  'orders',
+]);
 
 const RESOURCE_PATHS = [
   '/api/v1/auth',
@@ -87,8 +96,18 @@ test('GET /api/v1/wishlist (bare) is not a placeholder 501 anymore', async () =>
   assert.equal(response.body.error.code, 'UNAUTHORIZED');
 });
 
+// Phase 8 implemented checkout and orders. The bare order history demands a
+// signed-in shopper; the checkout endpoint rejects an anonymous POST for lack
+// of a same-origin header before it ever needs a body.
+test('GET /api/v1/orders (bare) is not a placeholder 501 anymore', async () => {
+  const response = await request(app).get('/api/v1/orders');
+
+  assert.equal(response.status, 401);
+  assert.equal(response.body.error.code, 'UNAUTHORIZED');
+});
+
 test('unknown method on a known resource still reports NOT_IMPLEMENTED', async () => {
-  const response = await request(app).post('/api/v1/orders').send({ productId: 'x' });
+  const response = await request(app).post('/api/v1/reviews').send({ productId: 'x' });
 
   assert.equal(response.status, 501);
   assert.equal(response.body.error.code, 'NOT_IMPLEMENTED');

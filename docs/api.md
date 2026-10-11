@@ -185,6 +185,53 @@ address mutations `{ data: { address } }`. `/me` with a missing, forged or
 expired cookie is a plain 401 — the storefront reads that as "guest", not
 "error".
 
+## Checkout & orders (implemented)
+
+Checkout is transactional: the order and its lines, its payment record, the
+stock deduction and the ledger entries either all commit or none do. Prices,
+totals, statuses and the owning user are computed inside that transaction and
+never read from the request — the body carries fulfilment details only.
+
+| Method | Path                          | Auth     | Purpose                           |
+| ------ | ----------------------------- | -------- | --------------------------------- |
+| POST   | `/api/v1/checkout`            | optional | Place an order from the cart      |
+| GET    | `/api/v1/orders`              | session  | The caller's orders, newest first |
+| GET    | `/api/v1/orders/:orderNumber` | session  | One order, scoped to its owner    |
+
+`POST /checkout` accepts a flat body, matching the address book the customer has
+already used: `full_name`, `email`, `phone`, `label`, `city`, `area`, `street`,
+`landmark`, `additional_notes`, `customer_notes`, `payment_method`. Only `COD`
+is accepted for `payment_method`; `city`, `area` and `street` are required. A
+guest must supply `full_name`, `email` and `phone`; a signed-in customer may
+omit them and the account's values are used.
+
+The cart is identified exactly as the cart layer identifies it: the session user
+when present, otherwise the `ecom_cart` cookie. Identity never comes from the
+body. On success the response is 201 with the finished order (the confirmation
+payload) and the cart is emptied; the cart cookie survives, so the next visit
+starts from an empty basket rather than a new guest.
+
+An order serialises as `{ orderNumber, status, paymentStatus, paymentMethod,
+currency, subtotal, deliveryFee, discountTotal, total, itemCount, items,
+customer, shippingAddress, customerNotes, payment, placedAt, updatedAt }`, with
+no internal ids. `items` carry purchase-time snapshots (`productName`, `sku`,
+`variantAttributes`, `unitPrice`, `quantity`, `subtotal`). Order history is
+`{ data: { orders }, meta: { pagination } }`, where each order is the same shape
+minus payment detail; it is scoped by the session user in SQL, so another
+customer's order reads as a 404 rather than a 403.
+
+Failures on checkout:
+
+| Code                  | HTTP | When                                                 |
+| --------------------- | ---- | ---------------------------------------------------- |
+| `CART_EMPTY`          | 409  | The cart is empty or missing                         |
+| `PRODUCT_UNAVAILABLE` | 409  | A line's product is not `ACTIVE` or its variant off  |
+| `INSUFFICIENT_STOCK`  | 409  | A line exceeds available stock (`details` closes it) |
+| `SERVICE_UNAVAILABLE` | 503  | The day's order numbers are exhausted                |
+
+`GET /api/v1/orders` paginates via `?page=&limit=` (default 20, max 100). Order
+detail is addressed by the human-readable `orderNumber`, never a UUID.
+
 ## Planned endpoints (mounted, return 501)
 
 These paths exist so the URL surface and CORS behaviour are testable today.
@@ -204,7 +251,6 @@ Every method on them answers:
 | ------------------ | ---------------------------------------------------------- |
 | `/api/v1/cart`     | Add/update/remove items, totals                            |
 | `/api/v1/wishlist` | Add/remove/list saved products                             |
-| `/api/v1/orders`   | Checkout, order history, order status                      |
 | `/api/v1/payments` | Cash on Delivery, online payment intents, webhooks         |
 | `/api/v1/reviews`  | Create, moderate, aggregate ratings                        |
 | `/api/v1/users`    | User administration (profile/addresses live under `/auth`) |
@@ -221,9 +267,6 @@ POST   /api/v1/cart/items
 PATCH  /api/v1/cart/items/:id
 DELETE /api/v1/cart/items/:id
 POST   /api/v1/reviews
-POST   /api/v1/orders            (checkout)
-GET    /api/v1/orders
-GET    /api/v1/orders/:id
 GET    /api/v1/admin/analytics/overview
 ```
 

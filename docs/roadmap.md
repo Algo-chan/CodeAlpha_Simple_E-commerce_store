@@ -167,21 +167,40 @@ Backend complete and documented in
 - [ ] Inventory write endpoints (quantity, reserved, transactions) — deferred, as
       the read model did not need them
 
-## Phase 7 — Cart & Wishlist API
+## Phase 7 — Cart & Wishlist API (done)
 
-- [ ] Persistent cart per authenticated user
-- [ ] Cart endpoints, server-side totals
-- [ ] Wishlist add/remove/list
-- [ ] Reconcile client cart state against the server on load
+- [x] Persistent cart per authenticated user
+- [x] Guest carts retained on the httpOnly `ecom_cart` cookie and merged on sign-in
+- [x] Cart endpoints, server-side totals
+- [x] Wishlist add/remove/list
+- [x] Reconcile client cart state against the server on load
 
-## Phase 8 — Checkout & Orders (sales)
+## Phase 8 — Checkout & Orders (done)
 
-- [ ] Checkout flow, address selection, shipping/payment
-- [ ] Cash on Delivery (COD) first
-- [ ] Order creation: atomic transaction (inventory reservation, order items)
-- [ ] Order number, status, payment status
-- [ ] Orders history + order details
-- [ ] Order status updates
+Checkout is one transaction: order, order items, payment record, stock deduction
+and ledger entries all commit together or not at all. Money and totals are
+recomputed server-side from the database; the request carries fulfilment details
+only. COD is the only real method; the schema already distinguishes `ONLINE`.
+
+- [x] Checkout flow: contact and delivery address, COD only
+- [x] Order creation: atomic transaction (inventory deduction, order items,
+      payment record, ledger entries)
+- [x] Order number (`ORD-YYYYMMDD-NNNN`, allocated under an advisory lock),
+      order status and payment status
+- [x] Delivery fee: flat default, waived at or above the free threshold, in
+      `delivery.service.js`
+- [x] Orders history + order details (`GET /orders`, `GET /orders/:orderNumber`),
+      scoped to the session user in SQL
+- [x] Storefront: `checkout.html` (form → inline confirmation) and `orders.html`
+      (history with expandable detail); the cart's Checkout button now navigates
+- [x] 13 checkout API tests on PGlite; suite green: 290 backend, frontend helpers
+      tested
+- [x] Documentation: api.md checkout & orders section
+
+Deferred from this phase:
+
+- [ ] Order status transitions (staff-side) → Phase 11
+- [ ] Online payment providers (Stripe/Paystack) → Phase 9
 
 ## Phase 9 — Payments (extensible)
 

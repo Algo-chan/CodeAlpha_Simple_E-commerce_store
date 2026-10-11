@@ -532,11 +532,18 @@ test('GET /api/v1/products/:slug/related works standalone', async () => {
 /* Phase boundaries                                                              */
 /* -------------------------------------------------------------------------- */
 
-test('orders, payments and admin remain unimplemented', async () => {
-  for (const path of ['/api/v1/orders', '/api/v1/payments', '/api/v1/admin']) {
+test('payments and admin remain unimplemented', async () => {
+  for (const path of ['/api/v1/payments', '/api/v1/admin']) {
     const response = await get(path);
     assert.equal(response.status, 501, `${path} belongs to a later phase`);
   }
+});
+
+// Checkout and orders became real in Phase 8: the placeholder must be gone, and
+// order history now demands a signed-in shopper rather than a 501.
+test('checkout and orders are no longer placeholders', async () => {
+  const orders = await get('/api/v1/orders');
+  assert.equal(orders.status, 401, 'order history requires a signed-in shopper');
 });
 
 // Cart and wishlist became real in Phase 7: the placeholder must be gone.

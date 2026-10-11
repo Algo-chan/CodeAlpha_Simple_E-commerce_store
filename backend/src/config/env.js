@@ -75,6 +75,31 @@ const envSchema = z
     RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(300),
     AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(20),
 
+    // --- Online payments ----------------------------------------------
+    /**
+     * Which online gateway is active. `NONE` disables online payment entirely
+     * (checkout stays COD-only) without a code change. `MOCK` is the sandbox
+     * provider that stands in for a real gateway until credentials exist.
+     */
+    PAYMENT_PROVIDER: z
+      .enum(['NONE', 'MOCK', 'TELEBIRR', 'STRIPE', 'PAYSTACK'])
+      .default('MOCK'),
+    /**
+     * HMAC secret a provider uses to sign its webhooks. Never written to logs,
+     * never returned to a client, and required in production when a provider is
+     * active. The sandbox falls back to a well-known development secret so a
+     * fresh checkout works before secrets are provisioned.
+     */
+    PAYMENT_WEBHOOK_SECRET: z.string().default(''),
+    /** Reject a signed notification whose timestamp is older than this. */
+    PAYMENT_WEBHOOK_TOLERANCE_SECONDS: z.coerce.number().int().min(0).max(86_400).default(300),
+    /** Where the sandbox provider sends a shopper to approve a payment. */
+    PAYMENT_MOCK_CHECKOUT_URL: z
+      .string()
+      .default('http://localhost:4000/api/v1/payments/mock/checkout'),
+    /** Minutes a PENDING online payment may age before it is expired. */
+    PAYMENT_PENDING_TIMEOUT_MINUTES: z.coerce.number().int().min(1).max(10_080).default(30),
+
     // --- Logging ------------------------------------------------------
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).default('info'),
 
@@ -96,6 +121,16 @@ const envSchema = z
           code: 'custom',
           path: ['JWT_REFRESH_SECRET'],
           message: 'JWT_REFRESH_SECRET must differ from JWT_SECRET',
+        });
+      }
+      // A live online provider with no signing secret would accept unsigned
+      // notifications. Fail fast rather than ship a forgeable webhook.
+      if (values.PAYMENT_PROVIDER !== 'NONE' && values.PAYMENT_WEBHOOK_SECRET.length < 16) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['PAYMENT_WEBHOOK_SECRET'],
+          message:
+            'PAYMENT_WEBHOOK_SECRET must be set to at least 16 characters when PAYMENT_PROVIDER is not NONE',
         });
       }
     }

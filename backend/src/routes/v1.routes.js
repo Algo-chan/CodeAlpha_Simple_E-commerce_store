@@ -6,6 +6,8 @@ import searchRoutes from './search.routes.js';
 import authRoutes from './auth.routes.js';
 import cartRoutes from './cart.routes.js';
 import wishlistRoutes from './wishlist.routes.js';
+import checkoutRoutes from './checkout.routes.js';
+import orderRoutes from './order.routes.js';
 import { RESOURCE_PLACEHOLDERS, createPlaceholderRouter } from './placeholder.routes.js';
 
 /**
@@ -35,12 +37,26 @@ router.use('/auth', authRoutes);
 router.use('/cart', cartRoutes);
 router.use('/wishlist', wishlistRoutes);
 
+/* Implemented: checkout (cart -> order) and a customer's own order history. */
+router.use('/checkout', checkoutRoutes);
+router.use('/orders', orderRoutes);
+
 /*
- * Not implemented. Checkout, payments, orders and admin are later phases;
- * answering 501 says "this URL does not exist yet", which is true, rather than
- * 404, which would suggest it never will.
+ * Not implemented. Payments and admin are later phases; answering 501 says
+ * "this URL does not exist yet", which is true, rather than 404, which would
+ * suggest it never will. `/payments` stays here on purpose: checkout writes a
+ * payment row, but there is no payment-provider API in this phase.
  */
-const implemented = new Set(['/products', '/categories', '/search', '/auth', '/cart', '/wishlist']);
+const implemented = new Set([
+  '/products',
+  '/categories',
+  '/search',
+  '/auth',
+  '/cart',
+  '/wishlist',
+  '/checkout',
+  '/orders',
+]);
 
 for (const { path, name } of RESOURCE_PLACEHOLDERS) {
   if (implemented.has(path)) continue;

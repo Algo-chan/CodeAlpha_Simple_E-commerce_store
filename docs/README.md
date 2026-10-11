@@ -23,7 +23,7 @@ Other useful references:
 
 ## Current phase
 
-**Phase 6 — catalogue API (backend complete, frontend pending).**
+**Phase 8 — checkout & orders (backend and storefront complete).**
 
 Phase 1 remains in place, plus:
 
@@ -71,11 +71,18 @@ Authentication shipped as its own phase ahead of the catalogue API:
 See [roadmap.md](./roadmap.md) Phase 5 and the authentication section of
 [api.md](./api.md) for the endpoints and the security decisions.
 
-Still to come: the frontend swap of catalogue, search and cart to `core/api.js`,
-the cart and wishlist APIs, checkout, orders, payments and the admin area. The
-catalogue-facing storefront still runs on fixtures in `frontend/js/mock/`,
-shaped so the real client can replace them without any component changing; auth
-and the account page already talk to the real API.
+Also shipped:
+
+- Phase 7: a server-backed cart (guest cookie or customer account) and wishlist,
+  with the storefront adopting the server view on load
+- Phase 8: checkout (atomic order creation, Cash on Delivery) and customer order
+  history, surfaced by the `checkout.html` and `orders.html` pages
+
+Still to come: the frontend swap of catalogue and search to `core/api.js`,
+online payments, and the admin area. The catalogue still runs on fixtures in
+`frontend/js/mock/`, shaped so the real client can replace them without any
+component changing; auth, the account page, cart, wishlist, checkout and orders
+already talk to the real API.
 
 The Phase 1 infrastructure still in place:
 
@@ -87,5 +94,6 @@ The Phase 1 infrastructure still in place:
 - Validated environment configuration (`.env` is git-ignored)
 - ESLint, Prettier, automated tests for both workspaces (`npm run verify`)
 
-The catalogue runs on the real database. Cart, wishlist, orders, payments and admin
-have no repositories, services or endpoints yet.
+The catalogue runs on the real database. Cart, wishlist, checkout and orders are
+implemented; payments beyond COD and the admin area have no repositories,
+services or endpoints yet.
