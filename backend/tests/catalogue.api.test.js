@@ -532,11 +532,10 @@ test('GET /api/v1/products/:slug/related works standalone', async () => {
 /* Phase boundaries                                                              */
 /* -------------------------------------------------------------------------- */
 
-test('admin remains unimplemented', async () => {
-  for (const path of ['/api/v1/admin']) {
-    const response = await get(path);
-    assert.equal(response.status, 501, `${path} belongs to a later phase`);
-  }
+test('admin is no longer a placeholder', async () => {
+  const response = await get('/api/v1/admin');
+  assert.equal(response.status, 401, 'the admin surface now demands a signed-in administrator');
+  assert.equal(response.body.error.code, 'UNAUTHORIZED');
 });
 
 // Payments became real in Phase 9: the init route demands a signed-in shopper,

@@ -9,6 +9,7 @@ import wishlistRoutes from './wishlist.routes.js';
 import checkoutRoutes from './checkout.routes.js';
 import orderRoutes from './order.routes.js';
 import paymentRoutes from './payment.routes.js';
+import adminRoutes from './admin.routes.js';
 import { RESOURCE_PLACEHOLDERS, createPlaceholderRouter } from './placeholder.routes.js';
 
 /**
@@ -52,9 +53,18 @@ router.use('/orders', orderRoutes);
 router.use('/payments', paymentRoutes);
 
 /*
- * Not implemented. Admin and reviews are later phases; answering 501 says
- * "this URL does not exist yet", which is true, rather than 404, which would
- * suggest it never will.
+ * Implemented: the store-management surface. The whole `/admin` tree sits
+ * behind authenticate + authorize(ADMIN), so a customer who calls an admin
+ * endpoint directly is refused at the router. `/admin` is listed in the
+ * placeholder set below but the `implemented` set wins, exactly as it does for
+ * `/payments`.
+ */
+router.use('/admin', adminRoutes);
+
+/*
+ * Not implemented. Reviews (the customer-facing write side) and users are later
+ * phases; answering 501 says "this URL does not exist yet", which is true,
+ * rather than 404, which would suggest it never will.
  */
 const implemented = new Set([
   '/products',
@@ -66,6 +76,7 @@ const implemented = new Set([
   '/checkout',
   '/orders',
   '/payments',
+  '/admin',
 ]);
 
 for (const { path, name } of RESOURCE_PLACEHOLDERS) {

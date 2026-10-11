@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Admin &middot; Aster &amp; Oak</title>
+    <meta name="description" content="Aster &amp; Oak store administration." />
+    <meta name="theme-color" content="#141310" />
+
+    <!-- An operator tool: never indexed, never linked from the storefront. -->
+    <meta name="robots" content="noindex, nofollow" />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles/main.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      media="print"
+      onload="this.media = 'all'"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+    />
+  </head>
+
+  <body class="admin-body">
+    <a class="skip-link" href="#admin-content">Skip to console content</a>
+
+    <div id="admin-root">
+      <div class="admin-gate">
+        <div class="admin-gate__card">
+          <div class="skeleton skeleton--title"></div>
+          <div class="skeleton skeleton--text"></div>
+        </div>
+      </div>
+    </div>
+
+    <noscript>
+      <div class="container noscript-notice">
+        <h1>The admin console needs JavaScript</h1>
+        <p>Please enable JavaScript to manage the store.</p>
+      </div>
+    </noscript>
+
+    <script type="module" src="/js/admin/index.js"></script>
+  </body>
+</html>

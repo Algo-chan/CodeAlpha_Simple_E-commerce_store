@@ -30,6 +30,12 @@ app.use(
   })
 );
 
+// The console has its own entry at the site root. `express.static` already
+// serves `/admin.html`; this lets the bare `/admin` URL reach it too.
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(currentDir, 'admin.html'));
+});
+
 // Pretty URLs: /products/development -> /pages/products/development.html
 app.use((req, res, next) => {
   if (req.method !== 'GET') return next();

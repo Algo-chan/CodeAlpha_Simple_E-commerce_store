@@ -43,21 +43,22 @@ Error:
 
 ## Error codes
 
-| Code                    | HTTP | Meaning                                   |
-| ----------------------- | ---- | ----------------------------------------- |
-| `VALIDATION_ERROR`      | 422  | Request failed schema validation          |
-| `BAD_REQUEST`           | 400  | Malformed request                         |
-| `UNAUTHORIZED`          | 401  | Missing or invalid credentials            |
-| `FORBIDDEN`             | 403  | Authenticated but not allowed             |
-| `NOT_FOUND`             | 404  | Route or resource does not exist          |
-| `CONFLICT`              | 409  | Duplicate key / uniqueness violation      |
-| `UNPROCESSABLE_ENTITY`  | 422  | Semantically invalid data                 |
-| `RATE_LIMITED`          | 429  | Too many requests                         |
-| `NOT_IMPLEMENTED`       | 501  | Endpoint is a planned placeholder         |
-| `SERVICE_UNAVAILABLE`   | 503  | Dependency unavailable                    |
-| `INTERNAL_SERVER_ERROR` | 500  | Unexpected server error                   |
-| `PAYMENT_NOT_REQUIRED`  | 409  | A COD order cannot start online payment   |
-| `DELIVERY_UNAVAILABLE`  | 422  | The destination is outside delivery areas |
+| Code                        | HTTP | Meaning                                      |
+| --------------------------- | ---- | -------------------------------------------- |
+| `VALIDATION_ERROR`          | 422  | Request failed schema validation             |
+| `BAD_REQUEST`               | 400  | Malformed request                            |
+| `UNAUTHORIZED`              | 401  | Missing or invalid credentials               |
+| `FORBIDDEN`                 | 403  | Authenticated but not allowed                |
+| `NOT_FOUND`                 | 404  | Route or resource does not exist             |
+| `CONFLICT`                  | 409  | Duplicate key / uniqueness violation         |
+| `UNPROCESSABLE_ENTITY`      | 422  | Semantically invalid data                    |
+| `RATE_LIMITED`              | 429  | Too many requests                            |
+| `NOT_IMPLEMENTED`           | 501  | Endpoint is a planned placeholder            |
+| `SERVICE_UNAVAILABLE`       | 503  | Dependency unavailable                       |
+| `INTERNAL_SERVER_ERROR`     | 500  | Unexpected server error                      |
+| `PAYMENT_NOT_REQUIRED`      | 409  | A COD order cannot start online payment      |
+| `DELIVERY_UNAVAILABLE`      | 422  | The destination is outside delivery areas    |
+| `INVALID_STATUS_TRANSITION` | 422  | An order status change the lifecycle forbids |
 
 ## Implemented endpoints
 
@@ -322,6 +323,84 @@ The delivery rules stay config-driven in `backend/src/services/delivery.service.
 populate with fees, ETA windows (`etaMinDays`/`etaMaxDays`) and an `available`
 flag, and a default 2–5 day window. Every order view carries the derived estimate
 as `delivery: { zone, available, fee, estimatedDelivery, estimatedDeliveryDays }`.
+
+## Admin endpoints (implemented)
+
+The store-management surface. The whole tree sits behind one gate — mounted on
+the router, so every path beneath `/admin` inherits it and no endpoint can be
+added without it:
+
+```
+authenticate            a valid session cookie resolves an ACTIVE user, or 401
+authorize(ADMIN)        that user's role is ADMIN, or 403
+requireSameOrigin       a state-changing call carries a same-origin Origin
+```
+
+A CUSTOMER who calls any of these by hand is stopped by `authorize` before the
+controller runs; hiding the UI is a courtesy, never the boundary. Responses reuse
+the standard envelope (`{ success, data }`, with `meta.pagination` on lists), and
+money stays in minor units.
+
+| Method | Path                                        | Responsibility                                                     |
+| ------ | ------------------------------------------- | ------------------------------------------------------------------ |
+| GET    | `/api/v1/admin/dashboard`                   | Orders, revenue, products, low stock, customers                    |
+| GET    | `/api/v1/admin/products`                    | List (filter: `status`, `productType`, `categoryId`, `search`)     |
+| POST   | `/api/v1/admin/products`                    | Create a product                                                   |
+| GET    | `/api/v1/admin/products/:id`                | One product                                                        |
+| PATCH  | `/api/v1/admin/products/:id`                | Update a product                                                   |
+| POST   | `/api/v1/admin/products/:id/archive`        | Archive (never hard-delete)                                        |
+| GET    | `/api/v1/admin/products/:id/variants`       | List variants                                                      |
+| POST   | `/api/v1/admin/products/:id/variants`       | Create a variant                                                   |
+| PATCH  | `/api/v1/admin/variants/:variantId`         | Update a variant                                                   |
+| DELETE | `/api/v1/admin/variants/:variantId`         | Deactivate a variant                                               |
+| GET    | `/api/v1/admin/products/:id/images`         | List images                                                        |
+| POST   | `/api/v1/admin/products/:id/images`         | Add an image by URL                                                |
+| PATCH  | `/api/v1/admin/images/:imageId`             | Update an image                                                    |
+| DELETE | `/api/v1/admin/images/:imageId`             | Remove an image                                                    |
+| GET    | `/api/v1/admin/categories`                  | List categories + tree                                             |
+| POST   | `/api/v1/admin/categories`                  | Create a category                                                  |
+| GET    | `/api/v1/admin/categories/:id`              | One category                                                       |
+| PATCH  | `/api/v1/admin/categories/:id`              | Update a category                                                  |
+| POST   | `/api/v1/admin/categories/:id/archive`      | Archive a category                                                 |
+| GET    | `/api/v1/admin/inventory`                   | List stock (filter: `search`, `lowStock`)                          |
+| GET    | `/api/v1/admin/inventory/:variantId/ledger` | Movement ledger for a variant                                      |
+| POST   | `/api/v1/admin/inventory/:variantId/adjust` | Restock / return / damage / adjustment                             |
+| PATCH  | `/api/v1/admin/inventory/:variantId`        | Set the reorder level                                              |
+| GET    | `/api/v1/admin/orders`                      | List (filter: `status`, `paymentStatus`, `search`)                 |
+| GET    | `/api/v1/admin/orders/:orderNumber`         | One order (addressed by number, not id)                            |
+| PATCH  | `/api/v1/admin/orders/:orderNumber/status`  | Move to an allowed status                                          |
+| GET    | `/api/v1/admin/customers`                   | List (filter: `status`, `role`, `search`)                          |
+| GET    | `/api/v1/admin/customers/:id`               | One customer (no auth material)                                    |
+| PATCH  | `/api/v1/admin/customers/:id/status`        | Suspend / reactivate                                               |
+| GET    | `/api/v1/admin/reviews`                     | List (filter: `status`)                                            |
+| GET    | `/api/v1/admin/reviews/:id`                 | One review                                                         |
+| PATCH  | `/api/v1/admin/reviews/:id/status`          | Moderate; author content is never edited                           |
+| GET    | `/api/v1/admin/payments`                    | List (filter: `status`, `method`, `provider`)                      |
+| GET    | `/api/v1/admin/payments/:id`                | One payment (no provider secrets)                                  |
+| GET    | `/api/v1/admin/audit-logs`                  | Sensitive-action trail (filter: `entityType`, `action`, `actorId`) |
+
+Decisions worth recording:
+
+- **Archive, do not delete.** Products, categories and variants are archived or
+  deactivated so historical orders still resolve. There is no DELETE for a
+  product or category.
+- **Images are URLs.** `image_url` is a text field; the console adds one by URL.
+  There is no multipart upload. Setting a new primary image promotes it in the
+  same transaction.
+- **Inventory is append-only.** Every manual change writes an
+  `inventory_transactions` row whose type fixes the sign (RESTOCK/RETURN add,
+  DAMAGE removes, ADJUSTMENT is signed); an adjustment that would drive stock
+  negative is rejected 422. Cancelling an order restocks each tracked line and
+  writes a `RETURN` row.
+- **Orders follow a graph.** `PENDING → CONFIRMED|CANCELLED`,
+  `CONFIRMED → PROCESSING|CANCELLED`, `PROCESSING → SHIPPED|CANCELLED`,
+  `SHIPPED → DELIVERED`; `DELIVERED` and `CANCELLED` are terminal. Anything else
+  is 422 `INVALID_STATUS_TRANSITION`, and resending the same status is 422.
+- **No secrets in views.** Customer payloads never carry `password_hash` or
+  session data; a staff account cannot be suspended.
+- **Audit foundation.** Sensitive actions (product/variant/image/category edits,
+  inventory adjustments, order/customer/review status changes) append an
+  `audit_logs` row, readable through `/admin/audit-logs`.
 
 ## Planned endpoints (mounted, return 501)
 

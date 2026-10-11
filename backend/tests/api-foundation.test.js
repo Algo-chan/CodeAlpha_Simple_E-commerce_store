@@ -29,11 +29,11 @@ test('unknown routes return a 404 envelope', async () => {
 });
 
 // Phase 5 implemented the public catalogue; Phase 6 added customer auth,
-// Phase 7 the customer cart + wishlist, Phase 8 checkout and order history, and
-// Phase 9 online payments (intents + webhooks). The rest are still ahead.
-// Keeping the placeholder list in step with `routes/v1.routes.js` is what stops
-// a route from silently disappearing: if one is implemented and forgotten here,
-// this fails.
+// Phase 7 the customer cart + wishlist, Phase 8 checkout and order history,
+// Phase 9 online payments (intents + webhooks), and Phase 10 the admin
+// store-management surface. The rest are still ahead. Keeping the placeholder
+// list in step with `routes/v1.routes.js` is what stops a route from silently
+// disappearing: if one is implemented and forgotten here, this fails.
 const IMPLEMENTED = new Set([
   'products',
   'categories',
@@ -44,6 +44,7 @@ const IMPLEMENTED = new Set([
   'checkout',
   'orders',
   'payments',
+  'admin',
 ]);
 
 const RESOURCE_PATHS = [
@@ -103,6 +104,16 @@ test('GET /api/v1/wishlist (bare) is not a placeholder 501 anymore', async () =>
 // of a same-origin header before it ever needs a body.
 test('GET /api/v1/orders (bare) is not a placeholder 501 anymore', async () => {
   const response = await request(app).get('/api/v1/orders');
+
+  assert.equal(response.status, 401);
+  assert.equal(response.body.error.code, 'UNAUTHORIZED');
+});
+
+// Phase 10 replaced the admin placeholder with a real, ADMIN-gated router. An
+// anonymous call is refused by `authenticate` before any handler runs, which is
+// the security boundary the phase requires.
+test('GET /api/v1/admin (bare) is not a placeholder 501 anymore', async () => {
+  const response = await request(app).get('/api/v1/admin');
 
   assert.equal(response.status, 401);
   assert.equal(response.body.error.code, 'UNAUTHORIZED');

@@ -186,6 +186,8 @@ export const ERROR_CODES = Object.freeze({
   PAYMENT_NOT_REQUIRED: 'PAYMENT_NOT_REQUIRED',
   /** The destination is outside the store's configured delivery areas. */
   DELIVERY_UNAVAILABLE: 'DELIVERY_UNAVAILABLE',
+  /** An order status change that the fulfilment lifecycle does not allow. */
+  INVALID_STATUS_TRANSITION: 'INVALID_STATUS_TRANSITION',
 });
 
 /** Default and maximum page sizes for list endpoints. */
@@ -193,4 +195,122 @@ export const PAGINATION = Object.freeze({
   DEFAULT_PAGE: 1,
   DEFAULT_LIMIT: 20,
   MAX_LIMIT: 100,
+});
+
+/* -------------------------------------------------------------------------- */
+/* Store management (Phase 10)                                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Catalogue visibility of a product, matching the `products_status_allowed`
+ * CHECK (migration 005). DRAFT is invisible, ACTIVE is sellable, ARCHIVED is
+ * hidden but kept because order history still points at it.
+ */
+export const PRODUCT_STATUS = Object.freeze({
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  ARCHIVED: 'ARCHIVED',
+});
+
+/** Purchasable unit type, matching `products_type_allowed` (migration 005). */
+export const PRODUCT_TYPE = Object.freeze({
+  PHYSICAL: 'PHYSICAL',
+  DIGITAL: 'DIGITAL',
+});
+
+/** Account lifecycle an admin may set, matching `users_status_allowed` (migration 002). */
+export const CUSTOMER_STATUS = Object.freeze({
+  ACTIVE: 'ACTIVE',
+  SUSPENDED: 'SUSPENDED',
+  INACTIVE: 'INACTIVE',
+});
+
+/** Review moderation states, matching `reviews_status_allowed` (migration 017). */
+export const REVIEW_STATUS = Object.freeze({
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+});
+
+/**
+ * Stock-ledger movement types, matching `inventory_transactions_type_allowed`
+ * (migration 009). SALE is written by the checkout flow only; an administrator
+ * may write RESTOCK, RETURN, DAMAGE and ADJUSTMENT.
+ */
+export const INVENTORY_TRANSACTION_TYPE = Object.freeze({
+  RESTOCK: 'RESTOCK',
+  SALE: 'SALE',
+  RETURN: 'RETURN',
+  DAMAGE: 'DAMAGE',
+  ADJUSTMENT: 'ADJUSTMENT',
+});
+
+/** The movement types an admin `adjust` call may request (SALE excluded). */
+export const ADMIN_ADJUSTMENT_TYPES = Object.freeze([
+  INVENTORY_TRANSACTION_TYPE.RESTOCK,
+  INVENTORY_TRANSACTION_TYPE.RETURN,
+  INVENTORY_TRANSACTION_TYPE.DAMAGE,
+  INVENTORY_TRANSACTION_TYPE.ADJUSTMENT,
+]);
+
+/**
+ * The movements an order status may make.
+ *
+ * Fulfilment is a one-way street with one escape hatch: an order advances
+ * PENDING -> CONFIRMED -> PROCESSING -> SHIPPED -> DELIVERED, and may be
+ * cancelled at any point before it ships. It may not jump from PENDING straight
+ * to DELIVERED, and a CANCELLED or DELIVERED order is terminal. Encoding the
+ * graph here - rather than as a checklist in a controller - is what lets the
+ * service refuse an arbitrary jump with one clear rule.
+ */
+export const ORDER_TRANSITIONS = Object.freeze({
+  PENDING: Object.freeze([ORDER_STATUS.CONFIRMED, ORDER_STATUS.CANCELLED]),
+  CONFIRMED: Object.freeze([ORDER_STATUS.PROCESSING, ORDER_STATUS.CANCELLED]),
+  PROCESSING: Object.freeze([ORDER_STATUS.SHIPPED, ORDER_STATUS.CANCELLED]),
+  SHIPPED: Object.freeze([ORDER_STATUS.DELIVERED]),
+  DELIVERED: Object.freeze([]),
+  CANCELLED: Object.freeze([]),
+});
+
+/** Administrative actions recorded in `audit_logs`. */
+export const AUDIT_ACTION = Object.freeze({
+  PRODUCT_CREATED: 'PRODUCT_CREATED',
+  PRODUCT_UPDATED: 'PRODUCT_UPDATED',
+  PRODUCT_ARCHIVED: 'PRODUCT_ARCHIVED',
+  VARIANT_CREATED: 'VARIANT_CREATED',
+  VARIANT_UPDATED: 'VARIANT_UPDATED',
+  VARIANT_DEACTIVATED: 'VARIANT_DEACTIVATED',
+  IMAGE_ADDED: 'IMAGE_ADDED',
+  IMAGE_UPDATED: 'IMAGE_UPDATED',
+  IMAGE_REMOVED: 'IMAGE_REMOVED',
+  CATEGORY_CREATED: 'CATEGORY_CREATED',
+  CATEGORY_UPDATED: 'CATEGORY_UPDATED',
+  CATEGORY_ARCHIVED: 'CATEGORY_ARCHIVED',
+  INVENTORY_ADJUSTED: 'INVENTORY_ADJUSTED',
+  INVENTORY_REORDER_LEVEL_UPDATED: 'INVENTORY_REORDER_LEVEL_UPDATED',
+  ORDER_STATUS_CHANGED: 'ORDER_STATUS_CHANGED',
+  CUSTOMER_STATUS_CHANGED: 'CUSTOMER_STATUS_CHANGED',
+  REVIEW_MODERATED: 'REVIEW_MODERATED',
+});
+
+/** Entity kinds an audit row can point at. */
+export const AUDIT_ENTITY = Object.freeze({
+  PRODUCT: 'PRODUCT',
+  VARIANT: 'VARIANT',
+  IMAGE: 'IMAGE',
+  CATEGORY: 'CATEGORY',
+  INVENTORY: 'INVENTORY',
+  ORDER: 'ORDER',
+  CUSTOMER: 'CUSTOMER',
+  REVIEW: 'REVIEW',
+});
+
+/** Bounds on store-management writes that must not reach the database unchecked. */
+export const ADMIN_LIMITS = Object.freeze({
+  MAX_ATTRIBUTES: 30,
+  MAX_ATTRIBUTE_KEY: 40,
+  MAX_ATTRIBUTE_VALUE: 80,
+  MAX_BULK_VARIANTS: 100,
+  /** Largest single stock correction or restock, in units. */
+  MAX_STOCK_DELTA: 1_000_000,
 });
