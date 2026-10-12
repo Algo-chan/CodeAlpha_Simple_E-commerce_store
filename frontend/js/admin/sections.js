@@ -44,6 +44,7 @@ import {
   loadingBlock,
   filterBar,
   filterSelect,
+  filterSearch,
   paginationBar,
   buildForm,
   openDialog,
@@ -2167,7 +2168,8 @@ async function paymentDetail(ctx, paymentId) {
 async function couponList(ctx) {
   const { body } = listShell(ctx, {
     title: 'Coupons',
-    description: 'Discount codes redeemable at checkout. Uses are spent inside the checkout transaction.',
+    description:
+      'Discount codes redeemable at checkout. Uses are spent inside the checkout transaction.',
   });
   const state = { page: 1, search: '', isActive: '' };
   let rows = null;
@@ -2223,14 +2225,13 @@ async function couponList(ctx) {
         {
           label: 'Uses',
           render: (row) =>
-            row.maxUses === null
-              ? `${row.usedCount} used`
-              : `${row.usedCount} / ${row.maxUses}`,
+            row.maxUses === null ? `${row.usedCount} used` : `${row.usedCount} / ${row.maxUses}`,
         },
         { label: 'Per user', render: (row) => row.perUserLimit ?? '—' },
         {
           label: 'Active',
-          render: (row) => toneBadge(row.isActive ? 'Active' : 'Inactive', row.isActive ? 'success' : 'neutral'),
+          render: (row) =>
+            toneBadge(row.isActive ? 'Active' : 'Inactive', row.isActive ? 'success' : 'neutral'),
         },
         {
           label: 'Valid until',
@@ -2242,11 +2243,11 @@ async function couponList(ctx) {
   }
 
   const filters = filterBar([
-    filterInput({
+    filterSearch({
       label: 'Search',
       placeholder: 'Search by code or description',
       value: state.search,
-      onChange: (value) => {
+      onSubmit: (value) => {
         state.search = value;
         state.page = 1;
         load();

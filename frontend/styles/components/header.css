@@ -3,7 +3,6 @@
    Three bands, in this order:
      .announcement        scrolls away - it is a message, not navigation
      .site-header__bar    sticky - brand, primary nav, actions
-     .category-strip      sticky beneath the bar - catalogue shortcuts
 
    Splitting the sticky band means the promo message does not eat ~40px of
    viewport on every scroll position.
@@ -326,7 +325,9 @@
 
 /* --- Category strip ------------------------------------------------------- */
 
-.category-strip {
+/* --- Navigation row (moved down from category strip) ---------------------- */
+
+.site-header__nav-row {
   position: sticky;
   top: var(--header-height);
   z-index: calc(var(--z-header) - 1);
@@ -336,11 +337,11 @@
   border-bottom: var(--border-width-hairline) solid var(--color-border);
 }
 
-.category-strip__inner {
+.site-header__nav-inner {
   display: flex;
   align-items: center;
-  gap: var(--space-lg);
   min-block-size: var(--nav-strip-height);
+  gap: var(--space-lg);
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -348,48 +349,14 @@
   scroll-snap-type: x proximity;
 }
 
-.category-strip__inner::-webkit-scrollbar {
+.site-header__nav-inner::-webkit-scrollbar {
   display: none;
 }
 
-.category-strip__link {
-  position: relative;
-  flex-shrink: 0;
-  padding-block: var(--space-2xs);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-  scroll-snap-align: start;
-  transition: color var(--duration-fast) var(--ease-standard);
-}
-
-.category-strip__link:hover {
-  color: var(--color-text);
-}
-
-/* Active state uses an underline, not a colour swap, so it survives
-   greyscale and does not rely on hue alone. */
-.category-strip__link::after {
-  content: '';
-  position: absolute;
-  inset-block-end: 0;
-  inset-inline: 0;
-  block-size: 2px;
-  background-color: var(--color-primary);
-  border-radius: var(--radius-full);
-  transform: scaleX(0);
-  transform-origin: center;
-  transition: transform var(--duration-normal) var(--ease-enter);
-}
-
-.category-strip__link:hover::after,
-.category-strip__link[aria-current='page']::after {
-  transform: scaleX(1);
-}
-
-.category-strip__link[aria-current='page'] {
-  color: var(--color-text);
-  font-weight: var(--font-weight-medium);
+@media (max-width: 63.99em) {
+  .site-header__nav-row {
+    top: calc(var(--header-height) - 0.5rem);
+  }
 }
 
 /* --- Desktop-only affordances --------------------------------------------- */

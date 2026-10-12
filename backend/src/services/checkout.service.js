@@ -237,7 +237,11 @@ export async function checkout(db, context, input, { user = null } = {}) {
     // roll back together.
     const couponCode = clean(input.coupon_code);
     const coupon = couponCode
-      ? await couponService.redeem(tx, { code: couponCode, subtotalMinor: subtotal, userId: context.userId })
+      ? await couponService.redeem(tx, {
+          code: couponCode,
+          subtotalMinor: subtotal,
+          userId: context.userId,
+        })
       : null;
     const discountTotal = coupon?.discountMinor ?? 0;
 

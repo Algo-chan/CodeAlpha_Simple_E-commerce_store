@@ -98,10 +98,10 @@ export function evaluate(coupon, { subtotalMinor, userId, userRedemptions = 0, n
 
   const minimum = Number(coupon.min_subtotal ?? 0);
   if (subtotalMinor < minimum) {
-    throw invalid(
-      `Add ${birr(minimum - subtotalMinor)} more to your cart to use that coupon.`,
-      { min_subtotal: minimum, subtotal: subtotalMinor }
-    );
+    throw invalid(`Add ${birr(minimum - subtotalMinor)} more to your cart to use that coupon.`, {
+      min_subtotal: minimum,
+      subtotal: subtotalMinor,
+    });
   }
 
   return { coupon, discountMinor: computeDiscount(coupon, subtotalMinor) };
@@ -124,8 +124,13 @@ export async function preview(db, { code, subtotalMinor, userId = null }) {
   if (Number(subtotalMinor) <= 0) throw invalid('Add items to your cart before applying a coupon.');
 
   const coupon = await coupons.findByCode(db, trimmed);
-  const redemptions = coupon && userId ? await coupons.countUserRedemptions(db, coupon.id, userId) : 0;
-  const { discountMinor } = evaluate(coupon, { subtotalMinor, userId, userRedemptions: redemptions });
+  const redemptions =
+    coupon && userId ? await coupons.countUserRedemptions(db, coupon.id, userId) : 0;
+  const { discountMinor } = evaluate(coupon, {
+    subtotalMinor,
+    userId,
+    userRedemptions: redemptions,
+  });
 
   return { code: coupon.code, discountMinor };
 }

@@ -330,10 +330,10 @@ Reading a product's published reviews is public (see the catalogue surface
 above). Writing one needs an account, because a review must be anchored to a
 purchase that can be proved.
 
-| Method | Path                          | Auth    | Purpose                                  |
-| ------ | ----------------------------- | ------- | ---------------------------------------- |
-| GET    | `/api/v1/reviews/reviewable`  | session | The caller's delivered, un-reviewed lines |
-| POST   | `/api/v1/reviews`             | session | Submit a review for one purchased line    |
+| Method | Path                         | Auth    | Purpose                                   |
+| ------ | ---------------------------- | ------- | ----------------------------------------- |
+| GET    | `/api/v1/reviews/reviewable` | session | The caller's delivered, un-reviewed lines |
+| POST   | `/api/v1/reviews`            | session | Submit a review for one purchased line    |
 
 A review is EARNED, not asserted. The submit body is `{ order_item_id, rating,
 title?, comment? }`; `rating` is a whole number 1–5, and at least one of `title`
@@ -447,9 +447,9 @@ Every method on them answers:
 }
 ```
 
-| Path               | Planned responsibility                                     |
-| ------------------ | ---------------------------------------------------------- |
-| `/api/v1/users`    | User administration (profile/addresses live under `/auth`) |
+| Path            | Planned responsibility                                     |
+| --------------- | ---------------------------------------------------------- |
+| `/api/v1/users` | User administration (profile/addresses live under `/auth`) |
 
 Planned route shapes (for reference, not implemented):
 

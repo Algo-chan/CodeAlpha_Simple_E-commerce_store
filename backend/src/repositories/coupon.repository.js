@@ -165,7 +165,10 @@ export async function countCoupons(db, filters) {
   }
 
   const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
-  const result = await execute(`SELECT count(*)::int AS total FROM coupons c ${where}`, params.values);
+  const result = await execute(
+    `SELECT count(*)::int AS total FROM coupons c ${where}`,
+    params.values
+  );
   return Number(rows(result)[0]?.total ?? 0);
 }
 

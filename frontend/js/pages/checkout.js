@@ -349,7 +349,10 @@ export default async function checkoutPage({ host, cart, auth, client = api, ui 
   async function refreshCoupon() {
     if (!appliedCoupon) return;
     try {
-      const data = await client.post('/checkout/coupon', buildCouponPreviewBody(appliedCoupon.code));
+      const data = await client.post(
+        '/checkout/coupon',
+        buildCouponPreviewBody(appliedCoupon.code)
+      );
       appliedCoupon = {
         code: data?.coupon?.code ?? appliedCoupon.code,
         discountMinor: Number(data?.coupon?.discount ?? 0),

@@ -92,10 +92,10 @@ async function makeVariant({ stock = 10, price = 100000 } = {}) {
     [variantId, productId, `SKU-COUPON-${seq}`, price, JSON.stringify({ color: 'Black' })]
   );
   if (stock !== null) {
-    await db.query(`INSERT INTO inventory (variant_id, quantity, reserved_quantity) VALUES ($1, $2, 0)`, [
-      variantId,
-      stock,
-    ]);
+    await db.query(
+      `INSERT INTO inventory (variant_id, quantity, reserved_quantity) VALUES ($1, $2, 0)`,
+      [variantId, stock]
+    );
   }
   return { variantId, productId };
 }
@@ -199,9 +199,10 @@ test('a fixed coupon discounts the order, is stamped on it, and spends one use',
   const row = await couponRow('SAVE50');
   assert.equal(Number(row.used_count), 1, 'one use is spent');
 
-  const { rows } = await db.query(`SELECT coupon_id, coupon_code FROM orders WHERE order_number = $1`, [
-    order.orderNumber,
-  ]);
+  const { rows } = await db.query(
+    `SELECT coupon_id, coupon_code FROM orders WHERE order_number = $1`,
+    [order.orderNumber]
+  );
   assert.equal(rows[0].coupon_code, 'SAVE50');
   assert.equal(rows[0].coupon_id, coupon.id);
 });

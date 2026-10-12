@@ -71,9 +71,11 @@ function mergeUpdate(current, input) {
     discountType: input.discountType ?? current.discount_type,
     discountValue: input.discountValue ?? Number(current.discount_value),
     minSubtotal: input.minSubtotal ?? Number(current.min_subtotal),
-    maxDiscount: 'maxDiscount' in input ? numOrNull(input.maxDiscount) : numOrNull(current.max_discount),
+    maxDiscount:
+      'maxDiscount' in input ? numOrNull(input.maxDiscount) : numOrNull(current.max_discount),
     validFrom: input.validFrom ?? current.valid_from,
-    validUntil: 'validUntil' in input ? numOrNull(input.validUntil) : numOrNull(current.valid_until),
+    validUntil:
+      'validUntil' in input ? numOrNull(input.validUntil) : numOrNull(current.valid_until),
     maxUses: 'maxUses' in input ? numOrNull(input.maxUses) : numOrNull(current.max_uses),
     perUserLimit:
       'perUserLimit' in input ? numOrNull(input.perUserLimit) : numOrNull(current.per_user_limit),

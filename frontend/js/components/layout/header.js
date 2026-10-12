@@ -17,7 +17,7 @@ import { el, on, qs, prefersReducedMotion } from '../../core/dom.js';
 import { icon } from '../../utils/icons.js';
 import { config } from '../../config.js';
 import { createAnnouncement } from './announcement.js';
-import { createNav, categoryUrl } from '../navigation/nav.js';
+import { createNav, categoryUrl as _categoryUrl } from '../navigation/nav.js';
 import { createMobileNav } from '../navigation/mobile-nav.js';
 
 /** Past this scroll depth the bar is allowed to hide on downward scroll. */
@@ -142,14 +142,14 @@ export function createHeader({
   });
 
   const bar = el('div.site-header__bar', {}, [
-    el('div.container.site-header__inner', {}, [menuToggle, brand, desktopNav.element, actions]),
+    el('div.container.site-header__inner', {}, [menuToggle, brand, actions]),
   ]);
 
-  const element = el('header.site-header', {}, [
-    createAnnouncement(),
-    bar,
-    buildCategoryStrip(categories, activeSlug),
+  const navRow = el('div.site-header__nav-row', {}, [
+    el('div.container.site-header__nav-inner', {}, [desktopNav.element]),
   ]);
+
+  const element = el('header.site-header', {}, [createAnnouncement(), bar, navRow]);
 
   /* --- State subscriptions -------------------------------------------------- */
 
@@ -227,46 +227,6 @@ export function createHeader({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Category strip                                                               */
-/* -------------------------------------------------------------------------- */
-
-function buildCategoryStrip(categories, activeSlug) {
-  const links = [
-    el('a.category-strip__link', {
-      href: '/collection.html',
-      ...(activeSlug ? {} : { 'aria-current': 'page' }),
-      text: 'All products',
-    }),
-  ];
-
-  // The strip is a shortcut row, not the primary nav, so it lists only the top
-  // level plus the collection landing page.
-  for (const category of categories) {
-    links.push(
-      el('a.category-strip__link', {
-        href: categoryUrl(category),
-        ...(category.slug === activeSlug ? { 'aria-current': 'page' } : {}),
-        text: category.name,
-      })
-    );
-  }
-
-  return el('nav.category-strip', { 'aria-label': 'Shop by category' }, [
-    el('div.container.category-strip__inner', {}, links),
-  ]);
-}
-
-/* -------------------------------------------------------------------------- */
-/* Counters                                                                     */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Updates a header counter.
- *
- * The visible pill is `aria-hidden` because the control's accessible name
- * already carries the count. Putting the number in both would make a screen
- * reader announce "Open cart, 3 items, 3".
- */
 function setCounter(control, countNode, count, labelFor) {
   const value = Number(count) || 0;
   countNode.textContent = value > 99 ? '99+' : String(value);
