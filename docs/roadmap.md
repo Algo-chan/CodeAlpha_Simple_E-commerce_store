@@ -245,12 +245,28 @@ Deferred (the architecture is the deliverable; real rails are not):
 - [ ] Guest-resumable online payment for orders placed while signed out
 - [ ] Storefront payment UI (intent redirect, webhook-fired confirmation)
 
-## Phase 10 — Reviews & Ratings
+## Phase 10 — Reviews & Ratings (done)
 
-- [ ] Review submission (read-only fixtures today)
-- [ ] One review per user per product
-- [ ] Average rating + distribution
-- [ ] Moderation status (pending/approved/rejected)
+Reviews are earned, not asserted. A review is anchored to a purchased order line
+(`order_item_id`), so "verified purchase" is a fact of the schema rather than a
+badge. The product is derived from that line server-side, so a review can never
+be aimed at something the customer did not buy. Every new review is created
+`PENDING` and only counts once an administrator approves it.
+
+- [x] Customer review submission (`POST /api/v1/reviews`) with eligibility proved
+      against the DELIVERED, owned order line (422 `REVIEW_NOT_ELIGIBLE`
+      otherwise); guests and unowned lines can never qualify
+- [x] One review per user per product and per purchase line, enforced by both the
+      unique constraints and a pre-check (409 `REVIEW_ALREADY_SUBMITTED`)
+- [x] `GET /api/v1/reviews/reviewable` — the caller's delivered, un-reviewed
+      lines, newest first, scoped to the session
+- [x] Average rating + distribution (read path, approved reviews only)
+- [x] Moderation status (pending/approved/rejected) via the admin surface
+- [x] Storefront: inline "write a review" forms on the orders page, with a star
+      picker and draft state that survives redraws
+- [x] 10 review API tests on PGlite + 12 frontend review-helper tests; suite
+      green: 341 backend, 248 frontend, lint clean
+- [x] Documentation: api.md reviews section
 
 ## Phase 11 — Admin Dashboard
 

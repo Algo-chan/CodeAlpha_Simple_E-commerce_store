@@ -848,7 +848,7 @@ export async function listAdminOrders(db, filters, page) {
   const sql = `
     SELECT
       o.id, o.order_number, o.user_id, o.status, o.subtotal, o.delivery_fee,
-      o.discount_total, o.total, o.currency, o.payment_status, o.payment_method,
+      o.discount_total, o.coupon_code, o.total, o.currency, o.payment_status, o.payment_method,
       o.customer_email, o.customer_phone, o.created_at, o.updated_at,
       u.name AS customer_name,
       pay.method AS latest_payment_method,

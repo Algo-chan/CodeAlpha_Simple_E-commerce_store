@@ -19,6 +19,7 @@ import { z } from 'zod';
 import {
   ADMIN_ADJUSTMENT_TYPES,
   ADMIN_LIMITS,
+  COUPON_TYPE,
   CUSTOMER_STATUS,
   ORDER_STATUS,
   PRODUCT_STATUS,
@@ -254,6 +255,57 @@ export const adminAuditQuerySchema = paginationSchema.extend({
   actorId: uuidSchema.optional(),
 });
 
+/* -------------------------------------------------------------------------- */
+/* Coupons                                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Codes are stored upper-cased and space-free (migration 023), so the validator
+ * normalises them the same way the repository does. `value` means a whole
+ * percentage for PERCENT and an amount in minor units for FIXED; which one is
+ * enforced by the `discountType` enum and cross-field rules in the service.
+ */
+const couponCodeSchema = z
+  .string()
+  .trim()
+  .min(1, 'A coupon code is required')
+  .max(ADMIN_LIMITS.MAX_COUPON_CODE)
+  .transform((value) => value.toUpperCase().replace(/\s+/g, ''))
+  .refine((value) => value.length > 0, 'A coupon code is required');
+
+const couponValueSchema = z.coerce
+  .number()
+  .int('Discount value must be a whole number')
+  .min(1, 'Discount value must be positive')
+  .max(ADMIN_LIMITS.MAX_COUPON_VALUE_MINOR, 'Discount value is out of range');
+
+const couponBodySchema = z
+  .object({
+    code: couponCodeSchema,
+    description: z.string().trim().max(ADMIN_LIMITS.MAX_COUPON_DESCRIPTION).nullable().optional(),
+    discountType: z.enum(Object.values(COUPON_TYPE)),
+    discountValue: couponValueSchema,
+    minSubtotal: z.coerce.number().int().min(0).max(ADMIN_LIMITS.MAX_COUPON_VALUE_MINOR).optional(),
+    maxDiscount: couponValueSchema.nullable().optional(),
+    validFrom: z.coerce.date().optional(),
+    validUntil: z.coerce.date().nullable().optional(),
+    maxUses: z.coerce.number().int().min(1).max(100_000_000).nullable().optional(),
+    perUserLimit: z.coerce.number().int().min(1).max(1_000_000).nullable().optional(),
+    isActive: z.boolean().optional(),
+  })
+  .strip();
+
+export const createCouponSchema = couponBodySchema;
+
+export const updateCouponSchema = couponBodySchema.partial();
+
+export const adminCouponQuerySchema = paginationSchema.extend({
+  isActive: z
+    .enum(['true', 'false'])
+    .transform((value) => value === 'true')
+    .optional(),
+});
+
 export default {
   uuidIdParamSchema,
   variantIdParamSchema,
@@ -279,4 +331,7 @@ export default {
   moderateReviewSchema,
   adminPaymentQuerySchema,
   adminAuditQuerySchema,
+  createCouponSchema,
+  updateCouponSchema,
+  adminCouponQuerySchema,
 };

@@ -45,6 +45,9 @@ import {
   moderateReviewSchema,
   adminPaymentQuerySchema,
   adminAuditQuerySchema,
+  createCouponSchema,
+  updateCouponSchema,
+  adminCouponQuerySchema,
 } from '../validators/admin.schema.js';
 import * as controller from '../controllers/admin.controller.js';
 
@@ -215,6 +218,26 @@ router.get(
   '/audit-logs',
   validateRequest({ query: adminAuditQuerySchema }),
   controller.listAuditLogs
+);
+
+/* Coupons ------------------------------------------------------------------- */
+router.get('/coupons', validateRequest({ query: adminCouponQuerySchema }), controller.listCoupons);
+router.post('/coupons', validateRequest({ body: createCouponSchema }), controller.createCoupon);
+router.get('/coupons/:id', validateRequest({ params: uuidIdParamSchema }), controller.getCoupon);
+router.patch(
+  '/coupons/:id',
+  validateRequest({ params: uuidIdParamSchema, body: updateCouponSchema }),
+  controller.updateCoupon
+);
+router.post(
+  '/coupons/:id/activate',
+  validateRequest({ params: uuidIdParamSchema }),
+  controller.activateCoupon
+);
+router.post(
+  '/coupons/:id/deactivate',
+  validateRequest({ params: uuidIdParamSchema }),
+  controller.deactivateCoupon
 );
 
 export default router;

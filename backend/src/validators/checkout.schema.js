@@ -39,6 +39,19 @@ export const checkoutSchema = z
     payment_method: z
       .enum(['COD', 'ONLINE'], { message: 'Choose a payment method.' })
       .default('COD'),
+    coupon_code: shortTextSchema(40).optional(),
+  })
+  .strip();
+
+/**
+ * `POST /checkout/coupon` — price a code against the current cart.
+ *
+ * Read-only, but a POST because the code travels in the body and the subtotal
+ * is resolved from the caller's own cart, never from the request.
+ */
+export const couponPreviewSchema = z
+  .object({
+    code: shortTextSchema(40),
   })
   .strip();
 
@@ -50,4 +63,4 @@ export const orderNumberParamSchema = z.object({
     .regex(/^ORD-\d{8}-\d{4}$/, 'Order number must look like ORD-YYYYMMDD-NNNN'),
 });
 
-export default { checkoutSchema, orderNumberParamSchema };
+export default { checkoutSchema, couponPreviewSchema, orderNumberParamSchema };

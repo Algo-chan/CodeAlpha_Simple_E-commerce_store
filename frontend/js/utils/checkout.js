@@ -31,6 +31,20 @@ function text(value) {
 }
 
 /**
+ * Upper-cases a coupon code and strips internal spaces, matching the store's
+ * storage rule (`coupons_code_format`, migration 023). Applied to what the
+ * shopper types and to what is sent, so " save10 " and "SAVE10" are one code.
+ */
+export function normaliseCouponCode(value) {
+  return text(value).toUpperCase().replace(/\s+/g, '');
+}
+
+/** The `POST /checkout/coupon` body. Read-only preview. */
+export function buildCouponPreviewBody(code) {
+  return { code: normaliseCouponCode(code) };
+}
+
+/**
  * Builds the `POST /checkout` body.
  *
  * Required destination fields are always sent (empty included), so the server's
@@ -58,6 +72,7 @@ export function buildCheckoutBody(input = {}) {
     landmark,
     additionalNotes,
     customerNotes,
+    couponCode,
     paymentMethod = PAYMENT_METHOD_COD,
   } = input;
 
@@ -76,6 +91,7 @@ export function buildCheckoutBody(input = {}) {
     landmark: text(landmark),
     additional_notes: text(additionalNotes),
     customer_notes: text(customerNotes),
+    coupon_code: normaliseCouponCode(couponCode),
   };
 
   for (const [key, value] of Object.entries(optional)) {
@@ -148,6 +164,8 @@ export function describeCheckoutError(error) {
       return error.message ?? 'One of your items sold out while you were checking out.';
     case 'VALIDATION_ERROR':
       return 'Please check the highlighted fields and try again.';
+    case 'COUPON_INVALID':
+      return error.message ?? 'That coupon could not be applied.';
     case 'SERVICE_UNAVAILABLE':
       return 'We could not place the order just now. Please try again in a moment.';
     case 'NETWORK_ERROR':
@@ -156,6 +174,34 @@ export function describeCheckoutError(error) {
       return 'That took too long. Check your connection, then try again.';
     default:
       return error.message ?? 'Something went wrong placing your order. Please try again.';
+  }
+}
+
+/**
+ * Shopper-facing copy for a failed coupon APPLY.
+ *
+ * Distinct from `describeCheckoutError`: this runs before the order exists,
+ * against the preview endpoint, so the only codes it can see are the coupon's
+ * own. The server's sentence is preferred because it names the rule that failed
+ * ("Add 20.00 ETB more…"), which an invented message could not.
+ *
+ * @param {{ code?: string, message?: string }|null} error
+ * @returns {string}
+ */
+export function describeCouponError(error) {
+  if (!error) return 'We could not check that code. Please try again.';
+
+  switch (error.code) {
+    case 'COUPON_INVALID':
+      return error.message ?? "That coupon code isn't valid.";
+    case 'VALIDATION_ERROR':
+      return 'Enter a valid coupon code.';
+    case 'NETWORK_ERROR':
+      return 'We could not reach the store. Check your connection, then try again.';
+    case 'REQUEST_TIMEOUT':
+      return 'That took too long. Check your connection, then try again.';
+    default:
+      return error.message ?? 'We could not check that code. Please try again.';
   }
 }
 
@@ -206,10 +252,13 @@ export default {
   DELIVERY_DEFAULT_FEE_MINOR,
   DELIVERY_FREE_THRESHOLD_MINOR,
   PAYMENT_METHOD_COD,
+  normaliseCouponCode,
+  buildCouponPreviewBody,
   buildCheckoutBody,
   previewDeliveryFee,
   checkoutTotal,
   describeCheckoutError,
+  describeCouponError,
   orderStatusLabel,
   orderStatusTone,
   paymentStatusLabel,

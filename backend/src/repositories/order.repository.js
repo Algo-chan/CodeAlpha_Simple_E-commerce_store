@@ -80,13 +80,15 @@ export async function nextOrderNumber(tx, date = new Date()) {
 
 const ORDER_COLUMNS = `
   id, order_number, user_id, status, subtotal, delivery_fee, discount_total,
-  total, currency, payment_status, payment_method, customer_email,
-  customer_phone, shipping_address_snapshot, customer_notes, created_at, updated_at`;
+  coupon_id, coupon_code, total, currency, payment_status, payment_method,
+  customer_email, customer_phone, shipping_address_snapshot, customer_notes,
+  created_at, updated_at`;
 
 /**
  * @param {object} db
  * @param {{ orderNumber: string, userId: string|null, status: string,
  *           subtotal: number, deliveryFee: number, discountTotal: number,
+ *           couponId?: string|null, couponCode?: string|null,
  *           total: number, currency: string, paymentStatus: string,
  *           paymentMethod: string, customerEmail: string, customerPhone: string,
  *           shippingAddressSnapshot: object, customerNotes?: string|null }} input
@@ -95,9 +97,9 @@ export async function insertOrder(db, input) {
   const result = await executor(db)(
     `INSERT INTO orders
        (order_number, user_id, status, subtotal, delivery_fee, discount_total,
-        total, currency, payment_status, payment_method, customer_email,
-        customer_phone, shipping_address_snapshot, customer_notes)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::JSONB, $14)
+        coupon_id, coupon_code, total, currency, payment_status, payment_method,
+        customer_email, customer_phone, shipping_address_snapshot, customer_notes)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::JSONB, $16)
      RETURNING ${ORDER_COLUMNS}`,
     [
       input.orderNumber,
@@ -106,6 +108,8 @@ export async function insertOrder(db, input) {
       input.subtotal,
       input.deliveryFee,
       input.discountTotal,
+      input.couponId ?? null,
+      input.couponCode ?? null,
       input.total,
       input.currency,
       input.paymentStatus,

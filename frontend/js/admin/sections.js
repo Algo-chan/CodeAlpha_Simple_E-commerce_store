@@ -2161,6 +2161,119 @@ async function paymentDetail(ctx, paymentId) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Coupons                                                                     */
+/* -------------------------------------------------------------------------- */
+
+async function couponList(ctx) {
+  const { body } = listShell(ctx, {
+    title: 'Coupons',
+    description: 'Discount codes redeemable at checkout. Uses are spent inside the checkout transaction.',
+  });
+  const state = { page: 1, search: '', isActive: '' };
+  let rows = null;
+  let pagination = null;
+
+  async function load() {
+    clear(body);
+    body.append(loadingBlock('Loading coupons…'));
+    let result;
+    try {
+      result = await ctx.api.listCoupons({
+        page: state.page,
+        limit: PAGE_SIZE,
+        search: state.search || undefined,
+        isActive: state.isActive || undefined,
+      });
+    } catch (error) {
+      clear(body);
+      body.append(errorBlock(error, load));
+      return;
+    }
+    rows = result.coupons;
+    pagination = result.pagination;
+    draw();
+  }
+
+  function draw() {
+    renderListBody({
+      body,
+      rows,
+      pagination,
+      emptyTitle: 'No coupons',
+      emptyDescription: 'Create a code to run a promotion.',
+      caption: 'Coupons',
+      onPage: (page) => {
+        state.page = page;
+        load();
+      },
+      columns: [
+        { label: 'Code', render: (row) => row.code },
+        { label: 'Type', render: (row) => humanize(row.discountType) },
+        {
+          label: 'Value',
+          render: (row) =>
+            row.discountType === 'PERCENT'
+              ? `${row.discountValue}%`
+              : formatMoney(row.discountValue),
+        },
+        {
+          label: 'Min subtotal',
+          render: (row) => (row.minSubtotal ? formatMoney(row.minSubtotal) : '—'),
+        },
+        {
+          label: 'Uses',
+          render: (row) =>
+            row.maxUses === null
+              ? `${row.usedCount} used`
+              : `${row.usedCount} / ${row.maxUses}`,
+        },
+        { label: 'Per user', render: (row) => row.perUserLimit ?? '—' },
+        {
+          label: 'Active',
+          render: (row) => toneBadge(row.isActive ? 'Active' : 'Inactive', row.isActive ? 'success' : 'neutral'),
+        },
+        {
+          label: 'Valid until',
+          render: (row) => (row.validUntil ? formatDate(row.validUntil) : 'No expiry'),
+        },
+        { label: 'Created', render: (row) => formatDate(row.createdAt) },
+      ],
+    });
+  }
+
+  const filters = filterBar([
+    filterInput({
+      label: 'Search',
+      placeholder: 'Search by code or description',
+      value: state.search,
+      onChange: (value) => {
+        state.search = value;
+        state.page = 1;
+        load();
+      },
+    }),
+    filterSelect({
+      label: 'Status',
+      value: state.isActive,
+      options: [
+        { value: '', label: 'All' },
+        { value: 'true', label: 'Active' },
+        { value: 'false', label: 'Inactive' },
+      ],
+      onChange: (value) => {
+        state.isActive = value;
+        state.page = 1;
+        load();
+      },
+    }),
+  ]);
+  body.before(filters);
+
+  await load();
+  return { destroy: () => {} };
+}
+
+/* -------------------------------------------------------------------------- */
 /* Audit log                                                                   */
 /* -------------------------------------------------------------------------- */
 
@@ -2232,6 +2345,7 @@ async function auditList(ctx) {
           'ORDER',
           'CUSTOMER',
           'REVIEW',
+          'COUPON',
         ].map((value) => ({ value, label: humanize(value) })),
       ],
       onChange: (value) => {
@@ -2272,6 +2386,8 @@ export async function renderSection(route, ctx) {
       return route.id ? reviewDetail(ctx, route.id) : reviewList(ctx);
     case 'payments':
       return route.id ? paymentDetail(ctx, route.id) : paymentList(ctx);
+    case 'coupons':
+      return couponList(ctx);
     case 'audit':
       return auditList(ctx);
     case 'dashboard':

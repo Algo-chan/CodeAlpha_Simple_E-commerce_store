@@ -21,6 +21,7 @@ import * as orders from '../services/admin/order-admin.service.js';
 import * as customers from '../services/admin/customer-admin.service.js';
 import * as reviews from '../services/admin/review-admin.service.js';
 import * as payments from '../services/admin/payment-admin.service.js';
+import * as coupons from '../services/admin/coupon-admin.service.js';
 import * as audit from '../services/admin/audit.service.js';
 
 /** The validated query for a list endpoint. */
@@ -269,6 +270,43 @@ export const listAuditLogs = asyncHandler(async (req, res) => {
   return sendSuccess(res, { data: { logs: result.logs }, meta: { pagination: result.pagination } });
 });
 
+/* -------------------------------------------------------------------------- */
+/* Coupons                                                                     */
+/* -------------------------------------------------------------------------- */
+
+export const listCoupons = asyncHandler(async (req, res) => {
+  const result = await coupons.listCoupons(req.db, query(req));
+  return sendSuccess(res, {
+    data: { coupons: result.coupons },
+    meta: { pagination: result.pagination },
+  });
+});
+
+export const getCoupon = asyncHandler(async (req, res) => {
+  const coupon = await coupons.getCoupon(req.db, req.params.id);
+  return sendSuccess(res, { data: { coupon } });
+});
+
+export const createCoupon = asyncHandler(async (req, res) => {
+  const coupon = await coupons.createCoupon(req.db, req.user, req.body);
+  return sendCreated(res, { coupon });
+});
+
+export const updateCoupon = asyncHandler(async (req, res) => {
+  const coupon = await coupons.updateCoupon(req.db, req.user, req.params.id, req.body);
+  return sendSuccess(res, { data: { coupon } });
+});
+
+export const activateCoupon = asyncHandler(async (req, res) => {
+  const coupon = await coupons.setCouponActive(req.db, req.user, req.params.id, true);
+  return sendSuccess(res, { data: { coupon } });
+});
+
+export const deactivateCoupon = asyncHandler(async (req, res) => {
+  const coupon = await coupons.setCouponActive(req.db, req.user, req.params.id, false);
+  return sendSuccess(res, { data: { coupon } });
+});
+
 export default {
   getDashboard,
   listProducts,
@@ -305,4 +343,10 @@ export default {
   listPayments,
   getPayment,
   listAuditLogs,
+  listCoupons,
+  getCoupon,
+  createCoupon,
+  updateCoupon,
+  activateCoupon,
+  deactivateCoupon,
 };

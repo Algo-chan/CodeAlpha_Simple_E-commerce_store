@@ -21,7 +21,6 @@ export const RESOURCE_PLACEHOLDERS = [
   { path: '/wishlist', name: 'Wishlist' },
   { path: '/orders', name: 'Orders' },
   { path: '/payments', name: 'Payments' },
-  { path: '/reviews', name: 'Reviews' },
   { path: '/users', name: 'Users' },
   { path: '/admin', name: 'Admin' },
 ];

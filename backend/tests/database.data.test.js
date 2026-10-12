@@ -318,8 +318,8 @@ describe('triggers', () => {
     assert.equal(ledger[0].n, 0, 'the stock ledger must stay append-only');
     assert.equal(
       triggered.length,
-      16,
-      `expected 16 triggered tables, got ${triggered.length}: ${triggered.map((r) => r.relname).join(', ')}`
+      17,
+      `expected 17 triggered tables, got ${triggered.length}: ${triggered.map((r) => r.relname).join(', ')}`
     );
   });
 });

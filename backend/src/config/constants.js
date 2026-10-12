@@ -188,6 +188,12 @@ export const ERROR_CODES = Object.freeze({
   DELIVERY_UNAVAILABLE: 'DELIVERY_UNAVAILABLE',
   /** An order status change that the fulfilment lifecycle does not allow. */
   INVALID_STATUS_TRANSITION: 'INVALID_STATUS_TRANSITION',
+  /** A review submitted for an item the customer did not buy (or not yet delivered). */
+  REVIEW_NOT_ELIGIBLE: 'REVIEW_NOT_ELIGIBLE',
+  /** This customer (or this purchase line) has already been reviewed. */
+  REVIEW_ALREADY_SUBMITTED: 'REVIEW_ALREADY_SUBMITTED',
+  /** A coupon that does not exist, is inactive, is out of window, or its limits are exhausted. */
+  COUPON_INVALID: 'COUPON_INVALID',
 });
 
 /** Default and maximum page sizes for list endpoints. */
@@ -254,6 +260,16 @@ export const ADMIN_ADJUSTMENT_TYPES = Object.freeze([
 ]);
 
 /**
+ * How a coupon's value is interpreted, matching `coupons_type_allowed`
+ * (migration 023). PERCENT is a whole-number percentage (1-100); FIXED is an
+ * amount in ETB minor units.
+ */
+export const COUPON_TYPE = Object.freeze({
+  PERCENT: 'PERCENT',
+  FIXED: 'FIXED',
+});
+
+/**
  * The movements an order status may make.
  *
  * Fulfilment is a one-way street with one escape hatch: an order advances
@@ -291,6 +307,10 @@ export const AUDIT_ACTION = Object.freeze({
   ORDER_STATUS_CHANGED: 'ORDER_STATUS_CHANGED',
   CUSTOMER_STATUS_CHANGED: 'CUSTOMER_STATUS_CHANGED',
   REVIEW_MODERATED: 'REVIEW_MODERATED',
+  COUPON_CREATED: 'COUPON_CREATED',
+  COUPON_UPDATED: 'COUPON_UPDATED',
+  COUPON_DEACTIVATED: 'COUPON_DEACTIVATED',
+  COUPON_ACTIVATED: 'COUPON_ACTIVATED',
 });
 
 /** Entity kinds an audit row can point at. */
@@ -303,6 +323,7 @@ export const AUDIT_ENTITY = Object.freeze({
   ORDER: 'ORDER',
   CUSTOMER: 'CUSTOMER',
   REVIEW: 'REVIEW',
+  COUPON: 'COUPON',
 });
 
 /** Bounds on store-management writes that must not reach the database unchecked. */
@@ -313,4 +334,9 @@ export const ADMIN_LIMITS = Object.freeze({
   MAX_BULK_VARIANTS: 100,
   /** Largest single stock correction or restock, in units. */
   MAX_STOCK_DELTA: 1_000_000,
+  /** Coupon code and description lengths, matching the 023 columns. */
+  MAX_COUPON_CODE: 40,
+  MAX_COUPON_DESCRIPTION: 255,
+  /** Largest fixed discount or PERCENT cap, in ETB minor units. */
+  MAX_COUPON_VALUE_MINOR: 100_000_000,
 });

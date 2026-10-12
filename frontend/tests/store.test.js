@@ -141,6 +141,20 @@ test('a selector returning null is a real value, not "no value yet"', () => {
   assert.deepEqual(received, [null], 'immediate must not fall back to whole state');
 });
 
+test('an immediate selector-less subscriber receives the whole state', () => {
+  const store = createStore({ status: 'guest', user: null });
+  const received = [];
+
+  store.subscribe((state) => received.push(state), { immediate: true });
+
+  assert.equal(received.length, 1, 'immediate fires once');
+  assert.deepEqual(
+    received[0],
+    { status: 'guest', user: null },
+    'a listener with no selector gets the state, not undefined'
+  );
+});
+
 test('select() memoises on state identity', () => {
   const store = createStore({ a: 1, b: 2 });
   const read = store.select((state) => ({ sum: state.a + state.b }));

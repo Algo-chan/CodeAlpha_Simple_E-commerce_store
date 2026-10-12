@@ -32,8 +32,8 @@ export const PRODUCT_TYPES = Object.freeze(['PHYSICAL', 'DIGITAL']);
 export const CUSTOMER_STATUSES = Object.freeze(['ACTIVE', 'SUSPENDED', 'INACTIVE']);
 export const REVIEW_STATUSES = Object.freeze(['PENDING', 'APPROVED', 'REJECTED']);
 export const ADJUSTMENT_TYPES = Object.freeze(['RESTOCK', 'RETURN', 'DAMAGE', 'ADJUSTMENT']);
+export const COUPON_TYPES = Object.freeze(['PERCENT', 'FIXED']);
 
-/** The console's top-level sections, in sidebar order. */
 export const ADMIN_SECTIONS = Object.freeze([
   { id: 'dashboard', label: 'Dashboard', icon: 'home' },
   { id: 'products', label: 'Products', icon: 'package' },
@@ -43,6 +43,7 @@ export const ADMIN_SECTIONS = Object.freeze([
   { id: 'customers', label: 'Customers', icon: 'user' },
   { id: 'reviews', label: 'Reviews', icon: 'star' },
   { id: 'payments', label: 'Payments', icon: 'banknote' },
+  { id: 'coupons', label: 'Coupons', icon: 'percent' },
   { id: 'audit', label: 'Audit log', icon: 'shield' },
 ]);
 
@@ -101,6 +102,7 @@ const TONES = {
   PRODUCT: { DRAFT: 'warning', ACTIVE: 'success', ARCHIVED: 'neutral' },
   CUSTOMER: { ACTIVE: 'success', SUSPENDED: 'danger', INACTIVE: 'neutral' },
   REVIEW: { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger' },
+  COUPON: { true: 'success', false: 'neutral' },
   INVENTORY: {
     RESTOCK: 'success',
     RETURN: 'success',
@@ -114,7 +116,7 @@ const TONES = {
  * Maps a status to a badge tone for a given domain. An unknown pair is
  * `neutral` rather than a crash — a new enum value on the server must not blank
  * the table.
- * @param {'ORDER'|'PAYMENT'|'PRODUCT'|'CUSTOMER'|'REVIEW'|'INVENTORY'} domain
+ * @param {'ORDER'|'PAYMENT'|'PRODUCT'|'CUSTOMER'|'REVIEW'|'COUPON'|'INVENTORY'} domain
  * @param {string} value
  * @returns {'neutral'|'info'|'success'|'warning'|'danger'}
  */
@@ -220,6 +222,7 @@ export default {
   CUSTOMER_STATUSES,
   REVIEW_STATUSES,
   ADJUSTMENT_TYPES,
+  COUPON_TYPES,
   ADMIN_SECTIONS,
   orderTransitions,
   canTransition,

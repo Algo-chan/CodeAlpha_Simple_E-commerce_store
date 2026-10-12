@@ -12,10 +12,12 @@
  * order so the next visit starts from an empty basket rather than a new guest.
  */
 import { asyncHandler } from '../utils/async-handler.js';
-import { sendCreated } from '../utils/http-response.js';
+import { sendCreated, sendSuccess } from '../utils/http-response.js';
 import { readCookie } from '../utils/cookies.js';
 import { CART_COOKIE_NAME } from '../config/constants.js';
 import * as service from '../services/checkout.service.js';
+import * as cartService from '../services/cart.service.js';
+import * as couponService from '../services/coupon.service.js';
 
 /** Identity for checkout: the session user (trusted) or guest cart cookie. */
 function checkoutContext(req) {
@@ -34,4 +36,24 @@ export const create = asyncHandler(async (req, res) => {
   return sendCreated(res, { order: result.order }, 'Order placed successfully.');
 });
 
-export default { create };
+/**
+ * `POST /api/v1/checkout/coupon`
+ *
+ * Prices a code against the caller's current cart. The subtotal is read from the
+ * cart service (server-side, same identity rules as checkout) so the client can
+ * never tell the server what the cart is worth. Nothing is written.
+ */
+export const previewCoupon = asyncHandler(async (req, res) => {
+  const { cart } = await cartService.getCart(req.db, checkoutContext(req));
+  const result = await couponService.preview(req.db, {
+    code: req.body.code,
+    subtotalMinor: cart.subtotal,
+    userId: req.user?.id ?? null,
+  });
+
+  return sendSuccess(res, {
+    data: { coupon: { code: result.code, discount: result.discountMinor } },
+  });
+});
+
+export default { create, previewCoupon };

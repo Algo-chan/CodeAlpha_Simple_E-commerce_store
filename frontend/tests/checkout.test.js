@@ -18,9 +18,12 @@ import assert from 'node:assert/strict';
 
 import {
   buildCheckoutBody,
+  buildCouponPreviewBody,
+  normaliseCouponCode,
   previewDeliveryFee,
   checkoutTotal,
   describeCheckoutError,
+  describeCouponError,
   orderStatusLabel,
   orderStatusTone,
   paymentStatusLabel,
@@ -162,4 +165,51 @@ test('payment status helpers describe the COD lifecycle', () => {
   assert.equal(paymentStatusLabel('PAID'), 'Paid');
   assert.equal(paymentStatusLabel('REFUNDED'), 'Refunded');
   assert.equal(paymentStatusLabel('WAT'), 'Payment pending');
+});
+
+test('normaliseCouponCode upper-cases and strips spaces, matching storage', () => {
+  assert.equal(normaliseCouponCode(' save10 '), 'SAVE10');
+  assert.equal(normaliseCouponCode('saver ten'), 'SAVERTEN');
+  assert.equal(normaliseCouponCode(''), '');
+  assert.equal(normaliseCouponCode(null), '');
+});
+
+test('buildCouponPreviewBody sends a normalised code', () => {
+  assert.deepEqual(buildCouponPreviewBody(' save10 '), { code: 'SAVE10' });
+});
+
+test('buildCheckoutBody carries a normalised coupon_code when one is applied', () => {
+  const body = buildCheckoutBody({
+    city: 'Addis Ababa',
+    area: 'Bole',
+    street: 'Bole Road',
+    couponCode: ' saver ten ',
+  });
+  assert.equal(body.coupon_code, 'SAVERTEN');
+});
+
+test('buildCheckoutBody omits coupon_code when none is applied', () => {
+  const blank = buildCheckoutBody({ city: 'A', area: 'B', street: 'C', couponCode: '   ' });
+  assert.equal('coupon_code' in blank, false);
+
+  const missing = buildCheckoutBody({ city: 'A', area: 'B', street: 'C' });
+  assert.equal('coupon_code' in missing, false);
+});
+
+test('describeCouponError names the coupon rules and degrades safely', () => {
+  assert.match(
+    describeCouponError({ code: 'COUPON_INVALID', message: 'Add 20.00 ETB more.' }),
+    /Add 20\.00 ETB more\./
+  );
+  assert.match(describeCouponError({ code: 'COUPON_INVALID' }), /isn't valid/i);
+  assert.match(describeCouponError({ code: 'VALIDATION_ERROR' }), /valid coupon code/i);
+  assert.match(describeCouponError({ code: 'NETWORK_ERROR' }), /could not reach/i);
+  assert.match(describeCouponError(null), /could not check/i);
+});
+
+test('describeCheckoutError surfaces a coupon problem from the server', () => {
+  assert.match(
+    describeCheckoutError({ code: 'COUPON_INVALID', message: 'That coupon has expired.' }),
+    /That coupon has expired\./
+  );
 });

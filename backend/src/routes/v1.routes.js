@@ -9,6 +9,7 @@ import wishlistRoutes from './wishlist.routes.js';
 import checkoutRoutes from './checkout.routes.js';
 import orderRoutes from './order.routes.js';
 import paymentRoutes from './payment.routes.js';
+import reviewRoutes from './review.routes.js';
 import adminRoutes from './admin.routes.js';
 import { RESOURCE_PLACEHOLDERS, createPlaceholderRouter } from './placeholder.routes.js';
 
@@ -53,6 +54,13 @@ router.use('/orders', orderRoutes);
 router.use('/payments', paymentRoutes);
 
 /*
+ * Implemented: the customer-facing review write side. Reading a product's
+ * reviews lives on `/products/:slug/reviews`; this surface lets a signed-in
+ * customer who has received an order write the review that appears there.
+ */
+router.use('/reviews', reviewRoutes);
+
+/*
  * Implemented: the store-management surface. The whole `/admin` tree sits
  * behind authenticate + authorize(ADMIN), so a customer who calls an admin
  * endpoint directly is refused at the router. `/admin` is listed in the
@@ -62,9 +70,9 @@ router.use('/payments', paymentRoutes);
 router.use('/admin', adminRoutes);
 
 /*
- * Not implemented. Reviews (the customer-facing write side) and users are later
- * phases; answering 501 says "this URL does not exist yet", which is true,
- * rather than 404, which would suggest it never will.
+ * Not implemented. `users` is a later phase; answering 501 says "this URL does
+ * not exist yet", which is true, rather than 404, which would suggest it never
+ * will.
  */
 const implemented = new Set([
   '/products',
@@ -76,6 +84,7 @@ const implemented = new Set([
   '/checkout',
   '/orders',
   '/payments',
+  '/reviews',
   '/admin',
 ]);
 

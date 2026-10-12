@@ -324,6 +324,36 @@ populate with fees, ETA windows (`etaMinDays`/`etaMaxDays`) and an `available`
 flag, and a default 2–5 day window. Every order view carries the derived estimate
 as `delivery: { zone, available, fee, estimatedDelivery, estimatedDeliveryDays }`.
 
+## Reviews (implemented)
+
+Reading a product's published reviews is public (see the catalogue surface
+above). Writing one needs an account, because a review must be anchored to a
+purchase that can be proved.
+
+| Method | Path                          | Auth    | Purpose                                  |
+| ------ | ----------------------------- | ------- | ---------------------------------------- |
+| GET    | `/api/v1/reviews/reviewable`  | session | The caller's delivered, un-reviewed lines |
+| POST   | `/api/v1/reviews`             | session | Submit a review for one purchased line    |
+
+A review is EARNED, not asserted. The submit body is `{ order_item_id, rating,
+title?, comment? }`; `rating` is a whole number 1–5, and at least one of `title`
+or `comment` must be non-blank. There is no `product_id` field — the product is
+derived from the purchased line, so a review can never be aimed at something the
+customer did not buy.
+
+Eligibility is the predicate from migration 017: the line belongs to the
+signed-in reviewer (`orders.user_id`), the order is `DELIVERED`, and the line has
+not already been reviewed. A guest order has `user_id NULL` and can never
+qualify. Anything else is 422 `REVIEW_NOT_ELIGIBLE`. Duplicates are refused with
+409 `REVIEW_ALREADY_SUBMITTED` — once per purchase line and once per product per
+customer, mirroring the two unique constraints.
+
+A new review is ALWAYS created `PENDING` moderation, so it does not appear on the
+public product read or count towards the average until an administrator approves
+it through `/admin/reviews/:id/status`. `reviewable` returns
+`{ items: [{ orderItemId, product: { id, name, slug }, variantLabel, orderNumber,
+purchasedAt }] }`, newest purchase first.
+
 ## Admin endpoints (implemented)
 
 The store-management surface. The whole tree sits behind one gate — mounted on
@@ -412,31 +442,20 @@ Every method on them answers:
   "success": false,
   "error": {
     "code": "NOT_IMPLEMENTED",
-    "message": "Cart API is not implemented yet."
+    "message": "Users API is not implemented yet."
   }
 }
 ```
 
 | Path               | Planned responsibility                                     |
 | ------------------ | ---------------------------------------------------------- |
-| `/api/v1/cart`     | Add/update/remove items, totals                            |
-| `/api/v1/wishlist` | Add/remove/list saved products                             |
-| `/api/v1/reviews`  | Create, moderate, aggregate ratings                        |
 | `/api/v1/users`    | User administration (profile/addresses live under `/auth`) |
-| `/api/v1/admin`    | Dashboard, products, inventory, coupons, analytics         |
-
-Note that reading a product's reviews is implemented above; _writing_ one is not,
-because it needs an account.
 
 Planned route shapes (for reference, not implemented):
 
 ```
-GET    /api/v1/cart
-POST   /api/v1/cart/items
-PATCH  /api/v1/cart/items/:id
-DELETE /api/v1/cart/items/:id
-POST   /api/v1/reviews
-GET    /api/v1/admin/analytics/overview
+GET  /api/v1/users
+POST /api/v1/users/:id/suspend
 ```
 
 Each will follow the same layering: route → validation → controller → service →

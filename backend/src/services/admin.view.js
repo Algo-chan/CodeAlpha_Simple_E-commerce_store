@@ -233,6 +233,7 @@ export function toAdminOrderListItem(row) {
     subtotal: Number(row.subtotal),
     deliveryFee: Number(row.delivery_fee),
     discountTotal: Number(row.discount_total),
+    couponCode: row.coupon_code ?? null,
     total: Number(row.total),
     customer: {
       id: row.user_id ?? null,
@@ -372,6 +373,33 @@ export function toAdminPayment(row) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Coupons                                                                     */
+/* -------------------------------------------------------------------------- */
+
+export function toAdminCoupon(row) {
+  const maxUses = num(row.max_uses);
+  const usedCount = Number(row.used_count ?? 0);
+  return {
+    id: row.id,
+    code: row.code,
+    description: row.description ?? null,
+    discountType: row.discount_type,
+    discountValue: Number(row.discount_value),
+    minSubtotal: Number(row.min_subtotal ?? 0),
+    maxDiscount: num(row.max_discount),
+    validFrom: iso(row.valid_from),
+    validUntil: iso(row.valid_until),
+    maxUses,
+    usedCount,
+    remainingUses: maxUses === null ? null : Math.max(0, maxUses - usedCount),
+    perUserLimit: num(row.per_user_limit),
+    isActive: row.is_active === true,
+    createdAt: iso(row.created_at),
+    updatedAt: iso(row.updated_at),
+  };
+}
+
+/* -------------------------------------------------------------------------- */
 /* Dashboard and audit                                                         */
 /* -------------------------------------------------------------------------- */
 
@@ -455,6 +483,7 @@ export default {
   toAdminCustomerDetail,
   toAdminReview,
   toAdminPayment,
+  toAdminCoupon,
   toAdminDashboard,
   toAuditLog,
 };

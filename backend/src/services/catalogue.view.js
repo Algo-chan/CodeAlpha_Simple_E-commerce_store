@@ -483,6 +483,27 @@ export function toReview(row) {
   };
 }
 
+/**
+ * A deliverable the customer has bought but not yet reviewed.
+ *
+ * Carries the `order_item_id` the submit endpoint expects, plus just enough
+ * product context for the storefront to label the action. The variant label is
+ * derived from the purchased line's snapshot, so it matches what the customer
+ * actually bought.
+ *
+ * @param {object} row
+ * @returns {object}
+ */
+export function toReviewableItem(row) {
+  return {
+    orderItemId: String(row.id),
+    product: { id: String(row.product_id), name: row.product_name, slug: row.product_slug },
+    variantLabel: buildVariantLabel(row.variant_attributes),
+    orderNumber: row.order_number,
+    purchasedAt: toIso(row.created_at),
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Variants                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -838,4 +859,5 @@ export default {
   PURCHASABILITY,
   LISTABLE_STATUS,
   LOW_STOCK_THRESHOLD,
+  toReviewableItem,
 };

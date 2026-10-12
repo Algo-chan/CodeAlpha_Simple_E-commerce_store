@@ -44,6 +44,7 @@ const IMPLEMENTED = new Set([
   'checkout',
   'orders',
   'payments',
+  'reviews',
   'admin',
 ]);
 
@@ -120,7 +121,7 @@ test('GET /api/v1/admin (bare) is not a placeholder 501 anymore', async () => {
 });
 
 test('unknown method on a known resource still reports NOT_IMPLEMENTED', async () => {
-  const response = await request(app).post('/api/v1/reviews').send({ productId: 'x' });
+  const response = await request(app).post('/api/v1/users').send({ email: 'x' });
 
   assert.equal(response.status, 501);
   assert.equal(response.body.error.code, 'NOT_IMPLEMENTED');

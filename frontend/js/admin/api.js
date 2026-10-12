@@ -145,6 +145,21 @@ export function createAdminApi(client = defaultClient) {
         logs: data.logs,
         pagination,
       })),
+
+    /* Coupons -------------------------------------------------------------- */
+    listCoupons: (query) =>
+      paginated(getPage, '/admin/coupons', query).then(({ data, pagination }) => ({
+        coupons: data.coupons,
+        pagination,
+      })),
+    getCoupon: (id) => client.get(`/admin/coupons/${id}`).then((data) => data.coupon),
+    createCoupon: (body) => client.post('/admin/coupons', body).then((data) => data.coupon),
+    updateCoupon: (id, body) =>
+      client.patch(`/admin/coupons/${id}`, body).then((data) => data.coupon),
+    activateCoupon: (id) =>
+      client.post(`/admin/coupons/${id}/activate`).then((data) => data.coupon),
+    deactivateCoupon: (id) =>
+      client.post(`/admin/coupons/${id}/deactivate`).then((data) => data.coupon),
   };
 }
 

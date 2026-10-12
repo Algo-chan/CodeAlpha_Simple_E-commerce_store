@@ -28,6 +28,13 @@ import {
   orderAddressBlock,
   orderPaymentBlock,
 } from '../components/order/order-view.js';
+import {
+  REVIEW_RATING_VALUES,
+  buildReviewBody,
+  isReviewSubmittable,
+  groupReviewableByOrder,
+  describeReviewError,
+} from '../utils/review.js';
 
 const PAGE_SIZE = 20;
 
@@ -86,6 +93,18 @@ export default async function ordersPage({ host, auth, client = api }) {
   /** Order numbers currently expanded. */
   const expanded = new Set();
 
+  /**
+   * Purchases this shopper may still review, grouped by the order they came
+   * from. Populated from `/reviews/reviewable`, which the server scopes to the
+   * session; if that call fails the orders list still renders without the
+   * "write a review" action rather than dragging the whole page down.
+   */
+  let reviewableByOrder = new Map();
+  /** Draft form state per order item, keyed by orderItemId, preserved across redraws. */
+  const reviewDrafts = new Map();
+  /** Items accepted this session, grouped by order number, so a thanks note lingers. */
+  const submittedByOrder = new Map();
+
   async function load({ more = false } = {}) {
     if (loading) return;
     loading = true;
@@ -108,6 +127,37 @@ export default async function ordersPage({ host, auth, client = api }) {
       loaded = true;
       draw();
     }
+  }
+
+  /**
+   * Fetches what this shopper may still review and groups it by order.
+   *
+   * Failures are swallowed on purpose: reviews are a bonus on top of the order
+   * history, and a shopper whose browser blocks the request should still see
+   * their purchases.
+   */
+  async function loadReviewable() {
+    try {
+      const data = await client.get('/reviews/reviewable');
+      reviewableByOrder = groupReviewableByOrder(data?.items ?? []);
+    } catch {
+      reviewableByOrder = new Map();
+    }
+  }
+
+  /** Removes a reviewed item from the offer and refiles it under its order. */
+  function markSubmitted(item, productName) {
+    const orderKey = item.orderNumber ?? '';
+    const list = submittedByOrder.get(orderKey) ?? [];
+    list.push(productName);
+    submittedByOrder.set(orderKey, list);
+
+    const remaining = [];
+    for (const [orderKey_, items] of reviewableByOrder) {
+      const kept = items.filter((candidate) => candidate.orderItemId !== item.orderItemId);
+      if (kept.length > 0) remaining.push([orderKey_, kept]);
+    }
+    reviewableByOrder = new Map(remaining);
   }
 
   async function loadDetails(orderNumber) {
@@ -133,6 +183,147 @@ export default async function ordersPage({ host, auth, client = api }) {
       return;
     }
     draw();
+  }
+
+  /**
+   * The "write a review" controls for one purchased line.
+   *
+   * The draft lives in `reviewDrafts`, not in the DOM, so toggling an unrelated
+   * order's details or loading another page does not silently discard what the
+   * shopper typed. The submit button is disabled until the draft would pass the
+   * server's own rules (`isReviewSubmittable`), so an ineligible submission is
+   * caught here instead of round-tripping to a 422.
+   */
+  function reviewForm(item) {
+    const draft = reviewDrafts.get(item.orderItemId) ?? {
+      rating: 0,
+      title: '',
+      comment: '',
+      error: null,
+    };
+    reviewDrafts.set(item.orderItemId, draft);
+
+    const errorNode = el('p.form-alert.form-alert--error', {
+      role: 'alert',
+      hidden: !draft.error,
+      text: draft.error ?? '',
+    });
+
+    const starChoices = REVIEW_RATING_VALUES.map((value) =>
+      el('label.review-stars__choice', {}, [
+        el('input.review-stars__input', {
+          type: 'radio',
+          name: `review-rating-${item.orderItemId}`,
+          value,
+          checked: draft.rating === value,
+          onChange: () => {
+            draft.rating = value;
+            if (draft.error) {
+              draft.error = null;
+              errorNode.hidden = true;
+            }
+            refreshSubmit();
+          },
+        }),
+        el('span.review-stars__label', { text: String(value) }),
+      ])
+    );
+
+    const titleInput = el('input.review-form__input', {
+      type: 'text',
+      maxlength: 120,
+      placeholder: 'Headline (optional)',
+      value: draft.title,
+      onInput: (event) => {
+        draft.title = event.target.value;
+        refreshSubmit();
+      },
+    });
+
+    const commentInput = el(
+      'textarea.review-form__textarea',
+      {
+        rows: 3,
+        maxlength: 2000,
+        placeholder: 'What did you think? (optional)',
+        onInput: (event) => {
+          draft.comment = event.target.value;
+          refreshSubmit();
+        },
+      },
+      [draft.comment]
+    );
+
+    const submit = button({ label: 'Submit review', variant: 'primary', size: 'sm' });
+
+    function refreshSubmit() {
+      submit.element.disabled = !isReviewSubmittable(draft).ok;
+    }
+    refreshSubmit();
+
+    submit.element.addEventListener('click', () =>
+      submit.run(async () => {
+        draft.error = null;
+        try {
+          await client.post(
+            '/reviews',
+            buildReviewBody({
+              orderItemId: item.orderItemId,
+              rating: draft.rating,
+              title: draft.title,
+              comment: draft.comment,
+            })
+          );
+          reviewDrafts.delete(item.orderItemId);
+          markSubmitted(item, item.product?.name ?? 'this item');
+          draw();
+        } catch (requestError) {
+          draft.error = describeReviewError(requestError);
+          errorNode.textContent = draft.error;
+          errorNode.hidden = false;
+        }
+      })
+    );
+
+    const label = item.variantLabel
+      ? `${item.product?.name ?? 'Item'} — ${item.variantLabel}`
+      : (item.product?.name ?? 'Item');
+
+    return el('div.review-form', {}, [
+      el('p.review-form__product', { text: label }),
+      el('fieldset.review-stars', {}, [
+        el('legend.review-stars__legend', { text: 'Your rating' }),
+        ...starChoices,
+      ]),
+      titleInput,
+      commentInput,
+      errorNode,
+      el('div.review-form__footer', {}, [submit.element]),
+    ]);
+  }
+
+  /**
+   * The review block on an order card: any thanks notes, then a form for each
+   * delivered line that has not been reviewed. Returns null when there is
+   * nothing to say, so an order with no reviewable items stays unchanged.
+   */
+  function reviewSection(order) {
+    const items = reviewableByOrder.get(order.orderNumber) ?? [];
+    const thanks = submittedByOrder.get(order.orderNumber) ?? [];
+    if (items.length === 0 && thanks.length === 0) return null;
+
+    return el('section.order-reviews', {}, [
+      el('p.order-reviews__title', {
+        text: items.length > 0 ? 'Rate your purchase' : 'Thanks for reviewing',
+      }),
+      ...thanks.map((name) =>
+        el('p.form-alert.form-alert--success', {
+          role: 'status',
+          text: `Thanks — your review of ${name} is awaiting moderation.`,
+        })
+      ),
+      ...items.map((item) => reviewForm(item)),
+    ]);
   }
 
   function draw() {
@@ -223,6 +414,8 @@ export default async function ordersPage({ host, auth, client = api }) {
       orderItemsList(order.items),
       orderTotals(order),
 
+      reviewSection(order),
+
       el('div.order-card__actions', {}, [
         button({
           label: isOpen ? 'Hide details' : 'View details',
@@ -239,6 +432,7 @@ export default async function ordersPage({ host, auth, client = api }) {
     ]);
   }
 
+  await loadReviewable();
   await load();
 
   return { destroy: () => {} };

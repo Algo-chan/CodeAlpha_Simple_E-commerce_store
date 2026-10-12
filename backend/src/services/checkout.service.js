@@ -44,6 +44,7 @@ import { calculateDeliveryFee } from './delivery.service.js';
 import { normaliseAttributes } from './catalogue.view.js';
 import { toOrderView } from './order.view.js';
 import { getActiveOnlineProvider } from '../payments/index.js';
+import * as couponService from './coupon.service.js';
 
 /* -------------------------------------------------------------------------- */
 /* Errors                                                                      */
@@ -229,7 +230,17 @@ export async function checkout(db, context, input, { user = null } = {}) {
       city: input.city,
       area: input.area,
     });
-    const discountTotal = 0;
+
+    // A coupon is optional. When present it is locked and validated against the
+    // authoritative subtotal here, and one use is spent in this same
+    // transaction, so the order, the discount and the usage count commit or
+    // roll back together.
+    const couponCode = clean(input.coupon_code);
+    const coupon = couponCode
+      ? await couponService.redeem(tx, { code: couponCode, subtotalMinor: subtotal, userId: context.userId })
+      : null;
+    const discountTotal = coupon?.discountMinor ?? 0;
+
     const total = subtotal + delivery.feeMinor - discountTotal;
 
     /* 8. Allocate a unique, human-readable order number. */
@@ -244,6 +255,8 @@ export async function checkout(db, context, input, { user = null } = {}) {
       subtotal,
       deliveryFee: delivery.feeMinor,
       discountTotal,
+      couponId: coupon?.couponId ?? null,
+      couponCode: coupon?.couponCode ?? null,
       total,
       currency: 'ETB',
       paymentStatus: PAYMENT_STATUS.PENDING,

@@ -78,6 +78,7 @@ export function toOrderView({ order, items = [], payment = null }) {
     subtotal: Number(order.subtotal),
     deliveryFee: Number(order.delivery_fee),
     discountTotal: Number(order.discount_total),
+    couponCode: order.coupon_code ?? null,
     total: Number(order.total),
     itemCount: items.reduce((sum, row) => sum + Number(row.quantity), 0),
     items: items.map(toItemView),

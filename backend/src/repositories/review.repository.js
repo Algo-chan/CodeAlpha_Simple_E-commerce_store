@@ -1,5 +1,5 @@
 /**
- * Review repository — approved reviews for the product detail page.
+ * Review repository — reading and writing product reviews.
  *
  * VERIFIED PURCHASE IS DERIVED, NEVER STORED
  *
@@ -8,10 +8,11 @@
  * real purchased line, so "verified" means "this review points at a line that
  * belongs to the reviewer, for this product, on a delivered order".
  *
- * A client cannot influence any of that. It cannot post a review at all yet
- * (review creation belongs to the account phase), and if it could, the predicate
- * below would still be the only thing that decides the badge — a client-supplied
- * `verified: true` would have nowhere to go.
+ * A client cannot influence any of that. Neither the write nor the read path
+ * accepts a `verified` flag: `createReview` accepts an `order_item_id` and the
+ * server derives the product and proves the purchase (see
+ * `findEligibleOrderItem`), so the same predicate that brands a review as
+ * verified is the predicate that must be true before the review exists at all.
  *
  * PRIVACY
  *
@@ -19,6 +20,11 @@
  * read here, so no amount of serialisation can leak them.
  */
 import { query as poolQuery } from '../config/db.js';
+
+/** The executor to use: a request/tx-scoped one when given, else the pool. */
+function executor(db) {
+  return db?.query ?? poolQuery;
+}
 
 /**
  * Loads approved reviews for a product, newest first.
@@ -110,4 +116,145 @@ export async function getRatingSummary(productId, db = {}) {
   };
 }
 
-export default { listProductReviews, getRatingSummary };
+/* -------------------------------------------------------------------------- */
+/* Writing — the customer submits, the server proves the purchase.              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The order item a review may be attached to, or null.
+ *
+ * The canonical eligibility predicate from migration 017: the line belongs to
+ * the signed-in reviewer (`orders.user_id`), it sits in a DELIVERED order, and
+ * it really is a purchased line `order_items`. A guest order has `user_id`
+ * NULL, so it can never qualify.
+ *
+ * The product is DERIVED here, never accepted from the client: the review is
+ * anchored to the order item, and the product is whatever that line says. That
+ * is what makes "verified purchase" a fact with nowhere to lie.
+ *
+ * @param {object} db transaction executor
+ * @param {string} orderItemId the purchase line being reviewed
+ * @param {string} userId the signed-in reviewer
+ * @returns {Promise<object|null>}
+ */
+export async function findEligibleOrderItem(db, orderItemId, userId) {
+  const result = await executor(db)(
+    `SELECT
+       oi.id,
+       oi.product_id,
+       oi.variant_id,
+       oi.variant_attributes,
+       o.id AS order_id,
+       o.order_number,
+       o.created_at,
+       p.name AS product_name,
+       p.slug AS product_slug
+     FROM order_items oi
+     JOIN orders o ON o.id = oi.order_id
+     JOIN products p ON p.id = oi.product_id
+     WHERE oi.id = $1
+       AND o.user_id = $2
+       AND o.status = 'DELIVERED'`,
+    [orderItemId, userId]
+  );
+  return result.rows[0] ?? null;
+}
+
+/** A review already anchored to this exact purchase line, if any. */
+export async function findReviewByOrderItem(db, orderItemId) {
+  const result = await executor(db)(`SELECT id FROM reviews WHERE order_item_id = $1`, [
+    orderItemId,
+  ]);
+  return result.rows[0] ?? null;
+}
+
+/** A review already written by this customer for this product, if any. */
+export async function findReviewByUserAndProduct(db, userId, productId) {
+  const result = await executor(db)(
+    `SELECT id, status FROM reviews WHERE user_id = $1 AND product_id = $2`,
+    [userId, productId]
+  );
+  return result.rows[0] ?? null;
+}
+
+/**
+ * Inserts a customer review, always PENDING moderation.
+ *
+ * The constraints in migration 017 (one per order item, one per user per
+ * product, rating 1–5, some text) are the last line of defence; the service
+ * checks each one first so a shopper gets a clear message rather than a
+ * translated database error.
+ *
+ * @param {object} db transaction executor
+ * @param {{ userId: string, productId: string, orderItemId: string,
+ *           rating: number, title?: string|null, comment?: string|null }} input
+ * @returns {Promise<object>} the inserted row
+ */
+export async function insertReview(db, input) {
+  const result = await executor(db)(
+    `INSERT INTO reviews (user_id, product_id, order_item_id, rating, title, comment, status)
+     VALUES ($1, $2, $3, $4, $5, $6, 'PENDING')
+     RETURNING id, user_id, product_id, order_item_id, rating, title, comment, status,
+               created_at, updated_at`,
+    [
+      input.userId,
+      input.productId,
+      input.orderItemId,
+      input.rating,
+      input.title ?? null,
+      input.comment ?? null,
+    ]
+  );
+  return result.rows[0] ?? null;
+}
+
+/**
+ * The customer's own reviewable purchases: delivered order items for a product
+ * they have not already reviewed, and that have not been reviewed before.
+ *
+ * Both duplicate guards matter. `UNIQUE (order_item_id)` means a given purchase
+ * line can be reviewed once; `UNIQUE (user_id, product_id)` means a product
+ * bought again in a later order is not reviewable a second time. An item that
+ * fails either check is excluded here so the storefront never offers a "Write a
+ * review" action the server would refuse.
+ *
+ * @param {object} db
+ * @param {string} userId
+ * @returns {Promise<object[]>}
+ */
+export async function listReviewableItems(db, userId) {
+  const result = await executor(db)(
+    `SELECT
+       oi.id,
+       oi.product_id,
+       oi.variant_id,
+       oi.variant_attributes,
+       o.order_number,
+       o.created_at,
+       p.name AS product_name,
+       p.slug AS product_slug
+     FROM order_items oi
+     JOIN orders o ON o.id = oi.order_id
+     JOIN products p ON p.id = oi.product_id
+     LEFT JOIN reviews existing_by_item ON existing_by_item.order_item_id = oi.id
+     LEFT JOIN reviews existing_by_user
+       ON existing_by_user.user_id = $1 AND existing_by_user.product_id = oi.product_id
+     WHERE o.user_id = $1
+       AND o.status = 'DELIVERED'
+       AND existing_by_item.id IS NULL
+       AND existing_by_user.id IS NULL
+     ORDER BY o.created_at DESC, oi.id`,
+    [userId]
+  );
+  return result.rows;
+}
+
+export default {
+  listProductReviews,
+  getRatingSummary,
+  findEligibleOrderItem,
+  findReviewByOrderItem,
+  findReviewByUserAndProduct,
+  insertReview,
+  listReviewableItems,
+};

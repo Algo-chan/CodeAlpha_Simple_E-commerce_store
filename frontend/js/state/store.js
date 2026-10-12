@@ -138,7 +138,11 @@ export function createStore(initialState, options = {}) {
     };
     subscribers.add(entry);
 
-    if (immediate) listener(entry.last, entry.last);
+    // A selector subscriber is handed the selection (which may legitimately be
+    // `undefined`); a selector-less subscriber is handed the whole state, the
+    // same value `notify` passes. Passing `entry.last` here would hand a
+    // selector-less listener `undefined` on its immediate call.
+    if (immediate) listener(selector ? entry.last : state, selector ? entry.last : state);
 
     return () => subscribers.delete(entry);
   }

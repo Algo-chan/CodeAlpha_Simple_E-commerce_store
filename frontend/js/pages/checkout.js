@@ -29,8 +29,11 @@ import { formatCount, formatMoney, freeDeliveryNotice } from '../utils/format.js
 import { icon } from '../utils/icons.js';
 import {
   buildCheckoutBody,
+  buildCouponPreviewBody,
   checkoutTotal,
   describeCheckoutError,
+  describeCouponError,
+  normaliseCouponCode,
   previewDeliveryFee,
   PAYMENT_METHOD_COD,
 } from '../utils/checkout.js';
@@ -65,6 +68,15 @@ export default async function checkoutPage({ host, cart, auth, client = api, ui 
       unsubscribe = null;
     }
   }
+
+  // Coupon state lives for the life of the page. `appliedCoupon` is the one the
+  // summary prices against and the order will carry; `couponNotice` is the
+  // feedback under the field; `couponDraft` preserves what was typed across the
+  // summary redraws that a cart change or a failed apply triggers.
+  let appliedCoupon = null;
+  let couponNotice = null;
+  let couponDraft = '';
+  let summaryEl = null;
 
   render();
 
@@ -137,14 +149,23 @@ export default async function checkoutPage({ host, cart, auth, client = api, ui 
     const form = buildForm({ disabled: unfulfillable > 0 });
     formColumn.append(form.element);
 
+    summaryEl = summaryColumn;
     drawSummary(summaryColumn, lines);
 
     // A cart change (another tab, a background hydration) refreshes the totals
-    // and the submit state without touching the typed form.
+    // and the submit state without touching the typed form. A coupon already
+    // applied is re-priced against the new basket, so the summary can never show
+    // a discount the cart no longer earns.
     unsubscribe = cart.subscribe(() => {
       const nextLines = cart.selectLines();
       if (nextLines.length === 0) {
         renderEmpty();
+        return;
+      }
+      if (appliedCoupon) {
+        void refreshCoupon().then(() => {
+          if (summaryEl) drawSummary(summaryEl, cart.selectLines());
+        });
         return;
       }
       drawSummary(summaryColumn, nextLines);
@@ -161,14 +182,42 @@ export default async function checkoutPage({ host, cart, auth, client = api, ui 
     );
   }
 
-  /** The order-summary rail: lines, sub-total, delivery preview and total. */
+  /** The order-summary rail: lines, coupon, sub-total, delivery preview and total. */
   function drawSummary(container, lines) {
     clear(container);
 
     const buyable = lines.filter((line) => !line.unavailableReason);
     const subtotal = cart.selectSubtotal();
     const delivery = previewDeliveryFee(subtotal);
-    const total = checkoutTotal(subtotal, delivery.feeMinor);
+    const discountMinor = appliedCoupon?.discountMinor ?? 0;
+    const total = checkoutTotal(subtotal, delivery.feeMinor, discountMinor);
+
+    const totals = [
+      el('div.cart__row', {}, [
+        el('dt', { text: 'Subtotal' }),
+        el('dd', { text: formatMoney(subtotal) }),
+      ]),
+      el('div.cart__row', {}, [
+        el('dt', { text: 'Delivery' }),
+        el('dd', { text: delivery.isFree ? 'Free' : formatMoney(delivery.feeMinor) }),
+      ]),
+    ];
+
+    if (appliedCoupon) {
+      totals.push(
+        el('div.cart__row.cart__row--discount', {}, [
+          el('dt', { text: `Discount (${appliedCoupon.code})` }),
+          el('dd', { text: `- ${formatMoney(discountMinor)}` }),
+        ])
+      );
+    }
+
+    totals.push(
+      el('div.cart__row.cart__row--total', {}, [
+        el('dt', { text: 'Total' }),
+        el('dd', { text: formatMoney(total) }),
+      ])
+    );
 
     container.append(
       el('h2.text-lg', { text: 'Order summary' }),
@@ -190,26 +239,126 @@ export default async function checkoutPage({ host, cart, auth, client = api, ui 
           ])
         )
       ),
-      el('dl', {}, [
-        el('div.cart__row', {}, [
-          el('dt', { text: 'Subtotal' }),
-          el('dd', { text: formatMoney(subtotal) }),
-        ]),
-        el('div.cart__row', {}, [
-          el('dt', { text: 'Delivery' }),
-          el('dd', { text: delivery.isFree ? 'Free' : formatMoney(delivery.feeMinor) }),
-        ]),
-        el('div.cart__row.cart__row--total', {}, [
-          el('dt', { text: 'Total' }),
-          el('dd', { text: formatMoney(total) }),
-        ]),
-      ]),
+      couponBlock(),
+      el('dl', {}, totals),
       el('p.cart__note', {
         text: delivery.isFree
           ? 'Delivery is free on this order.'
           : freeDeliveryNotice({ long: true }),
       })
     );
+  }
+
+  /** Redraws the summary in place after a coupon change. */
+  function redrawSummary() {
+    if (summaryEl) drawSummary(summaryEl, cart.selectLines());
+  }
+
+  /**
+   * The coupon field: an input + Apply button, or the applied code + a Remove
+   * button. Kept in the summary rail so the shopper sees the effect on the total
+   * the moment a code lands.
+   */
+  function couponBlock() {
+    const notice = couponNotice
+      ? el('p.checkout-coupon__notice', {
+          text: couponNotice.text,
+          className: couponNotice.tone === 'error' ? 'checkout-coupon__notice--error' : null,
+          role: 'status',
+        })
+      : null;
+
+    if (appliedCoupon) {
+      return el('div.checkout-coupon.checkout-coupon--applied', {}, [
+        el('p.checkout-coupon__label', { text: 'Coupon applied' }),
+        el('div.checkout-coupon__row', {}, [
+          el('span.checkout-coupon__code', { text: appliedCoupon.code }),
+          button({
+            label: 'Remove',
+            variant: 'ghost',
+            size: 'sm',
+            onClick: removeCoupon,
+          }).element,
+        ]),
+        notice,
+      ]);
+    }
+
+    const input = el('input.input.checkout-coupon__input', {
+      id: 'checkout-coupon-code',
+      name: 'coupon_code',
+      type: 'text',
+      placeholder: 'e.g. SAVE10',
+      autocomplete: 'off',
+      value: couponDraft,
+      'aria-label': 'Coupon code',
+    });
+    input.addEventListener('input', () => {
+      couponDraft = input.value;
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        void applyCoupon();
+      }
+    });
+
+    const apply = button({ label: 'Apply', variant: 'secondary', size: 'sm', type: 'button' });
+    apply.element.addEventListener('click', () => apply.run(() => applyCoupon()));
+
+    return el('div.checkout-coupon', {}, [
+      el('label.checkout-coupon__label', { for: 'checkout-coupon-code', text: 'Coupon code' }),
+      el('div.checkout-coupon__row', {}, [input, apply.element]),
+      notice,
+    ]);
+  }
+
+  /** Prices the typed code against the cart and records the result. */
+  async function applyCoupon() {
+    const code = normaliseCouponCode(couponDraft);
+    if (!code) {
+      couponNotice = { tone: 'error', text: 'Enter a coupon code.' };
+      redrawSummary();
+      return;
+    }
+
+    try {
+      const data = await client.post('/checkout/coupon', buildCouponPreviewBody(code));
+      appliedCoupon = {
+        code: data?.coupon?.code ?? code,
+        discountMinor: Number(data?.coupon?.discount ?? 0),
+      };
+      couponDraft = '';
+      couponNotice = { tone: 'success', text: `Coupon ${appliedCoupon.code} applied.` };
+    } catch (error) {
+      appliedCoupon = null;
+      couponNotice = { tone: 'error', text: describeCouponError(error) };
+    }
+    redrawSummary();
+  }
+
+  /** Forgets the applied coupon and clears its feedback. */
+  function removeCoupon() {
+    appliedCoupon = null;
+    couponNotice = null;
+    couponDraft = '';
+    redrawSummary();
+  }
+
+  /** Re-prices an already-applied coupon after the cart changed. */
+  async function refreshCoupon() {
+    if (!appliedCoupon) return;
+    try {
+      const data = await client.post('/checkout/coupon', buildCouponPreviewBody(appliedCoupon.code));
+      appliedCoupon = {
+        code: data?.coupon?.code ?? appliedCoupon.code,
+        discountMinor: Number(data?.coupon?.discount ?? 0),
+      };
+      couponNotice = null;
+    } catch (error) {
+      appliedCoupon = null;
+      couponNotice = { tone: 'error', text: describeCouponError(error) };
+    }
   }
 
   /**
@@ -377,6 +526,7 @@ export default async function checkoutPage({ host, cart, auth, client = api, ui 
           landmark: landmark.getValue(),
           additionalNotes: additionalNotes.getValue(),
           customerNotes: customerNotes.getValue(),
+          couponCode: appliedCoupon?.code ?? '',
           paymentMethod: PAYMENT_METHOD_COD,
         });
 
