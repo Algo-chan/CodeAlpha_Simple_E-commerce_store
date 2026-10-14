@@ -1,0 +1,104 @@
+# A basic CI pipeline. It does not deploy: a green run is a signal that the
+# commit is safe to release, and the hosting platform or a separate workflow
+# handles the actual deploy. See docs/deployment.md.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+# Cancel an in-progress run when a newer commit arrives on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Lint, format and the full test suite. No database server needed: the backend
+  # tests run against PGlite, an in-process PostgreSQL.
+  # ---------------------------------------------------------------------------
+  quality:
+    name: Lint, format and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Backend tests
+        run: npm run test:backend
+
+      - name: Frontend tests
+        run: npm run test:frontend
+
+  # ---------------------------------------------------------------------------
+  # Migrations, seeds and the real-PostgreSQL verification against a live
+  # PostgreSQL 16 service. This is the check PGlite cannot provide: real
+  # connections, real locking and the production environment validation.
+  # ---------------------------------------------------------------------------
+  database:
+    name: PostgreSQL migrations and verification
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ecommerce_store
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/ecommerce_store
+      DB_SSL: 'false'
+      PORT: '4000'
+      LOG_LEVEL: warn
+      FRONTEND_URL: https://shop.example.com
+      # Throwaway values that satisfy the production fail-fast checks. They are
+      # never used to sign anything: this job only runs migrations and reads.
+      JWT_SECRET: ci-only-jwt-secret-not-used-in-production-000000
+      JWT_REFRESH_SECRET: ci-only-jwt-refresh-secret-not-used-000000
+      PAYMENT_PROVIDER: MOCK
+      PAYMENT_WEBHOOK_SECRET: ci-only-webhook-secret-000000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Apply migrations
+        run: npm run migrate
+
+      - name: Load seeds (demo database only)
+        run: node backend/seeds/run.js --force
+
+      - name: Verify schema, constraints and concurrency
+        run: npm run verify:db

@@ -21,12 +21,36 @@
  * @property {string} [description] longer description for structured data
  */
 
+/**
+ * Default API location.
+ *
+ * In development the storefront runs on its own dev server (:5173) and the API
+ * on :4000, so an absolute localhost URL is correct. In production the backend
+ * serves the storefront itself, so the API is same-origin: deriving the URL from
+ * `window.location` means a deploy needs no rebuild or hardcoded host. A split
+ * deployment (static CDN + a separate API host) overrides `apiBaseUrl` through
+ * `window.__APP_CONFIG__` exactly as before.
+ *
+ * `window` is absent when this module is imported by the Node test runner, so
+ * the guarded fallback keeps the tests on the localhost default.
+ */
+function defaultApiBaseUrl() {
+  if (typeof window === 'undefined' || !window.location) return 'http://localhost:4000/api/v1';
+
+  const { protocol, hostname, origin } = window.location;
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '';
+  const isHttp = protocol === 'http:' || protocol === 'https:';
+
+  // Same-origin API for any non-local HTTP(S) origin (i.e. production).
+  return !isLocalhost && isHttp ? `${origin}/api/v1` : 'http://localhost:4000/api/v1';
+}
+
 /** @type {{ apiBaseUrl: string, requestTimeoutMs: number, mockLatencyMs: number,
  *           mockJitterMs: number, currency: string, locale: string,
  *           store: StoreBranding, freeShippingThreshold: number }} */
 const defaults = {
   // --- Backend ---------------------------------------------------------------
-  apiBaseUrl: 'http://localhost:4000/api/v1',
+  apiBaseUrl: defaultApiBaseUrl(),
   requestTimeoutMs: 10000,
 
   // --- Mock service ----------------------------------------------------------

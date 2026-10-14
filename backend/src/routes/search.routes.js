@@ -11,6 +11,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { validateRequest } from '../middleware/validate.js';
+import { searchLimiter } from '../middleware/security.js';
+import env from '../config/env.js';
 import * as controller from '../controllers/catalogue.controller.js';
 import { searchQuerySchema, MAX_QUERY_LENGTH } from '../validators/catalogue.schema.js';
 
@@ -24,6 +26,14 @@ router.use((req, res, next) => {
   res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
   next();
 });
+
+// Both search endpoints are cheap for a client to hammer and relatively costly
+// for the database to answer (type-ahead runs per keystroke), so they share one
+// per-IP limiter. The limit is generous enough that normal shopping never sees
+// it, and the limiter is skipped under test so the suite is not throttled.
+if (!env.isTest) {
+  router.use(searchLimiter);
+}
 
 /**
  * `GET /api/v1/search?q=...` — the full results page.

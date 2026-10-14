@@ -268,24 +268,36 @@ be aimed at something the customer did not buy. Every new review is created
       green: 341 backend, 248 frontend, lint clean
 - [x] Documentation: api.md reviews section
 
-## Phase 11 — Admin Dashboard
+## Phase 11 — Admin Dashboard (done)
 
-- [ ] Admin layout, navigation, RBAC
-- [ ] Product/inventory management
-- [ ] Orders management, status updates
-- [ ] Coupons, discounts
-- [ ] Basic analytics (sales, orders, products)
+- [x] Admin layout, navigation, RBAC
+- [x] Product/inventory management
+- [x] Orders management, status updates
+- [x] Coupons, discounts
+- [x] Basic analytics (sales, orders, products)
 
-## Phase 12 — Polish, QA & Deployment
+## Phase 12 — Polish, QA & Deployment (done)
 
-- [ ] Performance: real product photography, image optimisation
-- [ ] Accessibility audit with assistive technology
-- [ ] Cross-browser QA
-- [ ] API documentation expansion (OpenAPI/Swagger) if needed
-- [ ] Final brand identity: name, wordmark, palette
-- [ ] Security hardening, production `.env` checklist
-- [ ] Deployment strategy (Render/Railway/Fly/Heroku, Vercel/Cloudflare Pages)
-- [ ] CI (lint + test) if desired
+- [x] Production architecture documented ([deployment.md](./deployment.md))
+- [x] Environment template and production secret guidance (`.env.example`)
+- [x] Database deployment: migrations, indexes, constraints, real-PostgreSQL
+      verification (`npm run verify:db`)
+- [x] Backend production config: secure cookies, CORS, logging, graceful
+      shutdown, connection pool, `GET /health` readiness probe
+- [x] Frontend production API URL (same-origin default, `__APP_CONFIG__` override)
+- [x] Image storage as external URLs with strict `http(s)` validation
+- [x] Payment production checks (signatures, idempotency, replay, amount/currency)
+- [x] Monitoring, backups and rollback documented
+- [x] CI pipeline: lint, format, tests, and a real-PostgreSQL job
+- [x] End-to-end production smoke test (`backend/tests/smoke.production.test.js`)
+
+Outstanding (not required for a stable COD release):
+
+- [ ] A real payment-gateway adapter (the sandbox stands in) and refund execution
+- [ ] Retire the frontend mock fixtures once the storefront runs entirely on the API
+- [ ] Real product photography and brand identity
+- [ ] Accessibility audit with assistive technology; cross-browser QA
+- [ ] OpenAPI/Swagger documentation if the API grows an external consumer
 
 ### Notes
 

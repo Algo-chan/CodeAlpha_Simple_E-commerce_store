@@ -181,6 +181,15 @@ export async function updateCoupon(db, actor, id, input) {
     const merged = mergeUpdate(current, input);
     assertRules(merged);
 
+    // A lifetime cap cannot be lowered below what has already been redeemed;
+    // the database CHECK enforces the same rule, this gives the operator a
+    // readable reason instead of a generic validation failure.
+    if (merged.maxUses !== null && merged.maxUses < Number(current.used_count ?? 0)) {
+      throw unprocessable(
+        'maxUses cannot be lower than the number of times this coupon has already been used.'
+      );
+    }
+
     if (merged.code !== current.code && (await repo.findByCode(tx, merged.code))) {
       throw conflict('A coupon with that code already exists.');
     }

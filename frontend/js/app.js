@@ -19,6 +19,7 @@
  * a shopper landing on the collection page never downloads the product page.
  */
 import { el, qs, on } from './core/dom.js';
+import { loadDeferredFonts } from './core/fonts.js';
 import { config } from './config.js';
 import { api } from './core/api.js';
 import { mockApi } from './mock/api.js';
@@ -438,6 +439,11 @@ if (document.readyState === 'loading') {
 } else {
   start();
 }
+
+// The font stylesheets are linked with `media="print"` so they never block the
+// first paint; applying them is the CSP-safe job of this module. Done before the
+// shell builds so the display face is requested as early as possible.
+loadDeferredFonts();
 
 // `pagehide` rather than `unload`: `unload` is deprecated and blocks the back
 // cache, which would make every navigation a full reload.

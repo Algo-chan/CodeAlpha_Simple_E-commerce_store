@@ -1,29 +1,39 @@
 # Documentation
 
-| Document | Contents |
-| -------- | -------- |
+The project is a single-vendor e-commerce platform: a vanilla HTML/CSS/JS
+storefront, an Express/Node.js API and PostgreSQL. All phases (architecture →
+catalogue → cart → checkout → orders → payments → reviews → admin → hardening →
+production) are implemented.
 
-## Admin area (Phase 10)
+| Document                                                 | Purpose                                                       |
+| -------------------------------------------------------- | ------------------------------------------------------------- |
+| [architecture.md](./architecture.md)                     | Layers, request lifecycle, production architecture, decisions |
+| [setup.md](./setup.md)                                   | Local installation, PostgreSQL, commands, troubleshooting     |
+| [api.md](./api.md)                                       | Endpoints, response envelope, error codes                     |
+| [database-plan.md](./database-plan.md)                   | Entity model and schema intent                                |
+| [security.md](./security.md)                             | Auth/sessions, headers, CSP, rate limits, payment security    |
+| [performance.md](./performance.md)                       | Indexes, caching, pagination, frontend budget                 |
+| [testing.md](./testing.md)                               | Test layout, how to run, coverage map                         |
+| [deployment.md](./deployment.md)                         | Production architecture, env vars, database, backups, CI/CD   |
+| [production-checklist.md](./production-checklist.md)     | Final pre-launch checklist and the end-to-end smoke test      |
+| [roadmap.md](./roadmap.md)                               | Build phases                                                  |
+| [frontend-design-system.md](./frontend-design-system.md) | Design tokens and component contract                          |
 
-A dedicated admin console lives at /admin.html (served as /admin). The UI is a hash-routed app (frontend/js/admin/_) built on the same design tokens, with its own layout and a gating entry that only renders for authenticated users with role ADMIN. Server-side, all /api/v1/admin/_ routes share a single gate (authenticate, authorize(ROLES.ADMIN),
-equireSameOrigin) - hiding UI controls is not the boundary. The console covers products, variants, images (by URL), categories, inventory (with append-only ledger), orders (status graph only), customers (suspend/reactivate), reviews (moderation), payments, dashboard and audit logs. Money stays in minor units. See [api.md](./api.md#admin-endpoints-implemented) for the full list.
+## What is implemented
 
-Still to come: the frontend swap of catalogue and search to core/api.js, real gateway adapters (the sandbox stands in), refund execution. The catalogue still runs on fixtures in frontend/js/mock/, shaped so the real client can replace them without any component changing; auth, the account page, cart, wishlist, checkout and orders already talk to the real API.
+- Catalogue (products, categories, variants, images, search) on the real database.
+- Auth with server-side sessions, bcrypt passwords and RBAC.
+- Cart, wishlist, checkout, orders and COD payments; an online **sandbox** provider.
+- Reviews with moderation, coupons, inventory with an append-only ledger and audit logs.
+- Admin console (products, variants, inventory, orders, customers, reviews,
+  payments, coupons, audit) behind a server-side admin gate.
 
-The Phase 1 infrastructure still in place:
+## Known gaps / next work
 
-- Express application with JSON parsing, CORS, Helmet, compression, rate limiting
-- /api/v1 versioned routing with a real health check; the catalogue routes are implemented and the remaining resources are still 501 placeholders
-- Centralized success/error envelope, 404 handling and safe error responses
-- PostgreSQL connection pool, health probe, migration runner and seed runner
-- Validated environment configuration (.env is git-ignored)
-- ESLint, Prettier, automated tests for both workspaces (
-- ESLint, Prettier, automated tests for both workspaces (
-- ESLint, Prettier, automated tests for both workspaces (
-- ESLint, Prettier, automated tests for both workspaces (
-- ESLint, Prettier, automated tests for both workspaces (
-- ESLint, Prettier, automated tests for both workspaces (
-- ESLint, Prettier, automated tests for both workspaces (
-- ESLint, Prettier, automated tests for both workspaces (
-  npm run verify)
-  The catalogue runs on the real database. Cart, wishlist, checkout, orders and payments (COD plus the sandbox online flow) are implemented; real gateway adapters, refunds and the admin area remain.
+- The online payment **sandbox** (`MOCK`) stands in for a real gateway; only COD is
+  production-safe today (see [deployment.md §7](./deployment.md)).
+- Refund execution is modelled but not implemented.
+- The catalogue UI still ships fixtures in `frontend/js/mock/` alongside the real
+  client; the data layer is behind a seam so they can be swapped without component
+  changes.
+- Email is not wired in.

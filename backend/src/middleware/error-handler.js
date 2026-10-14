@@ -12,11 +12,26 @@ import env from '../config/env.js';
  * 3. Handle other errors: log with stack trace and return 500 (generic message)
  * 4. Never expose internal details or stack traces in production
  */
-function mapPostgresError(err) {
+/**
+ * Maps a known PostgreSQL error to an `AppError`, or returns `null` if the
+ * error is not one of the recognised codes.
+ *
+ * @param {Error & { code?: string, table?: string }} err
+ * @param {{ isProduction?: boolean }} [options] defaults to the running
+ *   environment; overridable so the production message can be asserted from a
+ *   test (which always runs with `NODE_ENV=test`).
+ * @returns {AppError|null}
+ */
+export function mapPostgresError(err, { isProduction = env.isProduction } = {}) {
   // pg unique_violation
   if (err.code === '23505') {
-    const table = err.table ?? 'record';
-    return new AppError(`${table} already exists`, 409, ERROR_CODES.CONFLICT);
+    // The raw `err.table` names an internal table. Leaking it hands an attacker
+    // a free schema map, so production always returns a generic message while
+    // development keeps the specific one for debugging.
+    const message = isProduction
+      ? 'A record with these details already exists'
+      : `${err.table ?? 'record'} already exists`;
+    return new AppError(message, 409, ERROR_CODES.CONFLICT);
   }
   // foreign_key_violation
   if (err.code === '23503') {

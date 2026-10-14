@@ -4,6 +4,12 @@
  * Usage:
  *   node seeds/run.js            # run every *.seed.js file in order
  *   node seeds/run.js --only=01_users
+ *   node seeds/run.js --force        # allow demo seeds in production
+ *
+ * Production guard: the seed files load demo users, products, orders and
+ * payments. Running them against a production database would publish fake
+ * catalogue data and test accounts, so `NODE_ENV=production` refuses unless
+ * `--force` is passed explicitly.
  *
  * A seed file must export a default async function:
  *
@@ -33,6 +39,18 @@ function loadSeedFiles(only) {
 async function run() {
   const onlyArg = process.argv.find((arg) => arg.startsWith('--only='));
   const only = onlyArg ? onlyArg.split('=')[1] : null;
+  const force = process.argv.includes('--force');
+
+  // Demo data must never reach a production database by accident.
+  if (process.env.NODE_ENV === 'production' && !force) {
+    logger.error(
+      'Refusing to seed with NODE_ENV=production: these seeds load demo users, ' +
+        'products, orders and payments. Pass --force only if that is intentional.'
+    );
+    process.exitCode = 1;
+    return;
+  }
+
   const files = loadSeedFiles(only);
 
   if (files.length === 0) {

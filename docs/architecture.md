@@ -89,19 +89,20 @@ routes/x.routes.js  →  controllers/x.controller.js  →  services/x.service.js
 | Path                   | Responsibility                                              |
 | ---------------------- | ----------------------------------------------------------- |
 | `index.html`, `pages/` | One HTML file per route                                     |
-| `partials/`            | Shared HTML fragments (navbar, footer) fetched at runtime   |
-| `components/`          | One component per file, each a factory returning a DOM node |
-| `css/tokens.css`       | Design tokens: color, spacing, radius, shadow, type, motion |
-| `css/base.css`         | Reset, element defaults, accessibility defaults             |
-| `css/layout.css`       | Container, grid, responsive breakpoints                     |
-| `css/utilities.css`    | Small single-purpose helpers                                |
-| `css/main.css`         | The only stylesheet pages load; imports the above           |
-| `js/config.js`         | API base URL and runtime config                             |
+| `js/components/`       | One component per file, each a factory returning a DOM node |
+| `styles/tokens.css`    | Design tokens: color, spacing, radius, shadow, type, motion |
+| `styles/base.css`      | Reset, element defaults, accessibility defaults             |
+| `styles/layout.css`    | Container, grid, responsive breakpoints                     |
+| `styles/utilities.css` | Small single-purpose helpers                                |
+| `styles/main.css`      | The only stylesheet pages load; imports the above           |
+| `styles/components/`   | Per-component stylesheets                                   |
+| `js/config.js`         | API base URL (same-origin in production) and runtime config |
 | `js/core/api.js`       | `fetch` wrapper: envelope unwrapping, timeout, `ApiError`   |
 | `js/core/dom.js`       | `el()`, `append()`, `loadPartial()`, `qs()`                 |
 | `js/core/registry.js`  | Component registration convention                           |
-| `js/main.js`           | Injects partials and boots the page module                  |
+| `js/app.js`            | Boots the page module and wires shared UI                   |
 | `js/pages/`            | One module per page                                         |
+| `js/admin/`            | Admin console (own entry at `/admin.html`)                  |
 | `server.js`            | Static dev server (`npm run dev:frontend`)                  |
 
 ### Docs and tooling
@@ -183,7 +184,7 @@ trace, answered with a generic message in production).
 | SQL injection    | Parameterized queries only, enforced by convention                 |
 | HTTP headers     | Helmet on every response                                           |
 | CORS             | Explicit origin allowlist from `FRONTEND_URL`                      |
-| Rate limiting    | Global API limiter plus a stricter limiter on register/login       |
+| Rate limiting    | Global API limiter plus stricter auth, write and search limiters   |
 | CSRF             | SameSite=Lax cookie + `requireSameOrigin` on auth mutations        |
 | Error leakage    | Stack traces and internal messages never sent in production        |
 | Body size        | JSON/urlencoded limited to 100 kB                                  |
@@ -197,4 +198,48 @@ gracefully when PostgreSQL is absent).
 ```bash
 npm test         # API tests
 npm run verify   # lint + format check + tests
+npm run verify:db # real-PostgreSQL schema, constraints and concurrency check
 ```
+
+## Production architecture
+
+Development runs two processes (the static dev server on `:5173` and the API on
+`:4000`). Production collapses them into one origin:
+
+```
+                    HTTPS
+   Customer ─────────────────────▶ Platform edge / TLS
+                                        │
+                        ┌───────────────┴───────────────┐
+                        ▼                               ▼
+              Static storefront                Express / Node API
+              (served by Express, or           /api/v1/* · /health
+               a static host/CDN)              sessions · CSRF · CSP
+                        │                               │
+                        └───────── fetch ───────────────┘
+                                                        │ pg pool
+                                                        ▼
+                                                   PostgreSQL
+
+   object storage + CDN  → product/category images (the API stores URLs only)
+   payment provider      → COD + sandbox today; a real adapter is the seam
+```
+
+Design points that production depends on:
+
+- **One origin.** Serving the storefront from the same Express process keeps the
+  session cookie `SameSite=Lax` and lets the CSP use `connect-src 'self'`.
+  `frontend/js/config.js` derives `<origin>/api/v1` automatically on any
+  non-localhost host; a split deployment injects `window.__APP_CONFIG__`.
+- **Stateless process.** No session state on the app host (sessions live in
+  PostgreSQL), so replicas scale horizontally and a rollback is a redeploy.
+- **Health probe.** `GET /health` is mounted outside `/api/v1` and ahead of the
+  rate limiter; it answers `200`/`503` from the database state and exposes no
+  internals. It is the platform's liveness/readiness signal.
+- **Managed database, pooled connections.** One pool per process
+  (`config/db.js`); `replicas × DB_POOL_MAX` stays under the server limit.
+- **No local file storage.** Images are external URLs; uploads are not accepted.
+- **Graceful shutdown.** `SIGTERM` drains the process and ends the pool.
+
+See [deployment.md](./deployment.md) for the full walkthrough and
+[production-checklist.md](./production-checklist.md) for the release list.

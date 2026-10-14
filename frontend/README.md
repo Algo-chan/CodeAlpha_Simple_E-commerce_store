@@ -99,7 +99,11 @@ shell exists exactly once instead of being duplicated across five HTML files.
 
 Not wired up yet, but the seam is in place.
 
-1. `js/config.js` holds `apiBaseUrl` (default `http://localhost:4000/api/v1`).
+1. `js/config.js` holds `apiBaseUrl`. In development it defaults to
+   `http://localhost:4000/api/v1`; in production, when the storefront is served
+   on a non-local HTTP(S) host, it derives `<origin>/api/v1` so the API is
+   same-origin. A split deployment (static host + separate API) overrides it with
+   `window.__APP_CONFIG__ = { apiBaseUrl: '...' }`.
 2. `js/core/api.js` builds the URL, adds `Accept: application/json`, enforces a
    timeout, unwraps the `{ success, data }` envelope and throws a normalized
    `ApiError` otherwise.

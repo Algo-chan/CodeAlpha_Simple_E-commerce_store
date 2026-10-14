@@ -23,7 +23,8 @@ npm run dev
 
 - Frontend: [http://localhost:5173](http://localhost:5173)
 - API: [http://localhost:4000](http://localhost:4000)
-- Health check: [http://localhost:4000/api/v1/health](http://localhost:4000/api/v1/health)
+- Health probe: [http://localhost:4000/health](http://localhost:4000/health)
+- Health detail: [http://localhost:4000/api/v1/health](http://localhost:4000/api/v1/health)
 
 ## Tech stack
 
@@ -65,26 +66,35 @@ catalogue, cart/wishlist, checkout/COD, orders, payments, reviews, admin).
 
 ## Documentation
 
-| Document                                         | Purpose                                             |
-| ------------------------------------------------ | --------------------------------------------------- |
-| [docs/architecture.md](./docs/architecture.md)   | Layers, request lifecycle, design decisions         |
-| [docs/api.md](./docs/api.md)                     | Endpoints, envelope, error codes                    |
-| [docs/database-plan.md](./docs/database-plan.md) | Planned entities (no schema yet)                    |
-| [docs/setup.md](./docs/setup.md)                 | Installation, PostgreSQL, commands, troubleshooting |
-| [docs/roadmap.md](./docs/roadmap.md)             | Build phases                                        |
+| Document                                                       | Purpose                                             |
+| -------------------------------------------------------------- | --------------------------------------------------- |
+| [docs/architecture.md](./docs/architecture.md)                 | Layers, request lifecycle, production architecture  |
+| [docs/deployment.md](./docs/deployment.md)                     | Production deployment, env vars, DB, backups, CI/CD |
+| [docs/production-checklist.md](./docs/production-checklist.md) | Final pre-launch checklist and smoke test           |
+| [docs/api.md](./docs/api.md)                                   | Endpoints, envelope, error codes                    |
+| [docs/database-plan.md](./docs/database-plan.md)               | Planned entities (no schema yet)                    |
+| [docs/setup.md](./docs/setup.md)                               | Installation, PostgreSQL, commands, troubleshooting |
+| [docs/security.md](./docs/security.md)                         | Auth/sessions, headers, CSP, rate limits, payments  |
+| [docs/testing.md](./docs/testing.md)                           | Test layout, how to run, coverage map               |
+| [docs/performance.md](./docs/performance.md)                   | Indexes, caching, pagination, frontend budget       |
+| [docs/roadmap.md](./docs/roadmap.md)                           | Build phases                                        |
 
 ## Scripts
 
-| Command             | What                        |
-| ------------------- | --------------------------- |
-| `npm run dev`       | Frontend + backend together |
-| `npm test`          | API tests                   |
-| `npm run verify`    | Lint + format check + tests |
-| `npm run lint`      | ESLint                      |
-| `npm run format`    | Prettier write              |
-| `npm run migrate`   | Run migrations              |
-| `npm run seed`      | Run seeds                   |
-| `npm run db:create` | Create PostgreSQL database  |
+| Command             | What                         |
+| ------------------- | ---------------------------- |
+| `npm run dev`       | Frontend + backend together  |
+| `npm start`         | Backend in production mode   |
+| `npm test`          | API + frontend tests         |
+| `npm run verify`    | Lint + format check + tests  |
+| `npm run lint`      | ESLint                       |
+| `npm run format`    | Prettier write               |
+| `npm run migrate`   | Run migrations               |
+| `npm run seed`      | Run seeds                    |
+| `npm run verify:db` | Real-PostgreSQL verification |
+| `npm run db:create` | Create PostgreSQL database   |
+
+Production release steps are in [docs/deployment.md](./docs/deployment.md).
 
 ## Contributing
 

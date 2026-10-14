@@ -54,6 +54,30 @@ export const slugSchema = z
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Slug must be lower-case words separated by hyphens')
   .max(220);
 
+/**
+ * A product or category image reference.
+ *
+ * Production storage is external (object storage behind a CDN): the admin
+ * supplies an absolute http(s) URL rather than uploading bytes to the API host.
+ * Requiring an absolute http(s) URL — and nothing else — keeps `javascript:`,
+ * `data:` and `file:` values out of an `<img src>` and matches the production
+ * Content-Security-Policy (`img-src ... https:`). The API never proxies, stores
+ * or rewrites the image bytes itself, so there is no upload surface to validate
+ * for file type, size or content.
+ */
+export const imageUrlSchema = z
+  .string()
+  .trim()
+  .max(2000, 'Image URL is too long')
+  .refine((value) => {
+    try {
+      const { protocol } = new URL(value);
+      return protocol === 'http:' || protocol === 'https:';
+    } catch {
+      return false;
+    }
+  }, 'Image URL must be an absolute http(s) URL');
+
 const attributesSchema = z
   .record(
     z.string().trim().min(1).max(ADMIN_LIMITS.MAX_ATTRIBUTE_KEY),
@@ -120,7 +144,7 @@ export const updateVariantSchema = variantBodySchema.partial();
 
 const imageBodySchema = z
   .object({
-    imageUrl: z.string().trim().min(1).max(2000),
+    imageUrl: imageUrlSchema,
     altText: z.string().trim().max(255).optional(),
     sortOrder: z.coerce.number().int().min(0).max(1000).optional(),
     isPrimary: z.boolean().optional(),
@@ -141,7 +165,7 @@ const categoryBodySchema = z
     slug: slugSchema.optional(),
     parentId: uuidSchema.nullable().optional(),
     description: z.string().trim().max(5000).optional(),
-    imageUrl: z.string().trim().max(2000).optional(),
+    imageUrl: imageUrlSchema.optional(),
     sortOrder: z.coerce.number().int().min(0).max(100000).optional(),
     isActive: z.boolean().optional(),
   })
@@ -307,6 +331,7 @@ export const adminCouponQuerySchema = paginationSchema.extend({
 });
 
 export default {
+  imageUrlSchema,
   uuidIdParamSchema,
   variantIdParamSchema,
   imageIdParamSchema,

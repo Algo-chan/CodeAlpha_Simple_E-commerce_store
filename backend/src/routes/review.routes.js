@@ -12,6 +12,8 @@ import { authenticate } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validate.js';
 import * as controller from '../controllers/review.controller.js';
 import { createReviewSchema } from '../validators/review.schema.js';
+import { writeLimiter } from '../middleware/security.js';
+import env from '../config/env.js';
 
 const router = Router();
 
@@ -21,6 +23,9 @@ router.get('/reviewable', controller.listReviewable);
 router.post(
   '/',
   requireSameOrigin,
+  // Submitting a review is an authenticated write a script could spam. The
+  // limiter is skipped under test so the suite can write freely.
+  ...(env.isTest ? [] : [writeLimiter]),
   validateRequest({ body: createReviewSchema }),
   controller.create
 );

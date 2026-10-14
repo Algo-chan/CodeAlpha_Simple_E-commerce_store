@@ -74,6 +74,10 @@ const envSchema = z
       .default(15 * 60 * 1000),
     RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(300),
     AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(20),
+    /** Reviews, password changes and other authenticated writes. */
+    WRITE_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(60),
+    /** Type-ahead search, which can fire per keystroke. Generous but bounded. */
+    SEARCH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(200),
 
     // --- Online payments ----------------------------------------------
     /**

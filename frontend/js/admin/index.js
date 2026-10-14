@@ -13,6 +13,7 @@
  * not shown an empty console and a network of failing requests.
  */
 import { el, qs, clear } from '../core/dom.js';
+import { loadDeferredFonts } from '../core/fonts.js';
 import { icon } from '../utils/icons.js';
 import { button } from '../components/ui/button.js';
 import { createAuthStore, AUTH_STATUS } from '../state/auth.js';
@@ -111,3 +112,7 @@ if (document.readyState === 'loading') {
 } else {
   void start();
 }
+
+// The font stylesheets load with `media="print"`; applying them here keeps the
+// load non-blocking under a Content-Security-Policy that forbids inline handlers.
+loadDeferredFonts();

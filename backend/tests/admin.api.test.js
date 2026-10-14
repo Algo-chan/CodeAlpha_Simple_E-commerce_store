@@ -277,6 +277,33 @@ test('the first image becomes primary; deleting it promotes the next', async () 
   assert.equal(remaining[0].isPrimary, true, 'the surviving image is promoted to primary');
 });
 
+test('an image URL that is not absolute http(s) is rejected', async () => {
+  const boss = await admin();
+  const product = await createProduct(boss, { name: 'Bad image', slug: 'bad-image-url-test' });
+
+  // Object storage/CDN URLs only: scheme-less paths and executable/data schemes
+  // are refused before they can reach an <img src>.
+  for (const imageUrl of [
+    'javascript:alert(1)',
+    'data:image/svg+xml;base64,AAAA',
+    '/local/a.png',
+    'not-a-url',
+  ]) {
+    const res = await POST(`/api/v1/admin/products/${product.id}/images`, {
+      session: boss.session,
+      body: { imageUrl },
+    });
+    assert.equal(res.status, 422, `${imageUrl} should be rejected`);
+    assert.equal(res.body.error.code, 'VALIDATION_ERROR');
+  }
+
+  const ok = await POST(`/api/v1/admin/products/${product.id}/images`, {
+    session: boss.session,
+    body: { imageUrl: 'https://cdn.example.com/a.png' },
+  });
+  assert.equal(ok.status, 201, 'an absolute https URL is accepted');
+});
+
 /* -------------------------------------------------------------------------- */
 /* Categories                                                                  */
 /* -------------------------------------------------------------------------- */

@@ -6,7 +6,7 @@
  */
 import { Router } from 'express';
 import env from '../config/env.js';
-import { createAuthLimiter } from '../middleware/security.js';
+import { createAuthLimiter, writeLimiter } from '../middleware/security.js';
 import { requireSameOrigin } from '../middleware/csrf.js';
 import { authenticate } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validate.js';
@@ -54,6 +54,9 @@ router.patch(
 router.post(
   '/password',
   requireSameOrigin,
+  // Changing a password is a credential operation: rate limit it so the current
+  // password cannot be brute-forced through an authenticated session.
+  ...(env.isTest ? [] : [writeLimiter]),
   authenticate,
   validateRequest({ body: passwordChangeSchema }),
   controller.changePassword

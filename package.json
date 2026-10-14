@@ -20,6 +20,7 @@
     "migrate": "npm run migrate --workspace backend",
     "migrate:status": "npm run migrate:status --workspace backend",
     "seed": "npm run seed --workspace backend",
+    "verify:db": "npm run verify:db --workspace backend",
     "test": "npm run test --workspace backend && npm run test --workspace frontend",
     "test:backend": "npm run test --workspace backend",
     "test:frontend": "npm run test --workspace frontend",
