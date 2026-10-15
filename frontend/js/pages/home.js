@@ -190,7 +190,7 @@ function hero(collage) {
             el('em', { text: 'every day' }),
           ]),
           el('p.hero__lead', {
-            text: 'Aster & Oak stocks electronics, fashion and homeware we would happily own ourselves. Honest pricing in ETB, real stock counts, and delivery across Ethiopia.',
+            text: 'Roman Store stocks electronics, fashion and homeware we would happily own ourselves. Honest pricing in ETB, real stock counts, and delivery across Ethiopia.',
           }),
           el('div.hero__actions', {}, [
             button({
@@ -513,7 +513,7 @@ function featureBand(catalogue) {
         el('div.feature', {}, [
           media,
           el('div.feature__content', {}, [
-            el('p.hero__eyebrow', { text: 'Why Aster & Oak' }),
+            el('p.hero__eyebrow', { text: 'Why Roman Store' }),
             el('h2.text-balance', { id: 'home-feature', text: 'Fewer brands, better chosen.' }),
             lede,
             el(

@@ -16,8 +16,12 @@
  *   - the palette comes from the design tokens, so swapping the theme swaps
  *     the imagery.
  *
- * REPLACING IT. `mediaFor()` is the only seam. When the API serves real image
- * URLs, the view model takes `image_url` and these functions stop being called.
+ * REPLACING IT. The storefront ships committed demo photographs (see
+ * `photoSet` and `assets/images/products/`), and `mock/products.js` names them
+ * per product. These procedural images are the fallback for a product with no
+ * photo files, and `placeholderFor()` the fallback for a product with no
+ * imagery at all. When the API serves real image URLs, the view model takes
+ * `image_url` and these functions stop being called.
  */
 
 /** Palette aligned with styles/tokens.css - bone, clay, ink, sage, sand. */
@@ -123,6 +127,40 @@ export function mediaSet(slug, angles, { width = 800, height = 800 } = {}) {
  */
 export function thumbnailFor(slug, { angle = 'Front', variant = 0, size = 200 } = {}) {
   return mediaFor({ seed: slug, angle, variant, width: size, height: size });
+}
+
+/* -------------------------------------------------------------------------- */
+/* Committed demo photographs                                                   */
+/* -------------------------------------------------------------------------- */
+
+/** Where the demo photographs live, relative to the storefront root. */
+export const PHOTO_BASE = '/assets/images/products/';
+
+/**
+ * The demo photographs for a product, primary image first.
+ *
+ * These are real files under `assets/images/products/<slug>/`: one
+ * `<angle>.webp` per entry in the fixture's `photos` list, plus a matching
+ * `<angle>-thumb.webp`. They stand in for the real catalogue imagery until it is
+ * uploaded, which is why the fixture - not this function - names them.
+ *
+ * @param {string} slug
+ * @param {string[]} photos angle slugs, e.g. `['front', 'detail']`
+ * @returns {Array<{url:string, thumb_url:string, alt:string, angle:string,
+ *   sort_order:number, is_primary:boolean}>}
+ */
+export function photoSet(slug, photos) {
+  return photos.map((angle, index) => {
+    const base = `${PHOTO_BASE}${slug}/${angle}`;
+    return {
+      url: `${base}.webp`,
+      thumb_url: `${base}-thumb.webp`,
+      alt: `${humaniseSlug(slug)} — ${humaniseAngle(angle)} view`,
+      angle: humaniseAngle(angle),
+      sort_order: index,
+      is_primary: index === 0,
+    };
+  });
 }
 
 /* -------------------------------------------------------------------------- */
@@ -272,6 +310,12 @@ function humaniseSlug(slug) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+/** `'sample-spread'` -> `'Sample spread'`. This is the gallery caption. */
+function humaniseAngle(angle) {
+  const text = String(angle ?? '').replace(/-/g, ' ');
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 /**
  * A neutral fallback for a product with no imagery at all. Deliberately calm:
  * it appears next to real products, so it must not shout.
@@ -281,4 +325,4 @@ export function placeholderFor(label = 'No image') {
   return mediaFor({ seed: `placeholder-${label}`, label, width: 600, height: 600 });
 }
 
-export default { mediaFor, mediaSet, thumbnailFor, placeholderFor, MEDIA_PALETTE };
+export default { mediaFor, mediaSet, thumbnailFor, placeholderFor, photoSet, MEDIA_PALETTE };

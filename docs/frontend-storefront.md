@@ -308,8 +308,13 @@ Products carry 3–5 images with an `angle` label (`Front`, `Side`, `Back`,
 - Non-critical images are lazy-loaded; the primary image is not, because it is
   the Largest Contentful Paint element.
 
-Imagery is currently generated SVG from `mock/media.js`. Replacing it with real
-photography means changing the URL, not the markup.
+The catalogue currently ships **demo photographs** under
+`frontend/assets/images/products/<slug>/` (`<angle>.webp` plus a smaller
+`<angle>-thumb.webp`), named per product by the `photos` list in
+`mock/products.js`; `mock/media.js` turns that list into view-model URLs.
+Replacing them with the real catalogue means new files and a new `photos` list,
+not new markup. A product with no photos still falls back to the generated SVG
+in `mock/media.js`.
 
 No 3D. The angle data is enough to make browsing front/side/back feel
 considered without pretending to be a 3D viewer.
@@ -320,7 +325,10 @@ considered without pretending to be a 3D viewer.
 
 **Desktop** — sticky header: announcement bar, wordmark, primary categories with
 dropdown panels (two levels), inline search, wishlist, cart, account placeholder.
-Keyboard accessible, with active state on the current category.
+A panel opens on hover, on focus (keyboard) or on click; because the trigger
+opens the panel rather than navigating, each panel ends with an "All <category>"
+link that is the route to the category page. Keyboard accessible, with active
+state on the current category.
 
 **Mobile** — compact header (menu, wordmark, search, cart), slide-in navigation
 drawer with expandable category accordions, clear back and close controls.

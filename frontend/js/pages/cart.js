@@ -38,7 +38,7 @@ export default function cartPage({ host, cart, catalogue, wishlist, ui = null, q
   const shell = el('div.container.cart-shell');
   const cleanups = [];
 
-  document.title = 'Your cart - Aster & Oak';
+  document.title = 'Your cart - Roman Store';
   host.replaceChildren(shell);
 
   function draw() {
@@ -103,9 +103,11 @@ export default function cartPage({ host, cart, catalogue, wishlist, ui = null, q
           ),
         ]),
 
-        el('aside.cart-page__summary', { 'aria-label': 'Order summary' }, [
-          summary({ cart, unfulfillable }),
-        ]),
+        el(
+          'aside.cart-page__summary',
+          { 'aria-label': 'Order summary' },
+          summary({ cart, unfulfillable })
+        ),
       ]),
 
       recommendations({ catalogue, wishlist, quickView, lines, cleanups })
@@ -162,7 +164,7 @@ function summary({ cart, unfulfillable }) {
             : 'Remove the items that can no longer be ordered to continue.',
       });
 
-  return el('div', {}, [
+  return [
     el('h2.text-lg', { text: 'Order summary' }),
 
     el('dl', {}, [
@@ -205,7 +207,7 @@ function summary({ cart, unfulfillable }) {
       block: true,
       onClick: () => cart.clear(),
     }).element,
-  ]);
+  ];
 }
 
 /* -------------------------------------------------------------------------- */

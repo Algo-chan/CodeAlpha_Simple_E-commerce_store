@@ -29,7 +29,7 @@ import { icon } from '../utils/icons.js';
  * @returns {{ destroy(): void }}
  */
 export default async function accountPage({ host, auth, client = api, ui = null }) {
-  document.title = 'Your account - Aster & Oak';
+  document.title = 'Your account - Roman Store';
   if (auth.selectStatus() === 'unknown') await auth.refresh();
 
   const shell = el('div.container.account-shell');

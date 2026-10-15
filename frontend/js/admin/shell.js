@@ -53,7 +53,7 @@ export function createAdminShell({ auth, client }) {
     el('div.admin-sidebar__brand', {}, [
       el('span.admin-sidebar__mark', { 'aria-hidden': 'true' }, [icon('shield')]),
       el('span.admin-sidebar__name', {}, [
-        el('span.admin-sidebar__store', { text: 'Aster & Oak' }),
+        el('span.admin-sidebar__store', { text: 'Roman Store' }),
         el('span.admin-sidebar__role', { text: 'Store admin' }),
       ]),
     ]),
@@ -135,7 +135,7 @@ export function createAdminShell({ auth, client }) {
   async function render(route) {
     setActive(route.section);
     titleNode.textContent = sectionTitle(route.section);
-    document.title = `${sectionTitle(route.section)} · Admin · Aster & Oak`;
+    document.title = `${sectionTitle(route.section)} · Admin · Roman Store`;
     sidebar.classList.remove('is-open');
     scrim.hidden = true;
     clear(content);

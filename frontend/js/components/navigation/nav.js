@@ -3,9 +3,12 @@
  *
  * Hover and focus both open a panel, because they are not interchangeable:
  * hover serves a mouse user, focus serves a keyboard or switch-device user.
- * Keyboard support here is the part that is usually missing - Escape closes,
- * arrows move between top-level items, Tab moves out and closes, and the panel
- * itself is a separate tab stop reached with Down.
+ * A click on a top-level trigger opens its panel rather than navigating, so the
+ * transform/opacity reveal is actually seen; every panel carries an "All X"
+ * link, which is the route to the category page. Keyboard support here is the
+ * part that is usually missing - Escape closes, arrows move between top-level
+ * items, Tab moves out and closes, and the panel itself is a separate tab stop
+ * reached with Down.
  *
  * A mega panel is used where a category has enough children to be worth it, and
  * a simple list panel otherwise, decided by child count rather than by hand.
@@ -73,6 +76,23 @@ export function createNav(categories = [], { activeSlug, onNavigate } = {}) {
       else cancelClose();
     }),
     on(element, 'pointerleave', scheduleClose),
+    // A plain left click on a top-level trigger opens its panel instead of
+    // navigating, so the reveal is seen; the panel's own "All X" link is the
+    // route to the category. Modified or non-primary clicks (new tab, etc.)
+    // still follow the link untouched.
+    on(element, 'click', (event) => {
+      const link = event.target instanceof Element ? event.target.closest('.nav__link') : null;
+      if (!link || !element.contains(link)) return;
+
+      const item = link.closest('.nav__item');
+      if (!item?.querySelector('.nav__panel')) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+        return;
+      }
+
+      event.preventDefault();
+      openItem(item);
+    }),
     on(element, 'focusin', (event) => {
       const item = event.target instanceof Element ? event.target.closest('.nav__item') : null;
       if (item && isDesktop()) openItem(item);
@@ -214,10 +234,8 @@ function buildPanel(category, children, useMega) {
 
   const body = useMega
     ? buildMega(category, children)
-    : el(
-        'ul.nav__list',
-        { role: 'list' },
-        children.map((child) =>
+    : el('ul.nav__list', { role: 'list' }, [
+        ...children.map((child) =>
           el('li', {}, [
             el('a.nav__list-link', { href: categoryUrl(child) }, [
               child.name,
@@ -227,8 +245,16 @@ function buildPanel(category, children, useMega) {
             ]),
             child.description ? el('p.nav__list-note', { text: child.description }) : null,
           ])
-        )
-      );
+        ),
+        // The trigger opens the panel rather than navigating, so the category
+        // page needs its own route in the panel - matching the mega menu's.
+        el('li.nav__list-all-item', {}, [
+          el('a.nav__list-link.nav__list-link--all', { href: categoryUrl(category) }, [
+            `All ${category.name}`,
+            icon('arrow-right'),
+          ]),
+        ]),
+      ]);
 
   return el(
     `div.nav__panel.${useMega ? 'nav__panel--mega' : 'nav__panel--simple'}`,

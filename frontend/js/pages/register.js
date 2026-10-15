@@ -16,7 +16,7 @@ import { authForm, authCopy } from '../components/forms/auth-form.js';
  * @returns {{ destroy(): void }}
  */
 export default function registerPage({ host, auth }) {
-  document.title = 'Create your account - Aster & Oak';
+  document.title = 'Create your account - Roman Store';
   const shell = el('div.container');
   host.replaceChildren(shell);
 

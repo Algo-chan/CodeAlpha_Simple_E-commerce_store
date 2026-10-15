@@ -65,10 +65,10 @@ const defaults = {
 
   // --- Storefront identity ---------------------------------------------------
   store: {
-    name: 'Aster & Oak',
+    name: 'Roman Store',
     tagline: 'Well-made things for everyday use',
     logo: '',
-    logoLabel: 'Aster & Oak — home',
+    logoLabel: 'Roman Store — home',
     description:
       'Considered clothing, footwear and homeware, selected for how it holds up ' +
       'to daily use. Delivered across Addis Ababa.',

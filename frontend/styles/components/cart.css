@@ -121,12 +121,25 @@
   margin-block: var(--space-lg);
 }
 
+/* The line list is a card on the page, matching the summary panel, rather than
+   the drawer's bare scrolling list. `overflow: hidden` keeps a row's hover
+   background from squaring off the rounded corners. */
+.cart-page .cart__lines {
+  background-color: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
 .cart-line__media {
   inline-size: 5rem;
   aspect-ratio: 1;
   overflow: hidden;
   background-color: var(--color-surface-muted);
   border-radius: var(--radius-md);
+  /* A grid item stretches to the row by default, which would override the
+     square aspect ratio when the body is taller. Keep it a square. */
+  align-self: start;
 }
 
 .cart-line__media img {
@@ -295,6 +308,15 @@
   gap: var(--space-sm);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+}
+
+/* The rows are a plain `<dl>`, which the reset zeroes out. A small column gap
+   keeps subtotal/delivery/total from sitting flush against each other. */
+.cart__summary dl,
+.cart-page__summary dl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
 }
 
 .cart__row dt {

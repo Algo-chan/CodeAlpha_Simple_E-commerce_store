@@ -327,14 +327,24 @@
 
 /* --- Navigation row (moved down from category strip) ---------------------- */
 
+/* The row owns nothing but the desktop nav, so below the breakpoint it is an
+   empty bordered strip - the categories are in the drawer there. It is hidden
+   rather than left as a stray line. */
 .site-header__nav-row {
-  position: sticky;
-  top: var(--header-height);
-  z-index: calc(var(--z-header) - 1);
-  background-color: color-mix(in srgb, var(--color-bg) 92%, transparent);
-  -webkit-backdrop-filter: saturate(180%) blur(12px);
-  backdrop-filter: saturate(180%) blur(12px);
-  border-bottom: var(--border-width-hairline) solid var(--color-border);
+  display: none;
+}
+
+@media (min-width: 64em) {
+  .site-header__nav-row {
+    display: block;
+    position: sticky;
+    top: var(--header-height);
+    z-index: calc(var(--z-header) - 1);
+    background-color: color-mix(in srgb, var(--color-bg) 92%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: var(--border-width-hairline) solid var(--color-border);
+  }
 }
 
 .site-header__nav-inner {
@@ -342,21 +352,11 @@
   align-items: center;
   min-block-size: var(--nav-strip-height);
   gap: var(--space-lg);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  scroll-snap-type: x proximity;
-}
-
-.site-header__nav-inner::-webkit-scrollbar {
-  display: none;
-}
-
-@media (max-width: 63.99em) {
-  .site-header__nav-row {
-    top: calc(var(--header-height) - 0.5rem);
-  }
+  /* The dropdown panels hang below the strip. Any scroll container here - on
+     either axis, since one non-visible axis forces the other to scroll - clips
+     them, which is why the menu appeared to list nothing. The inline nav is
+     short, so it never needs to scroll. */
+  overflow: visible;
 }
 
 /* --- Desktop-only affordances --------------------------------------------- */

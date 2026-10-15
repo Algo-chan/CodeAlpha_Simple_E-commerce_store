@@ -161,6 +161,22 @@
   font-weight: var(--font-weight-regular);
 }
 
+/* The panel's footer route to the category page itself, mirroring the mega
+   menu's "All X" link. The trigger opens the panel instead of navigating, so
+   this is how the category is reached from the simple dropdown. */
+.nav__list-link--all {
+  margin-block-start: var(--space-2xs);
+  padding-block-start: var(--space-2xs);
+  border-top: var(--border-width-hairline) solid var(--color-border);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-hover);
+}
+
+.nav__list-link--all:hover,
+.nav__list-link--all:focus-visible {
+  color: var(--color-primary-hover);
+}
+
 /* --- Mega menu ------------------------------------------------------------
    Wide panel anchored to the nav edge rather than the trigger, so it reads as
    a site-level section instead of a menu for one item. */

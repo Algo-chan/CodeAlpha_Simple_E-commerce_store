@@ -46,7 +46,7 @@ const PAGE_SIZE = 20;
  * @returns {{ destroy(): void }}
  */
 export default async function ordersPage({ host, auth, client = api }) {
-  document.title = 'Your orders - Aster & Oak';
+  document.title = 'Your orders - Roman Store';
   if (auth.selectStatus() === 'unknown') await auth.refresh();
 
   const shell = el('div.container.account-shell');

@@ -56,7 +56,7 @@ export default function productPage({
   const params = new URLSearchParams(globalThis.location?.search ?? '');
   const product = resolveProduct(catalogue, params);
 
-  document.title = product ? `${product.name} - Aster & Oak` : 'Product not found - Aster & Oak';
+  document.title = product ? `${product.name} - Roman Store` : 'Product not found - Roman Store';
 
   if (!product) {
     host.replaceChildren(

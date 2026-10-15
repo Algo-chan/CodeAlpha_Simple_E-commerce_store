@@ -329,13 +329,13 @@ test('angles are varied, and front/side/back coverage exists where a product has
   assert.ok(threeAngles.length > 0, 'at least one product demonstrates front, side and back');
 });
 
-test('fixture images are generated placeholders, not binary assets', () => {
+test('fixture images are either inlined SVG or a committed asset path', () => {
   for (const product of catalogue.products) {
     for (const image of product.images) {
       assert.match(
         image.url,
-        /^(data:image\/svg\+xml;base64,|\/)/,
-        'either an inlined SVG fixture or a real path once assets exist'
+        /^(data:image\/svg\+xml;base64,|\/assets\/images\/products\/)/,
+        'either an inlined SVG fixture or a committed demo-photo path'
       );
       assert.ok(image.url.length > 0);
     }

@@ -18,6 +18,12 @@
  *     are presentation inputs the Phase 3 UI needs and Phase 4 serves. They are
  *     namespaced in this file so it is obvious what has to be added server-side.
  *
+ * PHOTOS ARE A THIRD DIVERGENCE. The seed still points at placehold.co; this
+ * fixture points at the committed demo photographs in
+ * `frontend/assets/images/products/<slug>/`, one file per `photos` angle plus a
+ * `-thumb` rendition. They are stand-ins for the real catalogue imagery, so the
+ * only thing a product needs to change later is its `photos` list.
+ *
  * AVAILABLE QUANTITY IS `quantity - reserved_quantity`. Reserved units are
  * committed to other orders, so quoting them as "in stock" would be a lie that
  * turns into an oversell at checkout.
@@ -66,7 +72,7 @@ const PRODUCTS = [
       'Everyday running shoe with a large visible Air heel unit. Mesh upper, foam ' +
       'midsole and a rubber outsole built for daily wear on concrete.',
     short_description: 'Visible Air unit, mesh upper, foam midsole.',
-    images: ['Front', 'Side', 'Back', 'Detail', 'Lifestyle'],
+    photos: ['front', 'side', 'back'],
     is_featured: true,
     is_new: false,
     display_order: 10,
@@ -85,7 +91,7 @@ const PRODUCTS = [
       '6.6" Super AMOLED display, 50MP main camera and a 5000mAh battery. ' +
       'IP67 rated, with four years of OS updates.',
     short_description: '6.6" AMOLED, 50MP camera, 5000mAh battery.',
-    images: ['Front', 'Back', 'Detail', 'Lifestyle'],
+    photos: ['front', 'detail', 'lifestyle'],
     is_featured: true,
     is_new: false,
     display_order: 20,
@@ -104,7 +110,7 @@ const PRODUCTS = [
       '13.6" Liquid Retina display with the M3 chip, 8GB unified memory and a ' +
       'fanless design that stays silent under load.',
     short_description: 'M3 chip, fanless, 13.6" Liquid Retina display.',
-    images: ['Front', 'Side', 'Back', 'Detail'],
+    photos: ['front', 'side', 'detail'],
     is_featured: true,
     is_new: false,
     display_order: 30,
@@ -123,7 +129,7 @@ const PRODUCTS = [
       '180gsm combed cotton, pre-shrunk, with a soft-print logo on the chest. ' +
       'Everyday weight for Addis weather.',
     short_description: '180gsm combed cotton, pre-shrunk, soft print.',
-    images: ['Front', 'Back', 'Detail', 'Lifestyle'],
+    photos: ['front', 'detail', 'lifestyle'],
     is_featured: false,
     is_new: false,
     display_order: 40,
@@ -142,7 +148,7 @@ const PRODUCTS = [
       'On-ear wireless headphones with 40mm drivers, Pure Bass sound and 40 hours ' +
       'of battery. Foldable, with a 3.5mm cable in the box.',
     short_description: '40mm drivers, 40-hour battery, foldable.',
-    images: ['Front', 'Side', 'Detail'],
+    photos: ['front', 'detail', 'lifestyle'],
     is_featured: true,
     is_new: true,
     display_order: 5,
@@ -161,7 +167,7 @@ const PRODUCTS = [
       'Stoneware set for four: four cups, four saucers, a sugar bowl and a ' +
       '250ml serving pot. Dishwasher and microwave safe.',
     short_description: 'Stoneware for four: cups, saucers, sugar bowl, pot.',
-    images: ['Front', 'Detail', 'Lifestyle'],
+    photos: ['front', 'detail', 'lifestyle'],
     is_featured: false,
     is_new: false,
     display_order: 60,
@@ -180,7 +186,7 @@ const PRODUCTS = [
       '180-page guide to production Node.js APIs: routing, validation, ' +
       'transactions, migrations, authentication and deployment. EPUB and PDF.',
     short_description: '180 pages on production Node.js APIs. EPUB and PDF.',
-    images: ['Front', 'Detail', 'Sample spread'],
+    photos: ['front', 'detail', 'sample-spread'],
     // A downloadable has no variant rows, so `view.js` synthesises the one line
     // it can be sold on. The price belongs to the product for exactly that case:
     // without it the card would fall back to the generic digital default.
@@ -203,7 +209,7 @@ const PRODUCTS = [
       '120 hand-drawn vector icons inspired by Addis landmarks, delivered as SVG ' +
       'and PNG at three sizes.',
     short_description: '120 landmarks-inspired vectors. SVG and PNG.',
-    images: ['Front', 'Detail', 'Lifestyle'],
+    photos: ['front', 'detail', 'lifestyle'],
     is_featured: false,
     is_new: false,
     display_order: 80,
@@ -223,7 +229,7 @@ const PRODUCTS = [
       'two pillowcases. Scaled to Ethiopian bed sizes rather than EU ones, which is ' +
       'the usual complaint with imported bedding.',
     short_description: 'Four-thread cotton percale, sized for Ethiopian beds.',
-    images: ['Front', 'Detail', 'Folded set', 'Lifestyle'],
+    photos: ['front', 'detail', 'lifestyle'],
     is_featured: false,
     is_new: true,
     display_order: 15,
@@ -243,7 +249,7 @@ const PRODUCTS = [
       'survives a pocket. Single capacity axis, so there is nothing to misconfigure ' +
       'before checkout.',
     short_description: 'USB-C 3.2, 1050MB/s, rubberised housing.',
-    images: ['Front', 'Detail', 'Lifestyle'],
+    photos: ['front', 'detail', 'lifestyle'],
     is_featured: false,
     is_new: false,
     display_order: 25,
@@ -262,7 +268,7 @@ const PRODUCTS = [
       'Four slots from vegetable-tanned cowhide, woven by hand in a small Addis ' +
       'workshop. Deliberately scarce - we cut this from one hide per fortnight.',
     short_description: 'Four slots, vegetable-tanned cowhide, handwoven.',
-    images: ['Front', 'Detail', 'Lifestyle'],
+    photos: ['front', 'detail', 'lifestyle'],
     is_featured: false,
     is_new: false,
     display_order: 45,
@@ -285,7 +291,7 @@ const PRODUCTS = [
       'Currently between production runs: the page stays visible and honest rather ' +
       'than vanishing until stock returns.',
     short_description: '67-layer Damascus blade, 8 inch, hand finished.',
-    images: ['Front', 'Detail', 'Lifestyle'],
+    photos: ['front', 'detail', 'lifestyle'],
     is_featured: false,
     is_new: false,
     display_order: 65,
@@ -304,7 +310,7 @@ const PRODUCTS = [
       '100% merino, 190cm by 32cm, woven at 12 gauge. Warm without the bulk, and ' +
       'light enough to fold into a coat pocket.',
     short_description: '100% merino, 190cm, light enough to pocket.',
-    images: ['Front', 'Detail', 'Folded', 'Lifestyle'],
+    photos: ['front', 'detail', 'lifestyle'],
     is_featured: false,
     is_new: true,
     display_order: 35,
@@ -325,7 +331,7 @@ const PRODUCTS = [
       '15W fast wireless charging pad. Not yet priced for sale - kept as a DRAFT so ' +
       'the catalogue can be tested with unpublished products.',
     short_description: '15W fast charging pad. Not yet on sale.',
-    images: ['Front', 'Side', 'Detail'],
+    photos: ['front', 'side', 'detail'],
     is_featured: false,
     is_new: false,
     display_order: 99,
@@ -964,7 +970,7 @@ export function listVariants() {
 
 /** @returns {object[]} deep-ish copy of the product rows */
 export function listProducts() {
-  return PRODUCTS.map((product) => ({ ...product, images: [...product.images] }));
+  return PRODUCTS.map((product) => ({ ...product, photos: [...(product.photos ?? [])] }));
 }
 
 /** @returns {Array<object>} review rows, newest first */

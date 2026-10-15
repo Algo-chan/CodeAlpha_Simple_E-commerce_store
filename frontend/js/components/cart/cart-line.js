@@ -57,41 +57,42 @@ export function cartLineItem({ line, cart, toasts = null, className = '' }) {
   });
 
   root.append(
-    el('div.cart-line__top', {}, [
-      // `aria-hidden` plus `tabindex="-1"`: the product name is already a link
-      // in the same row, so a second link to the same product would announce
-      // twice and add a redundant tab stop.
-      el('a.cart-line__media', { href, tabindex: '-1', 'aria-hidden': 'true' }, [
-        line.image
-          ? el('img', { src: line.image, alt: '', width: 96, height: 120, loading: 'lazy' })
-          : el('div.skeleton', { style: 'block-size:100%' }),
-      ]),
-      el('div.cart-line__body', {}, [
-        el('div.cart-line__top', {}, [el('a.cart-line__name', { href, text: line.name }), remove]),
-        line.variantName
-          ? el('p.cart-line__variant', {}, [
-              el('span.cart-line__variant-dot', { 'aria-hidden': 'true' }),
-              line.variantName,
-            ])
-          : null,
-        flagged ? flagNote(line.unavailableReason) : null,
-      ]),
+    // `aria-hidden` plus `tabindex="-1"`: the product name is already a link
+    // in the same row, so a second link to the same product would announce
+    // twice and add a redundant tab stop.
+    el('a.cart-line__media', { href, tabindex: '-1', 'aria-hidden': 'true' }, [
+      line.image
+        ? el('img', { src: line.image, alt: '', width: 96, height: 120, loading: 'lazy' })
+        : el('div.skeleton', { style: 'block-size:100%' }),
     ]),
 
-    el('div.cart-line__bottom', {}, [
-      flagged
-        ? el('span.cart-line__flag', {}, [icon('info'), UNAVAILABLE_COPY[line.unavailableReason]])
-        : el('span.cart-line__unit', { text: `${formatMoneyPrecise(line.unitPrice)} each` }),
-      flagged
-        ? el('span.cart-line__total', { text: formatMoney(line.lineTotal) })
-        : stepper({
-            value: line.quantity,
-            min: 1,
-            max: line.maxQuantity,
-            small: true,
-            label: `Quantity for ${line.name}`,
-            onChange: (next) => cart.setQuantity(line.variantId, next),
-          }).element,
+    // The line is a two-column grid - media, then body - so the image and the
+    // body are the grid's direct children. The body stacks the name row, the
+    // variant note and the price/quantity row.
+    el('div.cart-line__body', {}, [
+      el('div.cart-line__top', {}, [el('a.cart-line__name', { href, text: line.name }), remove]),
+      line.variantName
+        ? el('p.cart-line__variant', {}, [
+            el('span.cart-line__variant-dot', { 'aria-hidden': 'true' }),
+            line.variantName,
+          ])
+        : null,
+      flagged ? flagNote(line.unavailableReason) : null,
+      el('div.cart-line__bottom', {}, [
+        flagged
+          ? el('span.cart-line__flag', {}, [icon('info'), UNAVAILABLE_COPY[line.unavailableReason]])
+          : el('span.cart-line__unit', { text: `${formatMoneyPrecise(line.unitPrice)} each` }),
+        flagged
+          ? el('span.cart-line__total', { text: formatMoney(line.lineTotal) })
+          : stepper({
+              value: line.quantity,
+              min: 1,
+              max: line.maxQuantity,
+              small: true,
+              label: `Quantity for ${line.name}`,
+              onChange: (next) => cart.setQuantity(line.variantId, next),
+            }).element,
+      ]),
     ])
   );
 

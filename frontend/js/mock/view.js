@@ -20,7 +20,7 @@
  * components must not reach into `mock/` for vocabulary. This file re-exports them
  * for the fixtures' own convenience; new code should import from `utils/`.
  */
-import { mediaSet, mediaFor, thumbnailFor, placeholderFor } from './media.js';
+import { mediaSet, mediaFor, thumbnailFor, placeholderFor, photoSet } from './media.js';
 import { discountPercent } from '../utils/format.js';
 import {
   BADGE_LABELS,
@@ -321,6 +321,12 @@ function buildVariantLabel(variant) {
 /* -------------------------------------------------------------------------- */
 
 function buildImages(product) {
+  // Demo photographs first: a product that names its files (see
+  // `mock/products.js`) renders them and skips generation entirely. The
+  // procedural SVG stays as the fallback so a product added without photos -
+  // or a future API response that carries neither - still gets a gallery.
+  if (product.photos?.length) return photoSet(product.slug, product.photos);
+
   const angles = product.images?.length ? product.images : ['Front'];
   return mediaSet(product.slug, angles).map((image) => ({
     ...image,
@@ -423,7 +429,7 @@ function firstSentence(text) {
 }
 
 /** Re-exported so callers do not need a second import for gallery fallbacks. */
-export { mediaFor, mediaSet, thumbnailFor, placeholderFor };
+export { mediaFor, mediaSet, thumbnailFor, placeholderFor, photoSet };
 
 export default {
   buildCatalogue,

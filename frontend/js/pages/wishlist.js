@@ -46,7 +46,7 @@ export default function wishlistPage({ host, wishlist, catalogue, ui = null, qui
 
   const shell = el('div.container.wishlist-page');
 
-  document.title = 'Saved items - Aster & Oak';
+  document.title = 'Saved items - Roman Store';
   host.replaceChildren(shell);
 
   function draw() {

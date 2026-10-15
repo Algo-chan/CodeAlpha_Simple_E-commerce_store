@@ -51,7 +51,7 @@ frontend/
 │   │   ├── api.js        createMockClient(): same methods as core/api.js
 │   │   ├── products.js   product / variant / inventory / review rows
 │   │   ├── categories.js category rows + buildTree()
-│   │   ├── media.js      generated SVG imagery per product
+│   │   ├── media.js      demo photos + generated SVG fallback per product
 │   │   └── view.js       buildCatalogue(): rows -> view models
 │   ├── state/            observable stores, no state library
 │   │   ├── store.js      the primitive: immutable, batched, persisted
@@ -77,7 +77,7 @@ frontend/
 │   └── utils/            format, focus-trap, icons, scroll-lock
 ├── tests/                node:test suites for the pure logic
 ├── pages/README.md       route -> file mapping (legacy index)
-└── assets/               static assets
+└── assets/               static assets (images/products/ = demo photos)
 ```
 
 ## How a page boots

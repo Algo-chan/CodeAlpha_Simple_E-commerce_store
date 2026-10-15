@@ -315,15 +315,22 @@ function syncInertness() {
   if (open.length === 0) delete document.body.dataset.overlayOpen;
   else document.body.dataset.overlayOpen = 'true';
 
+  // Only a page that *has* an open panel becomes partially inert. With nothing
+  // open every sibling loses the markers, so the page is fully interactive
+  // again. Getting this backwards left the whole document inert after the last
+  // panel closed - every link, including the header logo, silently stopped
+  // responding, which reads as "navigation/Back is broken".
+  const hasOpen = open.length > 0;
+
   for (const sibling of document.body.children) {
     if (sibling.tagName === 'SCRIPT' || sibling.tagName === 'STYLE') continue;
 
-    if (open.includes(sibling)) {
-      sibling.removeAttribute('inert');
-      sibling.removeAttribute('aria-hidden');
-    } else {
+    if (hasOpen && !open.includes(sibling)) {
       sibling.setAttribute('inert', '');
       sibling.setAttribute('aria-hidden', 'true');
+    } else {
+      sibling.removeAttribute('inert');
+      sibling.removeAttribute('aria-hidden');
     }
   }
 }

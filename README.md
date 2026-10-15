@@ -1,8 +1,8 @@
-# CodeAlpha_Simple_E-commerce_store
+# Roman Store
 
-Professional, portfolio-quality single-vendor e-commerce platform. Built with
-**vanilla HTML/CSS/JavaScript** (frontend) + **Node.js, Express, PostgreSQL**
-(backend).
+Roman Store is a professional, portfolio-quality single-vendor e-commerce
+platform. Built with **vanilla HTML/CSS/JavaScript** (frontend) + **Node.js,
+Express, PostgreSQL** (backend).
 
 This repository contains the completed **Phase 1 — Architecture and
 Development Environment**. No product, cart, checkout or admin functionality is

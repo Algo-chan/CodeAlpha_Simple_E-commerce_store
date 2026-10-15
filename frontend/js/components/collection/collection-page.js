@@ -291,6 +291,13 @@ export function createCollectionPage({
       render();
       syncToUrl();
     }),
+    // Back/Forward inside the collection is a same-document traversal: the URL
+    // changes but nothing re-reads it, so the grid keeps showing the old query
+    // and the Back press looks like it did nothing. Re-hydrating from the URL
+    // on `popstate` keeps the address bar and the grid in agreement. (Leaving
+    // the collection is a cross-document navigation, where `popstate` does not
+    // fire, so this does not interfere with that.)
+    on(globalThis, 'popstate', hydrateFromUrl),
   ]);
 
   return {

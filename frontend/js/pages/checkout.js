@@ -55,7 +55,7 @@ import {
  * @returns {{ destroy(): void }}
  */
 export default async function checkoutPage({ host, cart, auth, client = api, ui = null }) {
-  document.title = 'Checkout - Aster & Oak';
+  document.title = 'Checkout - Roman Store';
   if (auth.selectStatus() === 'unknown') await auth.refresh();
 
   const shell = el('div.container.checkout-shell');

@@ -16,7 +16,7 @@ import { authForm, authCopy } from '../components/forms/auth-form.js';
  * @returns {{ destroy(): void }}
  */
 export default function loginPage({ host, auth }) {
-  document.title = 'Sign in - Aster & Oak';
+  document.title = 'Sign in - Roman Store';
   const shell = el('div.container');
   host.replaceChildren(shell);
 
