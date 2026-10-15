@@ -65,7 +65,13 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||4000)+'/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-# Migrate, then hand the process straight to Node as PID 1 so SIGTERM reaches
-# the graceful-shutdown handler in `server.js`. Migrations are idempotent and
-# skip already-applied files, so a restart or a redeploy is a cheap no-op.
-CMD ["sh", "-c", "npm run migrate && exec node backend/server.js"]
+# Migrate, optionally load the demo catalogue, then hand the process straight to
+# Node as PID 1 so SIGTERM reaches the graceful-shutdown handler in `server.js`.
+# Migrations are idempotent and skip already-applied files, so a restart or a
+# redeploy is a cheap no-op — and so are the seeds, which converge.
+#
+# `SEED_DEMO_DATA=true` is for hosts with no way to run the seed runner by hand
+# (Render's free plan has no Shell and no one-off jobs). It is off unless set, so
+# a normal deployment ships an empty catalogue. A failing seed is fatal on
+# purpose: better a loud failed deploy than a silently empty storefront.
+CMD ["sh", "-c", "npm run migrate && { if [ \"$SEED_DEMO_DATA\" = \"true\" ]; then node backend/seeds/run.js --force; fi; } && exec node backend/server.js"]

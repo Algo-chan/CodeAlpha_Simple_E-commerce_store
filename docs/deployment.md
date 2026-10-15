@@ -146,6 +146,28 @@ node backend/seeds/run.js            # dev: loads demo data
 node backend/seeds/run.js --force    # explicitly, in production
 ```
 
+Call the runner directly, as above. The root shortcut
+`npm run seed -- --force` does **not** work: npm appends the extra argument to
+the nested workspace script, where the inner `npm` consumes `--force` as one of
+its own flags. The seed is then refused, with nothing to say the flag went
+missing.
+
+#### Seeding a host that has no shell
+
+Render's free plan provides neither Shell access nor one-off jobs, so there is
+no way to run the command above by hand. `SEED_DEMO_DATA=true` makes the
+container's start command seed after migrating and before it serves:
+
+```bash
+docker run ... -e SEED_DEMO_DATA=true roman-store
+```
+
+This is what `render.yaml` sets. The seeds converge, so the cost is one pass on
+the first boot and a cheap no-op afterwards, including after the platform
+recreates the database. Leave the flag unset to deploy an empty catalogue, and
+consider a paid instance — which restores Shell access — when you need to seed
+deliberately.
+
 ### Verify against real PostgreSQL
 
 The automated suite runs on **PGlite** (PostgreSQL compiled to WebAssembly), so

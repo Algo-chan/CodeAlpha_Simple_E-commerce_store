@@ -13,8 +13,13 @@
 # dashboard, so this file holds no credentials and can be committed.
 #
 # NOTE ON THE FREE PLAN
-#   The `free` database is time-limited (Render expires it after a period) and
-#   the free web service sleeps after inactivity, waking on the next request.
+#   - The web service spins down after 15 minutes without traffic and takes about
+#     a minute to wake, so the first request after a quiet spell is slow.
+#   - The database EXPIRES 30 DAYS AFTER CREATION. Render grants a 14-day grace
+#     period to move it to a paid plan, then deletes it and all of its data.
+#   - Free services have no Shell and cannot run one-off jobs, which is why the
+#     container seeds the demo catalogue itself (see SEED_DEMO_DATA below).
+#   - Only one free Postgres database may exist per workspace.
 #   Move both to a paid plan for a store that has to stay up.
 
 databases:
@@ -72,3 +77,13 @@ services:
       # accept unsigned webhooks in production.
       - key: PAYMENT_PROVIDER
         value: NONE
+
+      # --- Demo catalogue ---------------------------------------------------
+      # Free web services expose no Shell and cannot run one-off jobs, so there
+      # is no way to run `node backend/seeds/run.js --force` by hand. The
+      # container's start command reads this flag instead and loads the demo
+      # catalogue after migrating. The seeds converge, so every later boot is a
+      # cheap no-op. Remove this entry to deploy an empty store and seed it by
+      # some other means.
+      - key: SEED_DEMO_DATA
+        value: 'true'
