@@ -50,7 +50,9 @@ COPY --from=deps --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node package.json package-lock.json ./
 # `seeds/` and `migrations/` travel with the image so migrations can run on
 # start and an operator can seed a demo database from the platform shell
-# (`npm run seed -- --force`; refused in production otherwise).
+# (`node backend/seeds/run.js --force`; refused in production otherwise). The
+# root `npm run seed -- --force` shape does NOT forward `--force` past the
+# nested workspace script, so call the runner directly.
 COPY --chown=node:node backend ./backend
 COPY --chown=node:node frontend ./frontend
 
