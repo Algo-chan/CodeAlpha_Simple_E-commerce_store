@@ -21,7 +21,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { pool } from '../src/config/db.js';
 import { logger } from '../src/utils/logger.js';
 
@@ -65,7 +65,8 @@ async function run() {
   logger.info(`Running ${files.length} seed file(s)...`);
 
   for (const file of files) {
-    const module = await import(file.path);
+    // `import()` needs a URL: a bare `C:\...` path is not one on Windows.
+    const module = await import(pathToFileURL(file.path).href);
     const seedFn = module.default;
 
     if (typeof seedFn !== 'function') {
