@@ -1,0 +1,16 @@
+# Keep the build context small and free of secrets. `.env` files must never be
+# baked into an image; production reads configuration from the platform's
+# environment panel instead (see .env.example and docs/deployment.md).
+**/node_modules
+**/.git
+**/.github
+**/.env
+**/.env.*
+**/npm-debug.log*
+**/*.log
+**/coverage
+**/.nyc_output
+**/.vscode
+**/.idea
+**/.DS_Store
+docs

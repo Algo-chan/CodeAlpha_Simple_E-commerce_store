@@ -1,0 +1,55 @@
+# Local, production-shaped run of the exact image that ships.
+#
+#   docker compose up --build
+#   open http://localhost:4000        (the storefront, served by the API)
+#
+# This exists to rehearse a deploy without pushing to Render: the same Dockerfile,
+# the same migrations-on-boot, the same single-origin static serving and CSP.
+#
+# CAVEAT — HTTPS AND THE SESSION COOKIE
+#   In `NODE_ENV=production` the session cookie is marked `Secure`, so a browser
+#   will not store it over plain http://localhost. Browsing the catalogue works
+#   (those reads need no session); signing in and the guest cart do not persist.
+#   Render terminates TLS, so this only affects the local HTTP preview. For full
+#   interactive development run `npm run dev` (the frontend dev server on :5173
+#   talks to the API on :4000 over http, where the cookie is not Secure).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ecommerce_store
+    # Published so `npm run migrate` / `npm run seed` can run from the host too.
+    ports:
+      - '5432:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: '4000'
+      DATABASE_URL: postgres://postgres:postgres@db:5432/ecommerce_store
+      DB_SSL: 'false'
+      # The storefront and the API share this origin, so it is the allowed one.
+      FRONTEND_URL: http://localhost:4000
+      # Development-only secrets: long enough to pass the production checks, and
+      # obviously not secrets. Render generates real ones (see render.yaml).
+      JWT_SECRET: local-compose-only-secret-000000000000000000
+      JWT_REFRESH_SECRET: local-compose-only-refresh-000000000000000
+      PAYMENT_PROVIDER: NONE
+    ports:
+      - '4000:4000'
+
+volumes:
+  db-data:

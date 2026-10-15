@@ -577,6 +577,84 @@ export async function findProductBySlug(slug, db = {}) {
 }
 
 /**
+ * Every ACTIVE product, with its full variant matrix and gallery, in three
+ * queries.
+ *
+ * This is the storefront shell payload. The shell holds the whole catalogue in
+ * memory before it can render: navigation comes from the category tree, the
+ * collection page and the home rails filter the product list client-side, and
+ * the product page resolves a variant by id without a second request.
+ * `listProducts` is unsuited to that job on purpose — it pages, and a listing row
+ * deliberately carries neither the variant matrix nor the full gallery — so this
+ * is the one read that genuinely wants everything.
+ *
+ * Three queries, never N+1: one for the product rows, one for every variant, one
+ * for every image, mirroring `findProductBySlug`. The service groups the rows
+ * per product, because the view-model mapping lives there.
+ *
+ * All three queries filter on `p.status = 'ACTIVE'`, so a DRAFT product neither
+ * appears nor leaks its variants.
+ *
+ * @param {{ query?: Function }} [db]
+ * @returns {Promise<{ products: object[], variants: object[], images: object[] }>}
+ */
+export async function listCatalogueProducts(db = {}) {
+  const execute = db.query ?? poolQuery;
+
+  const productsResult = await execute(
+    `SELECT
+       p.id, p.slug, p.name, p.brand, p.product_type, p.description, p.created_at,
+       p.category_id,
+       c.slug AS category_slug, c.name AS category_name, c.description AS category_description,
+       COALESCE(rat.rating_average, 0) AS rating_average,
+       COALESCE(rat.rating_count, 0) AS rating_count
+     FROM products p
+     JOIN categories c ON c.id = p.category_id
+     LEFT JOIN LATERAL (
+       SELECT round(avg(r.rating)::numeric, 1) AS rating_average,
+              count(*)::int AS rating_count
+         FROM reviews r
+        WHERE r.product_id = p.id AND r.status = 'APPROVED'
+     ) rat ON TRUE
+     WHERE p.status = 'ACTIVE'
+     ORDER BY p.created_at DESC, p.id`
+  );
+
+  const products = productsResult.rows;
+  if (products.length === 0) return { products: [], variants: [], images: [] };
+
+  const [variantsResult, imagesResult] = await Promise.all([
+    execute(
+      `SELECT
+         v.id, v.product_id, v.sku, v.price, v.compare_at_price, v.attributes, v.is_active,
+         i.quantity,
+         i.reserved_quantity,
+         COALESCE(i.quantity - i.reserved_quantity, NULL) AS available
+       FROM product_variants v
+       JOIN products p ON p.id = v.product_id AND p.status = 'ACTIVE'
+       LEFT JOIN inventory i ON i.variant_id = v.id
+       ORDER BY
+         v.is_active DESC,
+         v.price ASC NULLS LAST,
+         v.attributes::text ASC,
+         v.id ASC`
+    ),
+    execute(
+      `SELECT pi.id, pi.product_id, pi.image_url, pi.alt_text, pi.sort_order, pi.is_primary
+         FROM product_images pi
+         JOIN products p ON p.id = pi.product_id AND p.status = 'ACTIVE'
+        ORDER BY pi.is_primary DESC, pi.sort_order, pi.id`
+    ),
+  ]);
+
+  return {
+    products,
+    variants: variantsResult.rows,
+    images: imagesResult.rows,
+  };
+}
+
+/**
  * Related products for a detail page.
  *
  * Scored in tiers, because a shopper who opened a phone is far better served by

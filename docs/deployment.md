@@ -83,6 +83,7 @@ Minimum production set:
 | `NODE_ENV`               | `production` (enables CSP, `Secure` cookies, generic errors, fail-fast checks)   |
 | `PORT`                   | the port the platform routes to (often injected by the host)                     |
 | `FRONTEND_URL`           | the exact HTTPS storefront origin, e.g. `https://shop.example.com` — never `*`   |
+| `PUBLIC_ORIGIN`          | the deployment's own origin when a custom domain fronts it (Render: automatic)   |
 | `DATABASE_URL`           | `postgres://user:pass@host:5432/db?sslmode=require` (or the `DB_*` parts)        |
 | `DB_SSL`                 | `true` for any managed database                                                  |
 | `DB_POOL_MAX`            | `10` (see §5 — keep `instances × max < server max_connections`)                  |
@@ -261,6 +262,10 @@ transaction that also records the order transition.
 - Terminate TLS at the platform edge or reverse proxy; never serve auth over HTTP.
 - Set `FRONTEND_URL` to the **exact** HTTPS origin. CORS reflects only allowed
   origins; `*` is refused.
+- A browser sends an `Origin` header even on a **same-origin** write, so the origin
+  the app is itself served from must also be allowed. `PUBLIC_ORIGIN` covers a
+  custom domain; on Render, `RENDER_EXTERNAL_URL` is injected and trusted
+  automatically, so the default `*.onrender.com` origin needs no configuration.
 - In production the auth cookie is set `Secure`, `HttpOnly`, `SameSite=Lax`, so it
   is transmitted only over HTTPS.
 - The storefront served by Express is same-origin with the API; a split deployment
@@ -323,16 +328,33 @@ Record the result of the last restore drill (date, who, duration) in your runboo
 
 ### Deployment
 
-Pick one managed platform and keep it boring:
+The repository ships the artifacts for a container deploy, so a platform only
+has to build and run them:
 
-- **PaaS (Render / Railway / Fly.io / Heroku):** connect the repo, run
-  `npm ci && npm run migrate` as the release command, `npm start` as the web
-  command. The database and object storage are add-ons.
+- **Docker image** — `Dockerfile` builds a two-stage image (production
+  dependencies only), runs as the unprivileged `node` user, exposes `/health` as a
+  `HEALTHCHECK`, and applies migrations before starting the server. `.dockerignore`
+  keeps `node_modules`, `.git` and every `.env` out of the build context.
+- **Render Blueprint** — `render.yaml` provisions the Docker web service _and_ a
+  managed PostgreSQL, binds `DATABASE_URL`, generates `JWT_SECRET` and
+  `JWT_REFRESH_SECRET`, and points Render's health check at `/health`. Create a
+  Blueprint from the repository and Render applies the file; no credentials live in
+  it.
+- **Local rehearsal** — `docker compose up --build` runs the same image against a
+  throwaway PostgreSQL on [http://localhost:4000](http://localhost:4000).
+
+Manual options, if you would rather wire it yourself:
+
+- **PaaS (Railway / Fly.io / Heroku):** build from the `Dockerfile`, or connect
+  the repo and run `npm ci && npm run migrate` as the release command, `npm start`
+  as the web command. The database and object storage are add-ons.
 - **VPS + reverse proxy:** `npm ci --omit=dev`, run migrations, supervise
   `npm start` with systemd, terminate TLS at nginx/Caddy.
 
-The storefront is served by the API in production (`env.isProduction`), so there
-is one artifact and one origin — no separate frontend deploy to keep in sync.
+Migration runs on every boot and is idempotent, so a restart or a redeploy is a
+cheap no-op. The storefront is served by the API in production
+(`env.isProduction`), so there is one artifact and one origin — no separate
+frontend deploy to keep in sync.
 
 ### Rollback
 

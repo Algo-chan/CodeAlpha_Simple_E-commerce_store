@@ -334,6 +334,64 @@ export async function getProduct(slug, { includeRelated = true } = {}, db = {}) 
 }
 
 /**
+ * The whole catalogue in one payload: every ACTIVE product as a DETAIL view
+ * model, plus the category tree.
+ *
+ * WHY THIS EXISTS
+ *
+ * The storefront shell is built once, from an in-memory catalogue, and every
+ * later view reads from that one object: the collection page filters and sorts
+ * client-side, the home rails select by category, the wishlist resolves a saved
+ * id, and the product page looks a variant up by id. `listProducts` cannot serve
+ * that — it pages, and a listing row has no variants — so this read returns the
+ * detail shape for every product.
+ *
+ * Reviews are deliberately not embedded. The detail page guards
+ * `product.reviews ?? []`, and shipping every review of every product to every
+ * visitor would dwarf the catalogue itself; a page that needs them fetches
+ * `/products/:slug/reviews`. Ratings DO come along, because a card renders them.
+ *
+ * @param {{ query?: Function }} [db]
+ * @returns {Promise<{ products: object[], categories: object[] }>}
+ */
+export async function getCatalogueBootstrap(db = {}) {
+  const [rows, categories] = await Promise.all([
+    catalogue.listCatalogueProducts(db),
+    // The shell always renders the full tree, so nothing is pruned by emptiness.
+    listCategories({}, db),
+  ]);
+
+  const variantsByProduct = groupBy(rows.variants, (variant) => variant.product_id);
+  const imagesByProduct = groupBy(rows.images, (image) => image.product_id);
+
+  const products = rows.products.map((product) => {
+    const ratingCount = Number(product.rating_count ?? 0);
+
+    return toProductDetail({
+      product,
+      variants: variantsByProduct.get(String(product.id)) ?? [],
+      images: imagesByProduct.get(String(product.id)) ?? [],
+      // The row already carries the aggregate, so no per-product review query.
+      // `0` means "no reviews yet", which must render as null rather than a zero
+      // rating, exactly as `toListingProduct` treats it.
+      rating: {
+        average: ratingCount > 0 ? Number(product.rating_average) : null,
+        count: ratingCount,
+        distribution: [],
+      },
+      // Empty by design: neither is rendered from a bootstrap product. The
+      // breadcrumb trail is rebuilt from the category tree on the page, and the
+      // related rail is a client-side category match over this same list.
+      reviews: [],
+      ancestry: [],
+      related: [],
+    });
+  });
+
+  return { products, categories };
+}
+
+/**
  * Related products for a detail page.
  *
  * Mapped to the same listing view model, so a related card renders through the
@@ -475,6 +533,7 @@ export default {
   listProducts,
   searchProducts,
   getProduct,
+  getCatalogueBootstrap,
   getProductReviews,
   getCategoryProducts,
   listCategories,
@@ -488,3 +547,32 @@ export default {
   productNotFound,
   categoryNotFound,
 };
+
+/* -------------------------------------------------------------------------- */
+/* Helpers                                                                       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Groups rows into a Map keyed by a derived string.
+ *
+ * `getCatalogueBootstrap` reads every variant and every image in one query each
+ * and has to hand each product only its own rows; a Map lookup beats scanning
+ * the full result per product.
+ *
+ * @template T
+ * @param {T[]} rows
+ * @param {(row: T) => unknown} keyOf
+ * @returns {Map<string, T[]>}
+ */
+function groupBy(rows, keyOf) {
+  const grouped = new Map();
+
+  for (const row of rows) {
+    const key = String(keyOf(row));
+    const bucket = grouped.get(key);
+    if (bucket) bucket.push(row);
+    else grouped.set(key, [row]);
+  }
+
+  return grouped;
+}

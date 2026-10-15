@@ -56,3 +56,51 @@ test('an injected __APP_CONFIG__ still wins over the derived default', async () 
     else globalThis.__APP_CONFIG__ = originalConfig;
   }
 });
+
+/* --- Catalogue source ----------------------------------------------------- */
+
+test('without a browser the catalogue comes from the API, not the fixtures', async () => {
+  const { config } = await import('../js/config.js');
+
+  assert.equal(config.useMockCatalogue, false);
+});
+
+test('?catalogue=mock switches the catalogue to the in-browser fixtures', async () => {
+  const original = globalThis.window;
+  globalThis.window = { location: { search: '?catalogue=mock' } };
+
+  try {
+    const { config } = await import('../js/config.js?mock-on');
+    assert.equal(config.useMockCatalogue, true);
+  } finally {
+    globalThis.window = original;
+  }
+});
+
+test('an explicit ?catalogue=api beats nothing being set', async () => {
+  const original = globalThis.window;
+  globalThis.window = { location: { search: '?catalogue=api' } };
+
+  try {
+    const { config } = await import('../js/config.js?mock-off');
+    assert.equal(config.useMockCatalogue, false);
+  } finally {
+    globalThis.window = original;
+  }
+});
+
+test('an injected __APP_CONFIG__ can force the fixture catalogue', async () => {
+  const originalWindow = globalThis.window;
+  const originalConfig = globalThis.__APP_CONFIG__;
+  globalThis.window = { location: { search: '' } };
+  globalThis.__APP_CONFIG__ = { useMockCatalogue: true };
+
+  try {
+    const { config } = await import('../js/config.js?mock-injected');
+    assert.equal(config.useMockCatalogue, true);
+  } finally {
+    globalThis.window = originalWindow;
+    if (originalConfig === undefined) delete globalThis.__APP_CONFIG__;
+    else globalThis.__APP_CONFIG__ = originalConfig;
+  }
+});

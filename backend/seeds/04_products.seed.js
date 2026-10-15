@@ -8,16 +8,21 @@
  *   - DIGITAL products with no variant at all
  *   - a DRAFT product that must not appear in the storefront
  *
- * Images use placeholder URLs and label the angle, because the gallery
- * component reads is_primary, sort_order and alt_text to build thumbnails,
- * the main image and the zoom overlay. There is no cap on the number of images
- * per product, so the count varies deliberately.
+ * Images point at the photos committed with the storefront under
+ * `frontend/assets/images/products/<slug>/<angle>.webp`, and carry the angle in
+ * `alt_text`, because the gallery component reads is_primary, sort_order and
+ * alt_text to build thumbnails, the main image and the zoom overlay. The URL is
+ * deliberately RELATIVE: it resolves against the storefront's own origin whether
+ * the frontend runs on its dev server (:5173) or is served by the API in
+ * production, and it survives a domain move.
+ *
+ * The angles listed per product are exactly the files that exist for it. A URL
+ * naming a photo that was never committed is a broken frame in the gallery, so
+ * the count varies deliberately and is not padded to a fixed five.
  *
  * Prices live in 05_product_variants.seed.js - products intentionally have no
  * price column.
  */
-const PLACEHOLDER = 'https://placehold.co/800x800/f4f4f7/1c1c21?text=';
-
 const PRODUCTS = [
   {
     id: '40000000-0000-4000-8000-000000000001',
@@ -30,7 +35,7 @@ const PRODUCTS = [
     description:
       'Everyday running shoe with a large visible Air heel unit. Mesh upper, foam ' +
       'midsole and a rubber outsole built for daily wear on concrete.',
-    images: ['Front', 'Side', 'Back', 'Detail', 'Lifestyle'],
+    images: ['front', 'side', 'back'],
   },
   {
     id: '40000000-0000-4000-8000-000000000002',
@@ -43,7 +48,7 @@ const PRODUCTS = [
     description:
       '6.6" Super AMOLED display, 50MP main camera and a 5000mAh battery. ' +
       'IP67 rated, with four years of OS updates.',
-    images: ['Front', 'Back', 'Detail', 'Lifestyle'],
+    images: ['front', 'detail', 'lifestyle'],
   },
   {
     id: '40000000-0000-4000-8000-000000000003',
@@ -56,7 +61,7 @@ const PRODUCTS = [
     description:
       '13.6" Liquid Retina display with the M3 chip, 8GB unified memory and a ' +
       'fanless design that stays silent under load.',
-    images: ['Front', 'Side', 'Back', 'Detail'],
+    images: ['front', 'side', 'detail'],
   },
   {
     id: '40000000-0000-4000-8000-000000000004',
@@ -69,7 +74,7 @@ const PRODUCTS = [
     description:
       '180gsm combed cotton, pre-shrunk, with a soft-print logo on the chest. ' +
       'Everyday weight for Addis weather.',
-    images: ['Front', 'Back', 'Detail', 'Lifestyle'],
+    images: ['front', 'detail', 'lifestyle'],
   },
   {
     id: '40000000-0000-4000-8000-000000000005',
@@ -82,7 +87,7 @@ const PRODUCTS = [
     description:
       'On-ear wireless headphones with 40mm drivers, Pure Bass sound and 40 hours ' +
       'of battery. Foldable, with a 3.5mm cable in the box.',
-    images: ['Front', 'Side', 'Detail'],
+    images: ['front', 'detail', 'lifestyle'],
   },
   {
     id: '40000000-0000-4000-8000-000000000006',
@@ -95,7 +100,7 @@ const PRODUCTS = [
     description:
       'Stoneware set for four: four cups, four saucers, a sugar bowl and a ' +
       '250ml serving pot. Dishwasher and microwave safe.',
-    images: ['Front', 'Detail', 'Lifestyle'],
+    images: ['front', 'detail', 'lifestyle'],
   },
   {
     id: '40000000-0000-4000-8000-000000000007',
@@ -109,7 +114,7 @@ const PRODUCTS = [
       '180-page guide to production Node.js APIs: routing, validation, ' +
       'transactions, migrations, authentication and deployment. EPUB and PDF.',
     // No variants at all: the product itself is the deliverable.
-    images: ['Front', 'Detail'],
+    images: ['front', 'detail', 'sample-spread'],
   },
   {
     id: '40000000-0000-4000-8000-000000000008',
@@ -123,7 +128,7 @@ const PRODUCTS = [
       '120 hand-drawn vector icons inspired by Addis landmarks, delivered as SVG ' +
       'and PNG at three sizes.',
     // A digital product that is licensed: one variant, license is the option.
-    images: ['Front', 'Detail', 'Lifestyle'],
+    images: ['front', 'detail', 'lifestyle'],
   },
   {
     id: '40000000-0000-4000-8000-000000000009',
@@ -136,7 +141,7 @@ const PRODUCTS = [
     description:
       '15W fast wireless charging pad. Not yet priced for sale - kept as a DRAFT so ' +
       'the catalogue can be tested with unpublished products.',
-    images: ['Front', 'Side', 'Detail'],
+    images: ['front', 'side', 'detail'],
   },
 ];
 
@@ -153,8 +158,8 @@ function imageRows(product, productIndex) {
       String(productIndex).padStart(4, '0') +
       String(imageIndex).padStart(8, '0'),
     productId: product.id,
-    imageUrl: `${PLACEHOLDER}${encodeURIComponent(`${product.slug}+${angle}`)}`,
-    altText: `${product.name} - ${angle.toLowerCase()} view`,
+    imageUrl: `/assets/images/products/${product.slug}/${angle}.webp`,
+    altText: `${product.name} - ${angle} view`,
     sortOrder: imageIndex,
     isPrimary: imageIndex === 0,
   }));

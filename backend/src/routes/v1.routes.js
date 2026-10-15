@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import healthRoutes from './health.routes.js';
 import productRoutes from './catalogue.routes.js';
+import catalogueBootstrapRoutes from './catalogue-bootstrap.routes.js';
 import categoryRoutes from './categories.routes.js';
 import searchRoutes from './search.routes.js';
 import authRoutes from './auth.routes.js';
@@ -32,6 +33,13 @@ router.use('/health', healthRoutes);
 router.use('/products', productRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/search', searchRoutes);
+
+/*
+ * Implemented: the storefront shell bootstrap. Mounted at `/catalogue` because it
+ * answers with the whole catalogue rather than a page of it; see the route file
+ * for why it is separate from `/products`.
+ */
+router.use('/catalogue', catalogueBootstrapRoutes);
 
 /* Implemented: customer authentication and the account surface. */
 router.use('/auth', authRoutes);
@@ -78,6 +86,7 @@ const implemented = new Set([
   '/products',
   '/categories',
   '/search',
+  '/catalogue',
   '/auth',
   '/cart',
   '/wishlist',

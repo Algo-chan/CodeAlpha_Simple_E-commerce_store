@@ -45,16 +45,47 @@ function defaultApiBaseUrl() {
   return !isLocalhost && isHttp ? `${origin}/api/v1` : 'http://localhost:4000/api/v1';
 }
 
-/** @type {{ apiBaseUrl: string, requestTimeoutMs: number, mockLatencyMs: number,
- *           mockJitterMs: number, currency: string, locale: string,
+/**
+ * Whether the storefront should read the catalogue from the in-browser fixtures
+ * (`js/mock/api.js`) instead of the API.
+ *
+ * Production is always `false`: the storefront reads the live catalogue. A
+ * developer working on the shell without a backend running — or reviewing the
+ * loading, empty and error states the fixtures can inject — opens the site with
+ * `?catalogue=mock`. `window.__APP_CONFIG__` overrides it either way, so a
+ * deployment can force fixtures without a code change.
+ *
+ * `window` is absent under the Node test runner, where the answer is always
+ * `false` and the fixtures are imported directly by the tests that want them.
+ *
+ * @returns {boolean}
+ */
+function defaultUseMockCatalogue() {
+  if (typeof window === 'undefined' || !window.location) return false;
+
+  try {
+    return new URLSearchParams(window.location.search).get('catalogue') === 'mock';
+  } catch {
+    return false;
+  }
+}
+
+/** @type {{ apiBaseUrl: string, requestTimeoutMs: number, useMockCatalogue: boolean,
+ *           mockLatencyMs: number, mockJitterMs: number, currency: string, locale: string,
  *           store: StoreBranding, freeShippingThreshold: number }} */
 const defaults = {
   // --- Backend ---------------------------------------------------------------
   apiBaseUrl: defaultApiBaseUrl(),
   requestTimeoutMs: 10000,
 
+  /**
+   * `false` (production): read the catalogue from `/api/v1`.
+   * `true`: read it from the in-browser fixtures (`?catalogue=mock`).
+   */
+  useMockCatalogue: defaultUseMockCatalogue(),
+
   // --- Mock service ----------------------------------------------------------
-  // Phase 3 only. Set both to 0 for instant rendering in tests.
+  // Only used when `useMockCatalogue` is on. Set both to 0 for instant rendering.
   mockLatencyMs: 260,
   mockJitterMs: 90,
 

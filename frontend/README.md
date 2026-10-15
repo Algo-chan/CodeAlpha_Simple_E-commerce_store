@@ -108,20 +108,25 @@ Not wired up yet, but the seam is in place.
    timeout, unwraps the `{ success, data }` envelope and throws a normalized
    `ApiError` otherwise.
 3. The backend's CORS config (driven by `FRONTEND_URL`) allows this origin.
-4. Pages never call `fetch` directly — only through `js/core/api.js`, and today
-   the object handed to components is `mockApi` from `js/mock/api.js`.
+4. Pages never call `fetch` directly — only through `js/core/api.js`. The object
+   handed to components is the real client, `js/core/catalogue-api.js`.
 
-Both clients expose `getCatalogue`, `getProduct`, `searchProducts` and
-`getFacets` and return the same normalised view models, so switching is a change
-to the import in `app.js` — no component changes.
+The catalogue has two interchangeable clients that return the same normalised
+view models, so no component knows which is in use:
 
-```js
-// current
-import { mockApi as api } from './mock/api.js';
+- `js/core/catalogue-api.js` — the default. Reads `GET /api/v1/catalogue` (the
+  whole catalogue as detail view models, plus the category tree) and
+  `GET /api/v1/search/suggest`.
+- `js/mock/api.js` — in-browser fixtures, selected with `?catalogue=mock` (or
+  `window.__APP_CONFIG__.useMockCatalogue`), for working on the shell with no
+  backend. It is imported lazily, so a real deployment never downloads the
+  fixtures.
 
-// when the backend lands
-import { api } from './core/api.js';
-```
+Neither exposes `getFacets`: the collection page counts facets from the
+in-memory catalogue, and the real API scopes facets to a listing.
+
+Switching between them is a change of one selection in `app.js`'s
+`resolveCatalogueClient()` — no component changes.
 
 ## Testing
 

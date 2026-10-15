@@ -92,6 +92,55 @@ test('GET /api/v1/categories?flat=1 returns un-nested rows', async () => {
   assert.ok(categories.every((category) => !Array.isArray(category.children)));
 });
 
+test('GET /api/v1/catalogue returns every ACTIVE product as a full detail model', async () => {
+  const response = await get('/api/v1/catalogue');
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.success, true);
+
+  const { products, categories } = response.body.data;
+
+  // The seed holds 8 ACTIVE products and 1 DRAFT; the DRAFT must not appear.
+  assert.equal(products.length, 8);
+  assert.ok(!products.some((product) => product.slug === 'wireless-charging-pad-prototype'));
+
+  // The category tree travels with the products so the shell renders from one read.
+  assert.ok(Array.isArray(categories));
+  assert.ok(categories.some((category) => category.slug === 'electronics'));
+
+  const nike = products.find((product) => product.slug === 'nike-air-max-270');
+  assert.ok(nike, 'nike should be present');
+
+  // Unlike a listing row, a bootstrap product carries the variant matrix, the
+  // gallery and the description: this is the whole reason the endpoint exists.
+  assert.ok(nike.variants.length > 0);
+  assert.ok(nike.attribute_options.length > 0);
+  assert.ok(nike.images.length > 0);
+  assert.ok(nike.description.length > 0);
+
+  // Ratings come along because a card renders them.
+  assert.equal(nike.rating_average, 5);
+  assert.equal(nike.rating_count, 1);
+});
+
+test('every bootstrap variant maps back to its product, as the cart expects', async () => {
+  const response = await get('/api/v1/catalogue');
+  const { products } = response.body.data;
+
+  for (const product of products) {
+    for (const variant of product.variants) {
+      assert.equal(variant.product_id, product.id);
+    }
+  }
+});
+
+test('the catalogue bootstrap is publicly cacheable, like the rest of the catalogue', async () => {
+  const response = await get('/api/v1/catalogue');
+
+  assert.match(response.headers['cache-control'], /public/);
+  assert.match(response.headers['cache-control'], /max-age=\d+/);
+});
+
 test('GET /api/v1/products/:slug returns a detail payload with breadcrumbs', async () => {
   const response = await get('/api/v1/products/nike-air-max-270');
 

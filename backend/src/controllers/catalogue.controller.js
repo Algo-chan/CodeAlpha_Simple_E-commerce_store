@@ -90,6 +90,22 @@ export const getProductReviews = asyncHandler(async (req, res) => {
 });
 
 /**
+ * `GET /api/v1/catalogue`
+ *
+ * The storefront shell payload: every ACTIVE product as a detail view model plus
+ * the category tree, in one request. Read the service for why this is not just
+ * `GET /products` with a big limit.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const getCatalogue = asyncHandler(async (req, res) => {
+  const payload = await service.getCatalogueBootstrap(req.db);
+
+  res.json({ success: true, data: payload });
+});
+
+/**
  * `GET /api/v1/search`
  *
  * The full results page. `q` is required by the schema, so an empty term is a 422
@@ -155,6 +171,7 @@ export default {
   listCategories,
   getCategory,
   getProduct,
+  getCatalogue,
   getProductReviews,
   search,
   suggest,

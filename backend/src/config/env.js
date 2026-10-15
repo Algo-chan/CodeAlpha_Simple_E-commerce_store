@@ -50,6 +50,16 @@ const envSchema = z
 
     // --- HTTP / CORS --------------------------------------------------
     FRONTEND_URL: z.string().default('http://localhost:5500'),
+    /**
+     * The deployment's own public origin, when it is known before the app
+     * boots. `PUBLIC_ORIGIN` is the generic spelling; `RENDER_EXTERNAL_URL` is
+     * injected by Render automatically. Both are same-origin by definition, so
+     * trusting them adds no new trust — but they MUST be included, because a
+     * browser sends an `Origin` header even on a same-origin write and the CORS
+     * middleware would otherwise reject it.
+     */
+    PUBLIC_ORIGIN: z.string().default(''),
+    RENDER_EXTERNAL_URL: z.string().default(''),
 
     // --- Authentication (consumed once auth is implemented) ------------
     JWT_SECRET: z.string().default(''),
@@ -159,10 +169,19 @@ export const env = Object.freeze({
   isProduction: values.NODE_ENV === 'production',
   isDevelopment: values.NODE_ENV === 'development',
   isTest: values.NODE_ENV === 'test',
-  /** Frontend origins allowed by CORS, parsed from FRONTEND_URL. */
-  frontendOrigins: values.FRONTEND_URL.split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean),
+  /**
+   * Origins allowed by CORS: the configured `FRONTEND_URL` list plus the
+   * deployment's own public origin (`PUBLIC_ORIGIN` / Render's injected
+   * `RENDER_EXTERNAL_URL`). Deduplicated, because the two often coincide.
+   */
+  frontendOrigins: [
+    ...new Set(
+      [values.FRONTEND_URL, values.PUBLIC_ORIGIN, values.RENDER_EXTERNAL_URL]
+        .flatMap((value) => value.split(','))
+        .map((origin) => origin.trim())
+        .filter(Boolean)
+    ),
+  ],
 });
 
 export default env;

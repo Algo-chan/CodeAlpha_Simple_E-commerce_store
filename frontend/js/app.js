@@ -22,7 +22,6 @@ import { el, qs, on } from './core/dom.js';
 import { loadDeferredFonts } from './core/fonts.js';
 import { config } from './config.js';
 import { api } from './core/api.js';
-import { mockApi } from './mock/api.js';
 import { createCatalogueStore } from './state/catalogue.js';
 import { createCartStore } from './state/cart.js';
 import { createWishlistStore } from './state/wishlist.js';
@@ -55,7 +54,7 @@ const pages = {
 
 /**
  * @typedef {object} AppContext
- * @property {object} api          data client (the mock during Phase 3)
+ * @property {object} api          catalogue client (the API, or fixtures when `useMockCatalogue`)
  * @property {object} catalogue
  * @property {object} cart
  * @property {object} wishlist
@@ -84,8 +83,8 @@ const teardown = [];
  *
  * The catalogue is awaited before the header renders, because the navigation is
  * built from the category tree and rendering it twice would cause a visible
- * re-layout. The mock resolves almost immediately; against a real API this is
- * where a cached category list would go instead.
+ * re-layout. Against the real API this is one `GET /catalogue`; against the
+ * fixtures it resolves almost immediately.
  *
  * @returns {Promise<AppContext>}
  */
@@ -177,7 +176,8 @@ async function boot() {
   teardown.push(() => toastRegion.destroy());
 
   catalogue.setLoading();
-  const loadError = await loadCatalogue(catalogue, mockApi);
+  const catalogueClient = await resolveCatalogueClient();
+  const loadError = await loadCatalogue(catalogue, catalogueClient);
 
   // Even on failure the shell renders. A storefront with no navigation and no
   // footer is a dead end, and the page will state what went wrong in place.
@@ -185,7 +185,7 @@ async function boot() {
   const categorySlug = new URLSearchParams(globalThis.location?.search ?? '').get('category');
 
   const cartDrawer = createCartDrawer({ cart, toasts: ui });
-  const search = createSearchOverlay({ api: mockApi, history: searchHistory });
+  const search = createSearchOverlay({ api: catalogueClient, history: searchHistory });
   // One quick view for the whole session, like the cart drawer: a panel per card
   // would mean dozens of registered panels and dozens of history entries.
   const quickView = createQuickView({ cart, wishlist, ui });
@@ -225,7 +225,7 @@ async function boot() {
   void auth.refresh();
 
   context = {
-    api: mockApi,
+    api: catalogueClient,
     auth,
     catalogue,
     cart,
@@ -257,6 +257,28 @@ async function boot() {
   bindRevealOnScroll(teardown);
 
   return context;
+}
+
+/**
+ * Picks the catalogue client.
+ *
+ * Production reads the live API. `config.useMockCatalogue` (set by
+ * `?catalogue=mock` or `window.__APP_CONFIG__`) reads the in-browser fixtures
+ * instead, for working on the shell with no backend.
+ *
+ * Imported lazily so a real deployment never downloads the fixture dataset, and
+ * so the fixtures are only parsed by the browsers that actually ask for them.
+ *
+ * @returns {Promise<{ getCatalogue: Function, getProduct: Function, searchProducts: Function }>}
+ */
+async function resolveCatalogueClient() {
+  if (config.useMockCatalogue) {
+    const { mockApi } = await import('./mock/api.js');
+    return mockApi;
+  }
+
+  const { catalogueApi } = await import('./core/catalogue-api.js');
+  return catalogueApi;
 }
 
 /**
