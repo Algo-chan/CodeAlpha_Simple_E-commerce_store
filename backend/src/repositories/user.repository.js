@@ -9,7 +9,7 @@ import { query as poolQuery } from '../config/db.js';
 
 /** Grounds a db executor, preferring an injected one. */
 function executor(db) {
-  return db.query ?? poolQuery;
+  return db?.query ?? poolQuery;
 }
 
 /**

@@ -19,7 +19,7 @@ import { withTransaction } from '../config/db.js';
  * Adapts a `pg` client to the executor shape repositories call.
  *
  * `Client.prototype.query` is a prototype method, so reading `client.query` off
- * the client detaches it: repositories do `db.query ?? poolQuery` and invoke the
+ * the client detaches it: repositories do `db?.query ?? poolQuery` and invoke the
  * result, which would run with `this === undefined` and throw
  * `Cannot read properties of undefined (reading '_Promise')`. A plain object
  * whose `query` closes over the client keeps the receiver intact and changes

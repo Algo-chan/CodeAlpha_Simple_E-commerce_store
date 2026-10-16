@@ -35,7 +35,7 @@ import { query as poolQuery } from '../config/db.js';
 import { ParamList, escapeLikePattern } from './catalogue.repository.js';
 
 function executor(db) {
-  return db.query ?? poolQuery;
+  return db?.query ?? poolQuery;
 }
 
 function rows(result) {

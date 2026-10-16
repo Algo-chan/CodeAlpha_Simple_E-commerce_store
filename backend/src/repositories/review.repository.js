@@ -35,7 +35,7 @@ function executor(db) {
  * @returns {Promise<{ rows: object[], total: number }>}
  */
 export async function listProductReviews(productId, options = {}, db = {}) {
-  const execute = db.query ?? poolQuery;
+  const execute = db?.query ?? poolQuery;
   const limit = Math.min(Math.max(Number(options.limit) || 10, 1), 50);
   const offset = Math.max(Number(options.offset) || 0, 0);
 
@@ -84,7 +84,7 @@ export async function listProductReviews(productId, options = {}, db = {}) {
  * @returns {Promise<{ average: number|null, count: number, distribution: object[] }>}
  */
 export async function getRatingSummary(productId, db = {}) {
-  const execute = db.query ?? poolQuery;
+  const execute = db?.query ?? poolQuery;
 
   const aggregateResult = await execute(
     `SELECT round(avg(r.rating)::numeric, 1) AS average, count(*)::int AS total

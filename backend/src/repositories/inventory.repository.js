@@ -23,7 +23,7 @@
 import { query as poolQuery } from '../config/db.js';
 
 function executor(db) {
-  return db.query ?? poolQuery;
+  return db?.query ?? poolQuery;
 }
 
 function changed(result) {

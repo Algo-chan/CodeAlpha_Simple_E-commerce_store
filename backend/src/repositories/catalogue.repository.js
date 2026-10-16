@@ -371,7 +371,7 @@ export function compileSearch(params, term) {
  * @returns {Promise<{ rows: object[], total: number }>}
  */
 export async function listProducts(filters, options = {}, db = {}) {
-  const execute = db.query ?? poolQuery;
+  const execute = db?.query ?? poolQuery;
   const searchTerm = options.searchTerm?.trim() ?? '';
 
   const { clause, params } = compileProductFilters(filters);
@@ -526,7 +526,7 @@ export async function listProducts(filters, options = {}, db = {}) {
  * @returns {Promise<{ product: object|null, variants: object[], images: object[] }>}
  */
 export async function findProductBySlug(slug, db = {}) {
-  const execute = db.query ?? poolQuery;
+  const execute = db?.query ?? poolQuery;
 
   const productResult = await execute(
     `SELECT
@@ -599,7 +599,7 @@ export async function findProductBySlug(slug, db = {}) {
  * @returns {Promise<{ products: object[], variants: object[], images: object[] }>}
  */
 export async function listCatalogueProducts(db = {}) {
-  const execute = db.query ?? poolQuery;
+  const execute = db?.query ?? poolQuery;
 
   const productsResult = await execute(
     `SELECT
@@ -693,7 +693,7 @@ export async function listRelatedProducts(
   { categoryIds, siblingCategoryIds = [], brand = null, excludeProductId, limit = 4 },
   db = {}
 ) {
-  const execute = db.query ?? poolQuery;
+  const execute = db?.query ?? poolQuery;
 
   if (!Array.isArray(categoryIds) || categoryIds.length === 0) return [];
   if (!Array.isArray(siblingCategoryIds)) siblingCategoryIds = [];
@@ -798,7 +798,7 @@ COALESCE(agg.total_stock, 0) AS total_stock,
  * @returns {Promise<number>}
  */
 export async function countProducts(filters, db = {}) {
-  const execute = db.query ?? poolQuery;
+  const execute = db?.query ?? poolQuery;
   const { clause, params } = compileProductFilters(filters);
 
   const result = await execute(
@@ -825,7 +825,7 @@ export async function countProducts(filters, db = {}) {
  * @returns {Promise<object>}
  */
 export async function buildFacets(filters, db = {}) {
-  const execute = db.query ?? poolQuery;
+  const execute = db?.query ?? poolQuery;
 
   /* Brands -------------------------------------------------------------- */
   const brandFilter = compileProductFilters(filters, { skip: 'brand' });

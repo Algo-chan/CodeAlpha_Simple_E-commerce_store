@@ -21,7 +21,7 @@ import { ORDER_NUMBER } from '../config/constants.js';
 import { AppError } from '../utils/app-error.js';
 
 function executor(db) {
-  return db.query ?? poolQuery;
+  return db?.query ?? poolQuery;
 }
 
 function rows(result) {

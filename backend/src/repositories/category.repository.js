@@ -20,7 +20,7 @@ import { query as poolQuery } from '../config/db.js';
  * @returns {Promise<object[]>}
  */
 export async function listCategories(db = {}) {
-  const execute = db.query ?? poolQuery;
+  const execute = db?.query ?? poolQuery;
   const result = await execute(
     `SELECT
        c.id, c.parent_id, c.name, c.slug, c.description, c.image_url, c.sort_order,
@@ -42,7 +42,7 @@ export async function listCategories(db = {}) {
  * @returns {Promise<object|null>}
  */
 export async function findCategoryBySlug(slug, db = {}) {
-  const execute = db.query ?? poolQuery;
+  const execute = db?.query ?? poolQuery;
   const result = await execute(
     `SELECT c.id, c.parent_id, c.name, c.slug, c.description, c.image_url, c.sort_order
        FROM categories c
@@ -68,7 +68,7 @@ export async function findCategoryBySlug(slug, db = {}) {
  * @returns {Promise<string[]>} category ids
  */
 export async function listCategoryIds(slug, db = {}) {
-  const execute = db.query ?? poolQuery;
+  const execute = db?.query ?? poolQuery;
   const result = await execute(
     `WITH RECURSIVE category_tree AS (
        SELECT id FROM categories WHERE slug = $1
@@ -98,7 +98,7 @@ export async function listCategoryIds(slug, db = {}) {
  * @returns {Promise<string[]>} category ids
  */
 export async function listSiblingCategoryIds(slug, db = {}) {
-  const execute = db.query ?? poolQuery;
+  const execute = db?.query ?? poolQuery;
   const result = await execute(
     `SELECT c.id
        FROM categories c
@@ -120,7 +120,7 @@ export async function listSiblingCategoryIds(slug, db = {}) {
  * @returns {Promise<object[]>}
  */
 export async function listSiblings(excludeIds, db = {}) {
-  const execute = db.query ?? poolQuery;
+  const execute = db?.query ?? poolQuery;
   if (excludeIds.length === 0) return [];
 
   const result = await execute(

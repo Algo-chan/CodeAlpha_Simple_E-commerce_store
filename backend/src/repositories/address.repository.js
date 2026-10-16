@@ -12,7 +12,7 @@
 import { query as poolQuery } from '../config/db.js';
 
 function executor(db) {
-  return db.query ?? poolQuery;
+  return db?.query ?? poolQuery;
 }
 
 /** Always returns the full row so the service can hand it straight back. */
