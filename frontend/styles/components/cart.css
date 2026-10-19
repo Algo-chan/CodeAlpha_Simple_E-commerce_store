@@ -280,13 +280,13 @@
 }
 
 .cart-line .stepper__button {
-  inline-size: 1.875rem;
-  min-block-size: 1.875rem;
+  inline-size: 2.25rem;
+  min-block-size: 2.25rem;
 }
 
 .cart-line .stepper__input {
-  inline-size: 2.125rem;
-  min-block-size: 1.875rem;
+  inline-size: 2.25rem;
+  min-block-size: 2.25rem;
   font-size: var(--font-size-xs);
 }
 

@@ -68,6 +68,19 @@ const envSchema = z
     JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
     BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
 
+    // --- Bootstrap administrator ---------------------------------------
+    /**
+     * One administrator created or refreshed on every boot by
+     * `backend/scripts/bootstrap-admin.js`, for hosts that offer no way to
+     * promote an account by hand (Render's free plan has no Shell). Set both
+     * values or neither; remove them once the account is set up, because the
+     * password is re-applied on every boot.
+     */
+    BOOTSTRAP_ADMIN_EMAIL: z.string().default(''),
+    BOOTSTRAP_ADMIN_PASSWORD: z.string().default(''),
+    /** Display name for the bootstrap administrator. */
+    BOOTSTRAP_ADMIN_NAME: z.string().default('Store Admin'),
+
     // --- Session cookie ---------------------------------------------------
     SESSION_TTL_HOURS: z.coerce
       .number()
@@ -119,6 +132,19 @@ const envSchema = z
     API_BASE_URL: z.string().default('http://localhost:4000/api/v1'),
   })
   .superRefine((values, ctx) => {
+    // A half-configured bootstrap administrator would silently do nothing, so
+    // refuse it in every environment rather than only in production.
+    const hasBootstrapEmail = values.BOOTSTRAP_ADMIN_EMAIL.trim().length > 0;
+    const hasBootstrapPassword = values.BOOTSTRAP_ADMIN_PASSWORD.length > 0;
+    if (hasBootstrapEmail !== hasBootstrapPassword) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['BOOTSTRAP_ADMIN_EMAIL'],
+        message:
+          'BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD must be set together (or both left empty)',
+      });
+    }
+
     // Fail fast in production: a weak or missing secret must never ship.
     if (values.NODE_ENV === 'production') {
       if (values.JWT_SECRET.length < 32) {

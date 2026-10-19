@@ -18,7 +18,8 @@
 #   - The database EXPIRES 30 DAYS AFTER CREATION. Render grants a 14-day grace
 #     period to move it to a paid plan, then deletes it and all of its data.
 #   - Free services have no Shell and cannot run one-off jobs, which is why the
-#     container seeds the demo catalogue itself (see SEED_DEMO_DATA below).
+#     container migrates and creates the first administrator itself rather than
+#     needing both done by hand (see BOOTSTRAP_ADMIN_* below).
 #   - Only one free Postgres database may exist per workspace.
 #   Move both to a paid plan for a store that has to stay up.
 
@@ -79,11 +80,28 @@ services:
         value: NONE
 
       # --- Demo catalogue ---------------------------------------------------
-      # Free web services expose no Shell and cannot run one-off jobs, so there
-      # is no way to run `node backend/seeds/run.js --force` by hand. The
-      # container's start command reads this flag instead and loads the demo
-      # catalogue after migrating. The seeds converge, so every later boot is a
-      # cheap no-op. Remove this entry to deploy an empty store and seed it by
-      # some other means.
+      # OFF for a real store: the container starts with an empty catalogue and
+      # every product comes from the admin area (/admin → Products). Set it to
+      # 'true' only to bring the demo data back. The Dockerfile's start command
+      # reads this flag, because free web services expose no Shell and cannot run
+      # one-off jobs. The seeds converge, so even a demo boot is a cheap no-op
+      # the second time.
       - key: SEED_DEMO_DATA
-        value: 'true'
+        value: 'false'
+
+      # --- First administrator ----------------------------------------------
+      # The container creates this one ADMIN account on every boot, so a real
+      # store can be administered without a Shell to promote an account by hand.
+      # `sync: false` keeps the values out of this file: Render asks for them in
+      # the dashboard and stores them as secrets, exactly like JWT_* above.
+      #
+      # Both must be set, and the password must satisfy the registration policy
+      # (8+ characters with upper, lower, digit and symbol). The account is
+      # refreshed on every boot, so this doubles as a recovery path — remove the
+      # two variables once the store has an administrator you are happy with.
+      # Leave both empty to skip: the app logs that it was skipped and boots
+      # normally.
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        sync: false
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false

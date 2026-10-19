@@ -47,6 +47,18 @@ export const registerSchema = z
     path: ['passwordConfirmation'],
   });
 
+/**
+ * The one-off administrator created from the environment by
+ * `backend/scripts/bootstrap-admin.js`. It is not bound to an HTTP route, but
+ * it deliberately reuses the registration password policy so a bootstrap
+ * administrator can never be given a weaker password than a shopper.
+ */
+export const bootstrapAdminSchema = z.object({
+  name: z.string().trim().min(2, { message: 'Name must be at least 2 characters' }).max(120),
+  email: emailSchema,
+  password: passwordSchema,
+});
+
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, { message: 'Enter your password' }),
@@ -102,6 +114,7 @@ export const addressIdParamSchema = z.object({
 
 export default {
   registerSchema,
+  bootstrapAdminSchema,
   loginSchema,
   profileUpdateSchema,
   passwordChangeSchema,

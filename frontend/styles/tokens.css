@@ -26,53 +26,63 @@
      1. PRIMITIVES
      ------------------------------------------------------------------------- */
 
-  /* Bone: warm off-white neutrals. The canvas. */
-  --bone-50: #fbfaf8;
-  --bone-100: #f5f3ef;
-  --bone-200: #ebe8e2;
-  --bone-300: #ddd9d1;
-  --bone-400: #c4bfb5;
+  /* Bone / System Surfaces: Apple neutral canvas and grouped backgrounds. */
+  --bone-50: #ffffff;
+  --bone-100: #f5f5f7;
+  --bone-200: #e5e5ea;
+  --bone-300: #d1d1d6;
+  --bone-400: #c7c7cc;
 
-  /* Ink: warm-leaning greys for type and dark surfaces. */
-  --ink-900: #16151a;
-  --ink-800: #26242c;
-  --ink-700: #3b3844;
-  --ink-600: #565261;
-  --ink-500: #6e6a79;
-  --ink-400: #918d9b;
-  --ink-300: #b6b2be;
+  /* Ink / System Labels: Apple dynamic labels with guaranteed WCAG contrast. */
+  --ink-900: #1d1d1f;
+  --ink-800: #2c2c2e;
+  --ink-700: #3a3a3c;
+  --ink-600: #48484a;
+  --ink-500: #636366;
+  --ink-400: #686472;
+  --ink-300: #8e8e93;
 
-  /* Ember: the single accent. Clay/burnt sienna - warm, uncommon, and it reads
-     as "made with care" rather than "SaaS default". */
-  --ember-50: #fdf3ef;
-  --ember-100: #fae4db;
-  --ember-200: #f2c6b5;
-  --ember-400: #d4785a;
-  --ember-500: #c25f3d;
-  --ember-600: #b04a29;
-  --ember-700: #8f3a1f;
-  --ember-800: #6d2b16;
+  /* Ember: refined brand accent that meets 4.5:1 contrast against white surfaces. */
+  --ember-50: #fdf5f2;
+  --ember-100: #f9e2db;
+  --ember-200: #f1c3b5;
+  --ember-400: #d46845;
+  --ember-500: #b84318;
+  --ember-600: #b84318;
+  --ember-700: #933310;
+  --ember-800: #712509;
 
-  /* Status ramps. Hue-distinct and contrast-checked against bone-50 text. */
-  --moss-50: #eef6ef;
-  --moss-500: #2f7a45;
-  --moss-700: #1d522e;
+  /* Status ramps. Hue-distinct and contrast-checked against light/dark text. */
+  --moss-50: #eef8f0;
+  --moss-500: #34c759;
+  --moss-700: #248a3d;
 
-  --amber-50: #fdf5e6;
-  --amber-500: #a5700a;
-  --amber-700: #744e06;
+  --amber-50: #fef8ee;
+  --amber-500: #ff9500;
+  --amber-700: #b26800;
 
-  --rust-50: #fdeeed;
-  --rust-500: #b3261e;
-  --rust-700: #7f1812;
+  --rust-50: #fef0ef;
+  --rust-500: #ff3b30;
+  --rust-700: #c9241b;
 
-  --azure-50: #edf3fa;
-  --azure-500: #1f5f9e;
-  --azure-700: #134370;
+  --azure-50: #eff6fe;
+  --azure-500: #0071e3;
+  --azure-700: #0056ad;
 
-  /* Pure values, for the rare case where a tint cannot work. */
+  /* Pure values */
   --white: #ffffff;
   --black: #000000;
+
+  /* Apple Liquid Glass Functional Layer */
+  --glass-bg: rgba(255, 255, 255, 0.78);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.88);
+  --glass-backdrop: saturate(180%) blur(24px);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-edge-highlight: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.7);
+
+  /* Apple Pay */
+  --apple-pay-black: #000000;
+  --apple-pay-white: #ffffff;
 
   /* ---------------------------------------------------------------------------
      2. SEMANTIC COLORS
@@ -87,10 +97,10 @@
   --color-primary-border: var(--ember-200);
   --color-primary-contrast: var(--white);
 
-  --color-secondary: var(--ink-800);
-  --color-secondary-hover: var(--ink-900);
+  --color-secondary: var(--bone-100);
+  --color-secondary-hover: var(--bone-200);
   --color-secondary-subtle: var(--bone-100);
-  --color-secondary-contrast: var(--white);
+  --color-secondary-contrast: var(--ink-900);
 
   --color-accent: var(--ember-500);
   --color-accent-subtle: var(--ember-100);
@@ -100,55 +110,55 @@
   --color-bg-subtle: var(--bone-100);
   --color-surface: var(--white);
   --color-surface-muted: var(--bone-100);
-  --color-surface-hover: var(--bone-50);
+  --color-surface-hover: #fbfbfd;
   --color-surface-sunken: var(--bone-100);
   --color-surface-inverse: var(--ink-900);
   --color-surface-inverse-subtle: var(--ink-800);
   --color-surface-elevated: var(--white);
 
-  /* Text */
+  /* Text - guaranteed WCAG AA 4.5:1 on light canvas */
   --color-text: var(--ink-900);
   --color-text-secondary: var(--ink-600);
   --color-text-muted: var(--ink-500);
   --color-text-subtle: var(--ink-400);
-  --color-text-inverse: var(--bone-50);
+  --color-text-inverse: var(--white);
   --color-text-inverse-muted: var(--ink-300);
-  --color-text-link: var(--ember-700);
+  --color-text-link: var(--azure-500);
   --color-text-placeholder: var(--ink-400);
   --color-text-on-primary: var(--white);
 
-  /* Lines. Two weights only: hairline for structure, strong for emphasis. */
+  /* Lines */
   --color-border: var(--bone-200);
-  --color-border-subtle: var(--bone-100);
+  --color-border-subtle: #f0f0f4;
   --color-border-strong: var(--bone-400);
   --color-border-inverse: var(--ink-700);
 
-  /* Status - surfaces and text both provided so components never guess. */
-  --color-success: var(--moss-500);
+  /* Status */
+  --color-success: var(--moss-700);
   --color-success-bg: var(--moss-50);
   --color-success-border: color-mix(in srgb, var(--moss-500) 28%, transparent);
   --color-success-text: var(--moss-700);
 
-  --color-warning: var(--amber-500);
+  --color-warning: var(--amber-700);
   --color-warning-bg: var(--amber-50);
   --color-warning-border: color-mix(in srgb, var(--amber-500) 32%, transparent);
   --color-warning-text: var(--amber-700);
 
-  --color-error: var(--rust-500);
+  --color-error: var(--rust-700);
   --color-error-bg: var(--rust-50);
   --color-error-border: color-mix(in srgb, var(--rust-500) 28%, transparent);
   --color-error-text: var(--rust-700);
 
-  --color-info: var(--azure-500);
+  --color-info: var(--azure-700);
   --color-info-bg: var(--azure-50);
   --color-info-border: color-mix(in srgb, var(--azure-500) 28%, transparent);
   --color-info-text: var(--azure-700);
 
   /* Interaction */
-  --color-focus: var(--ember-600);
-  --color-focus-ring: color-mix(in srgb, var(--ember-600) 28%, transparent);
-  --color-overlay: rgb(22 21 26 / 52%);
-  --color-overlay-strong: rgb(22 21 26 / 72%);
+  --color-focus: var(--azure-500);
+  --color-focus-ring: rgba(0, 113, 227, 0.32);
+  --color-overlay: rgb(0 0 0 / 40%);
+  --color-overlay-strong: rgb(0 0 0 / 64%);
   --color-selection: var(--ember-100);
   --color-skeleton: var(--bone-200);
   --color-skeleton-sheen: var(--bone-100);
@@ -163,9 +173,11 @@
      ------------------------------------------------------------------------- */
 
   --font-display:
-    'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', 'Fraunces', system-ui, sans-serif;
   --font-sans:
-    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'SF Pro', system-ui, sans-serif;
+  --font-serif:
+    'New York', 'Fraunces', Georgia, serif;
   --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
 
   /* Fluid type scale. `clamp` keeps headings readable from 320px to 1600px
@@ -194,13 +206,13 @@
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* Display faces need optical sizing rather than heavy tracking. */
-  --letter-spacing-tighter: -0.035em;
-  --letter-spacing-tight: -0.02em;
+  /* Apple optical tracking */
+  --letter-spacing-tighter: -0.025em;
+  --letter-spacing-tight: -0.015em;
   --letter-spacing-normal: 0;
-  --letter-spacing-wide: 0.04em;
-  --letter-spacing-wider: 0.12em;
-  --letter-spacing-widest: 0.2em;
+  --letter-spacing-wide: 0.015em;
+  --letter-spacing-wider: 0.04em;
+  --letter-spacing-widest: 0.08em;
 
   /* Text helpers for the non-editorial cases. */
   --text-transform-label: uppercase;
@@ -243,33 +255,31 @@
   --grid-gap-xl: var(--space-2xl);
 
   /* ---------------------------------------------------------------------------
-     5. SHAPE
+     5. SHAPE — Apple continuous curvature squircle scale
      ------------------------------------------------------------------------- */
 
   --radius-none: 0;
-  --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 18px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
   --radius-2xl: 28px;
   --radius-3xl: 40px;
-  --radius-full: 999px;
+  --radius-full: 9999px;
 
   --border-width-hairline: 1px;
   --border-width-thick: 2px;
 
   /* ---------------------------------------------------------------------------
-     6. DEPTH
-     Four levels only. Warm-tinted shadows (they carry a trace of the ember hue)
-     because a neutral black shadow over a bone background reads as grey dirt.
+     6. DEPTH — Soft, natural Apple light-diffusion shadows
      ------------------------------------------------------------------------- */
 
   --shadow-none: none;
-  --shadow-subtle: 0 1px 2px rgb(58 40 30 / 5%);
-  --shadow-card: 0 2px 4px rgb(58 40 30 / 4%), 0 8px 20px -8px rgb(58 40 30 / 10%);
-  --shadow-elevated: 0 4px 8px rgb(58 40 30 / 5%), 0 18px 40px -12px rgb(58 40 30 / 16%);
-  --shadow-modal: 0 8px 16px rgb(58 40 30 / 8%), 0 40px 80px -20px rgb(58 40 30 / 26%);
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 4px 14px rgba(0, 0, 0, 0.06);
+  --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-modal: 0 20px 48px rgba(0, 0, 0, 0.14);
   --shadow-inset: inset 0 0 0 1px var(--color-border);
 
   /* ---------------------------------------------------------------------------
@@ -336,9 +346,9 @@
   --quickview-width: 62rem;
   --toast-width: 24rem;
 
-  --control-height-sm: 2rem;
-  --control-height: 2.625rem;
-  --control-height-lg: 3rem;
+  --control-height-sm: 2.25rem;
+  --control-height: 2.75rem;
+  --control-height-lg: 3.25rem;
   --touch-target: 2.75rem;
 
   --product-media-ratio: 4 / 5;
@@ -376,5 +386,70 @@
     --duration-normal: 1ms;
     --duration-slow: 1ms;
     --duration-slower: 1ms;
+  }
+}
+
+/* =============================================================================
+   APPLE DARK APPEARANCE
+   Automatic adaptation to system dark appearance with genuine semantic tokens,
+   Liquid Glass translucency, and softened dark surfaces.
+   ========================================================================== */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bone-50: #000000;
+    --bone-100: #1c1c1e;
+    --bone-200: #2c2c2e;
+    --bone-300: #3a3a3c;
+    --bone-400: #48484a;
+
+    --ink-900: #ffffff;
+    --ink-800: #f5f5f7;
+    --ink-700: #e5e5ea;
+    --ink-600: #d1d1d6;
+    --ink-500: #a1a1a6;
+    --ink-400: #86868b;
+    --ink-300: #636366;
+
+    --color-bg: #000000;
+    --color-bg-subtle: #1c1c1e;
+    --color-surface: #1c1c1e;
+    --color-surface-muted: #2c2c2e;
+    --color-surface-hover: #2c2c2e;
+    --color-surface-sunken: #000000;
+    --color-surface-inverse: #ffffff;
+    --color-surface-inverse-subtle: #f5f5f7;
+    --color-surface-elevated: #2c2c2e;
+
+    --color-secondary: #2c2c2e;
+    --color-secondary-hover: #3a3a3c;
+    --color-secondary-subtle: #1c1c1e;
+    --color-secondary-contrast: #ffffff;
+
+    --color-text: #ffffff;
+    --color-text-secondary: rgba(235, 235, 245, 0.75);
+    --color-text-muted: rgba(235, 235, 245, 0.55);
+    --color-text-subtle: rgba(235, 235, 245, 0.55);
+    --color-text-inverse: #000000;
+    --color-text-inverse-muted: #636366;
+    --color-text-placeholder: rgba(235, 235, 245, 0.40);
+
+    --color-border: rgba(255, 255, 255, 0.12);
+    --color-border-subtle: rgba(255, 255, 255, 0.08);
+    --color-border-strong: rgba(255, 255, 255, 0.24);
+    --color-border-inverse: rgba(0, 0, 0, 0.25);
+
+    --glass-bg: rgba(28, 28, 30, 0.78);
+    --glass-bg-elevated: rgba(44, 44, 46, 0.88);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --glass-edge-highlight: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.15);
+
+    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.45);
+    --shadow-elevated: 0 8px 30px rgba(0, 0, 0, 0.55);
+    --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.7);
+
+    --color-skeleton: #2c2c2e;
+    --color-skeleton-sheen: #3a3a3c;
   }
 }

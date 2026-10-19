@@ -21,9 +21,10 @@
 /* --- Announcement bar ----------------------------------------------------- */
 
 .announcement {
-  background-color: var(--color-surface-inverse);
-  color: var(--color-text-inverse);
+  background-color: var(--color-surface-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-2xs);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
 }
 
 .announcement__inner {
@@ -55,7 +56,7 @@
 }
 
 .announcement__message a:hover {
-  color: var(--bone-200);
+  color: var(--color-text);
 }
 
 .announcement__dots {
@@ -75,7 +76,7 @@
   block-size: 0.25rem;
   padding: 0;
   border-radius: var(--radius-full);
-  background-color: var(--ink-700);
+  background-color: var(--color-border-strong);
   transition:
     background-color var(--duration-normal) var(--ease-standard),
     inline-size var(--duration-normal) var(--ease-standard);
@@ -83,32 +84,32 @@
 
 .announcement__dot[aria-current='true'] {
   inline-size: 1rem;
-  background-color: var(--bone-200);
+  background-color: var(--color-text-secondary);
 }
 
-/* --- Bar ------------------------------------------------------------------ */
+/* --- Bar: Apple Liquid Glass Functional Layer ------------------------------ */
 
 .site-header__bar {
   position: sticky;
   top: 0;
   z-index: var(--z-header);
-  background-color: color-mix(in srgb, var(--color-bg) 88%, transparent);
-  -webkit-backdrop-filter: saturate(180%) blur(12px);
-  backdrop-filter: saturate(180%) blur(12px);
-  border-bottom: var(--border-width-hairline) solid transparent;
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  backdrop-filter: var(--glass-backdrop);
+  border-bottom: 0.5px solid var(--glass-border);
+  box-shadow: var(--glass-edge-highlight);
   transition:
     border-color var(--duration-normal) var(--ease-standard),
     background-color var(--duration-normal) var(--ease-standard),
     box-shadow var(--duration-normal) var(--ease-standard);
 }
 
-/* The hairline and blur only appear once content is underneath the bar, so a
-   page scrolled to the top does not start with a divider across nothing. */
+/* Scrolled state: increased opacity and subtle separation */
 .site-header__bar.is-scrolled,
 .site-header__bar.is-stuck {
-  background-color: color-mix(in srgb, var(--color-bg) 95%, transparent);
+  background-color: var(--glass-bg-elevated);
   border-bottom-color: var(--color-border);
-  box-shadow: var(--shadow-subtle);
+  box-shadow: var(--shadow-subtle), var(--glass-edge-highlight);
 }
 
 .site-header__bar.is-hidden {

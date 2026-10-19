@@ -55,6 +55,40 @@ export async function create(db, { name, email, phone, passwordHash }) {
 }
 
 /**
+ * Creates the bootstrap administrator, or refreshes it if the account already
+ * exists.
+ *
+ * This is the only statement in the codebase where a caller chooses `role`, and
+ * it exists so a host with no shell — Render's free plan offers neither Shell
+ * nor one-off jobs — can still obtain an administrator without a hand-written
+ * SQL statement. It is driven by the `BOOTSTRAP_ADMIN_*` environment variables.
+ *
+ * The update is deliberately unconditional: the configured password always
+ * works after a boot, which is what makes this usable as a recovery path. Remove
+ * the variables once the account is set up to stop re-applying them.
+ *
+ * @param {object} [db]
+ * @param {{ name: string, email: string, passwordHash: string }} input
+ * @returns {Promise<object>}
+ */
+export async function upsertAdmin(db, { name, email, passwordHash }) {
+  const result = await executor(db)(
+    `INSERT INTO users (name, email, phone, password_hash, role, status)
+     VALUES ($1, $2, NULL, $3, 'ADMIN', 'ACTIVE')
+     ON CONFLICT (email) DO UPDATE
+        SET name = EXCLUDED.name,
+            password_hash = EXCLUDED.password_hash,
+            role = 'ADMIN',
+            status = 'ACTIVE',
+            password_changed_at = NOW(),
+            updated_at = NOW()
+      RETURNING *`,
+    [name, email, passwordHash]
+  );
+  return result.rows[0];
+}
+
+/**
  * Updates profile fields. Only the two columns a customer may control are ever
  * touched; role/status/email are intentionally absent from this statement.
  *
@@ -105,4 +139,12 @@ export async function updatePassword(db, id, passwordHash) {
   );
 }
 
-export default { findByEmail, findById, create, updateProfile, setLastLogin, updatePassword };
+export default {
+  findByEmail,
+  findById,
+  create,
+  upsertAdmin,
+  updateProfile,
+  setLastLogin,
+  updatePassword,
+};

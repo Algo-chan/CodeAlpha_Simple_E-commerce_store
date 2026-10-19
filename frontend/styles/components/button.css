@@ -235,7 +235,7 @@
 /* --- Interaction states --------------------------------------------------- */
 
 .btn:active:not(:disabled):not([aria-disabled='true']) {
-  transform: translateY(1px);
+  transform: scale(0.97);
 }
 
 .btn:focus-visible {
@@ -348,5 +348,44 @@
     opacity: 1;
     transform: none;
     margin-block-start: var(--space-xs);
+  }
+}
+
+/* --- Apple Pay Button ----------------------------------------------------- */
+
+.btn--apple-pay {
+  background-color: var(--apple-pay-black);
+  color: var(--apple-pay-white);
+  border: none;
+  border-radius: var(--radius-md);
+  min-block-size: var(--control-height);
+  padding-inline: var(--space-xl);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-tight);
+  -webkit-appearance: -apple-pay-button;
+  -apple-pay-button-type: check-out;
+  -apple-pay-button-style: black;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition:
+    transform var(--duration-instant) var(--ease-standard),
+    opacity var(--duration-fast) var(--ease-standard);
+}
+
+.btn--apple-pay:hover {
+  opacity: 0.92;
+}
+
+.btn--apple-pay:active {
+  transform: scale(0.97);
+  opacity: 0.85;
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn--apple-pay {
+    background-color: var(--apple-pay-white);
+    color: var(--apple-pay-black);
+    -apple-pay-button-style: white;
   }
 }

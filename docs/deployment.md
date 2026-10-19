@@ -162,11 +162,66 @@ container's start command seed after migrating and before it serves:
 docker run ... -e SEED_DEMO_DATA=true roman-store
 ```
 
-This is what `render.yaml` sets. The seeds converge, so the cost is one pass on
-the first boot and a cheap no-op afterwards, including after the platform
-recreates the database. Leave the flag unset to deploy an empty catalogue, and
-consider a paid instance — which restores Shell access — when you need to seed
-deliberately.
+That is how the **demo** deployment was brought up. `render.yaml` now sets it to
+`false`, because a real store starts empty and is stocked from the admin area —
+see _First administrator_ below. The seeds converge, so even a demo boot costs
+one pass and a cheap no-op afterwards, including after the platform recreates
+the database.
+
+### First administrator
+
+A real store needs an administrator, and a store on a shell-less host has no way
+to promote one with SQL. `backend/scripts/bootstrap-admin.js` creates the
+account from configuration instead. The container's start command runs it on
+every boot, so `render.yaml` declares the two variables with `sync: false` —
+Render asks for the values in its dashboard and keeps them out of the repository:
+
+```yaml
+- key: BOOTSTRAP_ADMIN_EMAIL
+  sync: false
+- key: BOOTSTRAP_ADMIN_PASSWORD
+  sync: false
+```
+
+Locally, or on a host with a shell:
+
+```bash
+BOOTSTRAP_ADMIN_EMAIL=you@example.com \
+BOOTSTRAP_ADMIN_PASSWORD='Choose-a-Strong-1!' \
+  node backend/scripts/bootstrap-admin.js
+```
+
+- Both values are required together; one without the other is refused at boot.
+- The password must satisfy the registration policy: 8+ characters with an
+  upper-case letter, a lower-case letter, a digit and a symbol.
+- The account is **refreshed on every boot**: an existing account with that
+  email is promoted to `ADMIN` and given the configured password. That makes it
+  a recovery path as well as a setup path — but it also means a password changed
+  in the UI is reset by the next deploy. Remove the two variables once the store
+  has an administrator you are happy with.
+- The password is hashed before storage and is never logged.
+- Leave both unset and the script logs `Bootstrap administrator skipped` and
+  exits 0, so the same image serves a demo and a real store.
+
+### Starting from an empty store
+
+The demo deployment shipped demo products, orders and users, and turning
+`SEED_DEMO_DATA` off does not remove them — the seeds only ever insert. To clear
+them, run this once against the **External Database URL** (Render dashboard →
+the database → _Connect_), then redeploy so the bootstrap administrator comes
+back:
+
+```bash
+psql "<EXTERNAL_DATABASE_URL>?sslmode=require" -c "
+  TRUNCATE audit_logs, payments, order_items, orders,
+           inventory_transactions, inventory, product_images, product_variants,
+           products, categories, reviews, wishlist_items, wishlists,
+           cart_items, carts, addresses, user_sessions, users, coupons
+  RESTART IDENTITY CASCADE;"
+```
+
+Migrations are idempotent and tracked in `schema_migrations`, so the redeploy
+re-applies nothing and leaves an empty, ready store.
 
 ### Verify against real PostgreSQL
 
