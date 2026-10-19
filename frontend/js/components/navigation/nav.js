@@ -238,19 +238,21 @@ function buildPanel(category, children, useMega) {
         ...children.map((child) =>
           el('li', {}, [
             el('a.nav__list-link', { href: categoryUrl(child) }, [
-              child.name,
-              child.product_count
-                ? el('span.nav__mega-count', { text: formatCount(child.product_count, 'item') })
-                : null,
+              el('span.nav__list-header', {}, [
+                el('span.nav__list-title', { text: child.name }),
+                child.product_count
+                  ? el('span.nav__mega-count', { text: formatCount(child.product_count, 'item') })
+                  : null,
+              ]),
+              child.description ? el('p.nav__list-note', { text: child.description }) : null,
             ]),
-            child.description ? el('p.nav__list-note', { text: child.description }) : null,
           ])
         ),
         // The trigger opens the panel rather than navigating, so the category
         // page needs its own route in the panel - matching the mega menu's.
         el('li.nav__list-all-item', {}, [
           el('a.nav__list-link.nav__list-link--all', { href: categoryUrl(category) }, [
-            `All ${category.name}`,
+            el('span.nav__list-title', { text: `All ${category.name}` }),
             icon('arrow-right'),
           ]),
         ]),
@@ -272,20 +274,22 @@ function buildPanel(category, children, useMega) {
 }
 
 function buildMega(category, children) {
-  const columns = chunk(children, 4).map((group, index) =>
+  const columns = chunk(children, 4).map((group) =>
     el('div.nav__mega-column', {}, [
-      index === 0 && category.description
-        ? el('p.nav__mega-description', { text: category.description })
-        : null,
       el(
         'ul.nav__list',
         { role: 'list' },
         group.map((child) =>
           el('li', {}, [
             el('a.nav__mega-link', { href: categoryUrl(child) }, [
-              el('span.nav__mega-title', { text: child.name }),
-              child.product_count
-                ? el('span.nav__mega-count', { text: formatCount(child.product_count, 'item') })
+              el('span.nav__mega-header', {}, [
+                el('span.nav__mega-title', { text: child.name }),
+                child.product_count
+                  ? el('span.nav__mega-count', { text: formatCount(child.product_count, 'item') })
+                  : null,
+              ]),
+              child.description
+                ? el('span.nav__mega-description', { text: child.description })
                 : null,
             ]),
           ])
@@ -295,14 +299,21 @@ function buildMega(category, children) {
   );
 
   return el('div.nav__mega', {}, [
-    ...columns,
-    el('div.nav__mega-column.nav__mega-column--all', {}, [
-      el('a.nav__mega-all', { href: categoryUrl(category) }, [
-        `All ${category.name}`,
-        icon('arrow-right'),
+    category.description
+      ? el('div.nav__mega-banner', {}, [
+          el('p.nav__mega-category-desc', { text: category.description }),
+        ])
+      : null,
+    el('div.nav__mega-grid', {}, [
+      ...columns,
+      el('div.nav__mega-column.nav__mega-column--all', {}, [
+        el('a.nav__mega-all', { href: categoryUrl(category) }, [
+          `All ${category.name}`,
+          icon('arrow-right'),
+        ]),
       ]),
     ]),
-  ]);
+  ].filter(Boolean));
 }
 
 /* -------------------------------------------------------------------------- */
