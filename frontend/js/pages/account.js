@@ -130,7 +130,12 @@ function signInPrompt() {
 /* -------------------------------------------------------------------------- */
 
 function sidebar({ user, auth }) {
+  const isAdmin = user.role === 'ADMIN';
+
   const links = [
+    ...(isAdmin
+      ? [{ href: '/admin.html', label: 'Admin Console (Store Management)', icon: 'shield', isAdmin: true }]
+      : []),
     { href: '#details', label: 'Your details', icon: 'user' },
     { href: '#addresses', label: 'Address book', icon: 'map-pin' },
     { href: '/orders.html', label: 'Orders', icon: 'package' },
@@ -157,6 +162,7 @@ function sidebar({ user, auth }) {
         el('div', {}, [
           el('p.account-identity__name', { text: user.name }),
           el('p.account-identity__email', { text: user.email }),
+          isAdmin ? el('span.account-identity__badge', { text: 'Administrator' }) : null,
         ]),
       ]),
     ]),
@@ -165,8 +171,8 @@ function sidebar({ user, auth }) {
       { 'aria-label': 'Account' },
       links.map((item, index) =>
         el(
-          'a.account-nav__link',
-          { href: item.href, ...(index === 0 ? { 'aria-current': 'page' } : {}) },
+          item.isAdmin ? 'a.account-nav__link.account-nav__link--admin' : 'a.account-nav__link',
+          { href: item.href, ...(index === 0 && !item.isAdmin ? { 'aria-current': 'page' } : {}) },
           [icon(item.icon), item.label]
         )
       )

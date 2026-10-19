@@ -219,6 +219,34 @@
   overflow-wrap: anywhere;
 }
 
+.account-identity__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  margin-block-start: var(--space-3xs);
+  padding: 0.125rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-primary-contrast);
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+.account-nav__link--admin {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  background-color: var(--color-primary-subtle);
+  margin-block-start: var(--space-2xs);
+  margin-block-end: var(--space-2xs);
+}
+
+.account-nav__link--admin:hover {
+  color: var(--color-primary-contrast);
+  background-color: var(--color-primary);
+}
+
 @media (min-width: 64em) {
   .account-columns {
     display: grid;
