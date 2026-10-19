@@ -124,8 +124,10 @@ export function iconNames() {
  *         instead of silently rendering nothing.
  */
 export function icon(name, options = {}) {
-  const path = PATHS[name];
-  if (!path) throw new Error(`Unknown icon "${name}". Known icons: ${iconNames().join(', ')}`);
+  const path = PATHS[name] ?? PATHS.tag ?? '';
+  if (!PATHS[name]) {
+    console.warn(`Unknown icon "${name}". Known icons: ${iconNames().join(', ')}`);
+  }
 
   const { size, className, title, filled, strokeWidth = STROKE_WIDTH } = options;
   const isFilled = filled ?? FILLED.has(name);

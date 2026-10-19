@@ -139,7 +139,7 @@ export function createApp({ db } = {}) {
         etag: true,
         lastModified: true,
         setHeaders(res, filePath) {
-          if (filePath.endsWith('.html')) {
+          if (filePath.endsWith('.html') || filePath.endsWith('.js') || filePath.endsWith('.css')) {
             res.setHeader('Cache-Control', 'no-cache');
           } else {
             res.setHeader('Cache-Control', 'public, max-age=3600');

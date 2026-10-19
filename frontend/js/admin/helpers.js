@@ -43,7 +43,7 @@ export const ADMIN_SECTIONS = Object.freeze([
   { id: 'customers', label: 'Customers', icon: 'user' },
   { id: 'reviews', label: 'Reviews', icon: 'star' },
   { id: 'payments', label: 'Payments', icon: 'banknote' },
-  { id: 'coupons', label: 'Coupons', icon: 'percent' },
+  { id: 'coupons', label: 'Coupons', icon: 'ticket' },
   { id: 'audit', label: 'Audit log', icon: 'shield' },
 ]);
 

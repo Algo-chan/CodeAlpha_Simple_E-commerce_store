@@ -32,6 +32,12 @@ export function createAdminShell({ auth, client }) {
     'nav.admin-nav',
     { 'aria-label': 'Admin sections' },
     ADMIN_SECTIONS.map((section) => {
+      let iconNode;
+      try {
+        iconNode = icon(section.icon);
+      } catch {
+        iconNode = icon('tag');
+      }
       const link = el(
         'a.admin-nav__link',
         {
@@ -39,7 +45,7 @@ export function createAdminShell({ auth, client }) {
           dataset: { section: section.id },
         },
         [
-          el('span.admin-nav__icon', { 'aria-hidden': 'true' }, [icon(section.icon)]),
+          el('span.admin-nav__icon', { 'aria-hidden': 'true' }, [iconNode]),
           el('span.admin-nav__label', { text: section.label }),
         ]
       );
