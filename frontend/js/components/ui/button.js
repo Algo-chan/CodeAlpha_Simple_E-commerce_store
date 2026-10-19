@@ -117,7 +117,7 @@ export function button(options = {}) {
   // Content is replaced on every render of the label, so the accessible name
   // and the visible text can never drift apart.
   const labelNode = el('span.btn__label');
-  const content = children ?? buildContent({ label, iconName, iconEnd });
+  const content = children ?? buildContent({ label, iconName, iconEnd, iconOnly });
   labelNode.append(content);
 
   element.append(labelNode);
@@ -148,8 +148,9 @@ export function button(options = {}) {
   function setLabel(next) {
     const span = element.querySelector('.btn__label');
     if (!span) return;
-    span.textContent = next;
-    if (!iconOnly) element.setAttribute('aria-label', next);
+    if (!iconOnly) span.textContent = next;
+    element.setAttribute('aria-label', next);
+    if (iconOnly) element.setAttribute('title', next);
   }
 
   function setPressed(next) {
@@ -237,11 +238,11 @@ function iconSlot(name) {
   ]);
 }
 
-function buildContent({ label, iconName, iconEnd }) {
+function buildContent({ label, iconName, iconEnd, iconOnly = false }) {
   const fragment = document.createDocumentFragment();
 
   if (iconName) fragment.append(iconSlot(iconName));
-  if (label) fragment.append(document.createTextNode(label));
+  if (label && !iconOnly) fragment.append(document.createTextNode(label));
   if (iconEnd) {
     fragment.append(
       el('span.btn__icon-slot', { 'aria-hidden': 'true' }, [
